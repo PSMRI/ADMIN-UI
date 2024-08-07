@@ -58,6 +58,13 @@
       <button mat-menu-item (click)="show('72')">
         Data Mapping Block to Subcenter
       </button>
+      <button mat-menu-item (click)="show('73')">Project Master</button>
+      <button mat-menu-item (click)="show('74')">
+        Project Serviceline Mapping
+      </button>
+      <button mat-menu-item (click)="show('75')">
+        Project Configuration Screen
+      </button>
     </mat-menu>
     <mat-menu #FetosenseMaster="matMenu">
       <button mat-menu-item (click)="show('70')">Device ID Master</button>
@@ -237,6 +244,13 @@
           *ngSwitchCase="68"
         ></app-fetosense-test-master>
         <app-device-id-master *ngSwitchCase="70"></app-device-id-master>
+        <app-project-master *ngSwitchCase="73"></app-project-master>
+        <app-project-serviceline-mapping
+          *ngSwitchCase="74"
+        ></app-project-serviceline-mapping>
+        <app-project-configutation-screen
+          *ngSwitchCase="75"
+        ></app-project-configutation-screen>
         <app-data-mapping-block-subcenter
           *ngSwitchCase="72"
         ></app-data-mapping-block-subcenter>

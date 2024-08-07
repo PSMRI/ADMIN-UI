@@ -157,9 +157,6 @@
     <h4 *ngIf="!editMode">
       <strong>Create Provider Admin</strong>
     </h4>
-    <!-- <h4 *ngIf="editMode">
-        <strong>Edit Provider Admin</strong>
-      </h4> -->
   </div>
 
   <form
@@ -168,8 +165,6 @@
     class="col-12 row"
   >
     <div class="col-3 p-b-10">
-      <!-- <md-input-container class="hide_underline width100">
-        <input matInput style="display:none"> -->
       <mat-form-field [style.width]="'100%'">
         <mat-label>Title</mat-label>
         <mat-select
@@ -184,16 +179,15 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
-      <!-- </md-input-container> -->
     </div>
     <div class="col-3 p-t-3 p-b-10">
       <mat-form-field
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
       >
+        <mat-label>First Name</mat-label>
         <input
           matInput
-          placeholder="First Name *"
           ngModel
           name="firstName"
           [(ngModel)]="admin_firstName"
@@ -210,16 +204,15 @@
         </mat-hint>
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix visible-sm"></div> -->
     <div class="col-3 p-t-3 p-b-10">
       <mat-form-field
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
         myName
       >
+        <mat-label>Middle Name</mat-label>
         <input
           matInput
-          placeholder="Middle Name"
           ngModel
           name="middleName"
           [(ngModel)]="admin_middleName"
@@ -229,16 +222,15 @@
         />
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix visible-md"></div> -->
     <div class="col-3 p-t-3 p-b-10">
       <mat-form-field
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
         myName
       >
+        <mat-label>Last Name</mat-label>
         <input
           matInput
-          placeholder="Last Name *"
           ngModel
           name="lastName"
           [(ngModel)]="admin_lastName"
@@ -252,10 +244,7 @@
         </mat-hint>
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix visible-lg"></div> -->
     <div class="col-3 p-b-10">
-      <!-- <md-input-container class="hide_underline width100">
-        <input matInput style="display:none"> -->
       <mat-form-field [style.width]="'100%'">
         <mat-label>Gender</mat-label>
         <mat-select
@@ -269,7 +258,6 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
-      <!-- </md-input-container> -->
     </div>
     <div class="col-3 p-t-3 p-b-10">
       <mat-form-field
@@ -277,9 +265,9 @@
         class="input-full-width mat_form_field_width_one"
         appMyMobileNumber
       >
+        <mat-label>Contact Number</mat-label>
         <input
           matInput
-          placeholder="Contact Number *"
           ngModel
           name="contact_number"
           [(ngModel)]="primaryMobileNumber"
@@ -296,14 +284,12 @@
         </mat-hint>
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix visible-sm visible-md"></div> -->
     <div class="col-3 p-b-10">
       <mat-form-field [style.width]="'100%'" class="width100">
         <mat-label>Date of Birth </mat-label>
         <input
           matInput
           [matDatepicker]="picker"
-          placeholder="Choose a date"
           [(ngModel)]="dob"
           [max]="maxdate"
           [min]="mindate"
@@ -326,9 +312,9 @@
         class="input-full-width mat_form_field_width_one"
         appMyMobileNumber
       >
+        <mat-label>Age</mat-label>
         <input
           matInput
-          placeholder="Age"
           ngModel
           name="person_age"
           [(ngModel)]="age"
@@ -337,20 +323,17 @@
           #personAge="ngModel"
           disabled
         />
-        <!-- <mat-hint class="errorText" *ngIf="personAge.errors && personAge.touched">Age is required
-                </mat-hint> -->
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix visible-lg"></div> -->
     <div class="col-3 p-t-3 p-b-10">
       <mat-form-field
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
         appMyEmail
       >
+        <mat-label>Email ID</mat-label>
         <input
           matInput
-          placeholder="Email ID *"
           ngModel
           [pattern]="emailPattern"
           name="email"
@@ -367,8 +350,6 @@
       </mat-form-field>
     </div>
     <div class="col-3 p-b-10">
-      <!-- <md-input-container class="hide_underline width100">
-        <input matInput style="display:none"> -->
       <mat-form-field [style.width]="'100%'">
         <mat-label>Marital Status</mat-label>
         <mat-select
@@ -384,18 +365,16 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
-      <!-- </md-input-container> -->
     </div>
-    <!-- <div class="clearfix visible-sm"></div> -->
     <div class="col-3 p-t-3 p-b-10">
       <mat-form-field
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
         appMyMobileNumber
       >
+        <mat-label>Aadhar Number</mat-label>
         <input
           matInput
-          placeholder="Aadhar Number"
           ngModel
           name="aadhar_number"
           [(ngModel)]="aadharNumber"
@@ -420,9 +399,9 @@
         class="input-full-width mat_form_field_width_one"
         appPAN
       >
+        <mat-label>PAN Card Number</mat-label>
         <input
           matInput
-          placeholder="PAN Card Number"
           ngModel
           name="pan_number"
           [(ngModel)]="panNumber"
@@ -441,10 +420,7 @@
         </mat-hint>
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix"></div> -->
     <div class="col-3">
-      <!-- <md-input-container class="hide_underline width100">
-        <input matInput style="display:none"> -->
       <mat-form-field [style.width]="'100%'">
         <mat-label>Educational Qualification</mat-label>
         <mat-select
@@ -461,8 +437,6 @@
           </mat-option>
         </mat-select>
       </mat-form-field>
-
-      <!-- </md-input-container> -->
     </div>
     <div class="col-3 p-t-3">
       <mat-form-field
@@ -470,9 +444,9 @@
         class="input-full-width mat_form_field_width_one"
         appMyProviderName
       >
+        <mat-label>Emergency Contact Person</mat-label>
         <input
           matInput
-          placeholder="Emergency Contact Person *"
           ngModel
           name="em_contact_person"
           [(ngModel)]="emergency_cnt_person"
@@ -488,16 +462,15 @@
         </mat-hint>
       </mat-form-field>
     </div>
-    <!-- <div class="clearfix visible-sm"></div> -->
     <div class="col-3 p-t-3">
       <mat-form-field
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
         appMyMobileNumber
       >
+        <mat-label>Emergency Contact Number</mat-label>
         <input
           matInput
-          placeholder="Emergency Contact Number *"
           ngModel
           name="em_contact_number"
           [(ngModel)]="emergencyMobileNumber"
@@ -535,9 +508,9 @@
         class="input-full-width mat_form_field_width_one"
         appPAN
       >
+        <mat-label>User Name</mat-label>
         <input
           matInput
-          placeholder="User Name *"
           ngModel
           name="user_name"
           [(ngModel)]="username"
@@ -562,10 +535,10 @@
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
       >
+        <mat-label>Password</mat-label>
         <input
           type="{{ dynamictype }}"
           matInput
-          placeholder="Password *"
           ngModel
           [(ngModel)]="user_password"
           name="password"
@@ -602,10 +575,10 @@
         [style.width]="'100%'"
         class="input-full-width mat_form_field_width_one"
       >
+        <mat-label>Remarks</mat-label>
         <input
           matInput
           appTextAreaValidator
-          placeholder="Remarks"
           ngModel
           maxlength="100"
           name="remarks"

@@ -1,0 +1,88 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>Project Configuration Screen</h4>
+    </div>
+
+    <form #projectNameForm="ngForm" autocomplete="off">
+      <div class="col-xs-12 col-sm-3">
+        <mat-form-field style="width: 100%">
+          <mat-label>Project Name</mat-label>
+          <input
+            type="text"
+            matInput
+            [(ngModel)]="project"
+            name="project"
+            [matAutocomplete]="auto"
+            (keyup)="filterOptions(project)"
+          />
+          <mat-autocomplete
+            #auto="matAutocomplete"
+            [displayWith]="displayFn"
+            (optionSelected)="getMappedSections()"
+          >
+            <mat-option *ngFor="let item of filteredOptions" [value]="item">
+              {{ item.projectName }}
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+    </form>
+
+    <div class="table-responsive" *ngIf="dataSource.data.length > 0">
+      <table
+        mat-table
+        [dataSource]="dataSource"
+        class="table table-striped table-hover"
+      >
+        <ng-container matColumnDef="sno">
+          <th mat-header-cell *matHeaderCellDef>SNo.</th>
+          <td mat-cell *matCellDef="let element; let i = index">{{ i + 1 }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="sectionName">
+          <th mat-header-cell *matHeaderCellDef>Section Name</th>
+          <td mat-cell *matCellDef="let element">{{ element.sectionName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="addFields">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let element">
+            <button
+              mat-raised-button
+              color="primary"
+              class="mat_blue"
+              (click)="addFields(element)"
+            >
+              Add Fields
+            </button>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="isChecked">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let element">
+            <mat-checkbox
+              color="primary"
+              [(ngModel)]="element.isChecked"
+            ></mat-checkbox>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+      <div style="padding-bottom: 60px">
+        <button
+          mat-raised-button
+          style="float: right"
+          class="pull-right mat_blue"
+          (click)="mapSections()"
+          color="primary"
+        >
+          Submit
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

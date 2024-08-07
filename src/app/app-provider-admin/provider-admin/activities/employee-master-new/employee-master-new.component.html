@@ -591,8 +591,6 @@
                     matInput
                     [matDatepicker]="dojPicker"
                     name="user_doj"
-                    [min]="minDate_doj"
-                    [max]="today"
                     [(ngModel)]="patchDojOnEdit"
                     (keydown)="preventTyping($event)"
                     required

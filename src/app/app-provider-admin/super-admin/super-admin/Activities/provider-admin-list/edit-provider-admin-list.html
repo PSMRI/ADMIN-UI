@@ -27,8 +27,6 @@
     <div class="col-12">
       <form #editAdminCreationForm="ngForm" autocomplete="off" class="row">
         <div class="col-3">
-          <!-- <md-input-container class="hide_underline"  >
-                      <input matInput style="display:none"> -->
           <mat-form-field>
             <mat-label>Title</mat-label>
             <mat-select
@@ -42,7 +40,6 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
-          <!-- </md-input-container> -->
         </div>
         <div class="col-3">
           <mat-form-field
@@ -67,7 +64,6 @@
             </mat-hint>
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-sm"></div> -->
         <div class="col-3">
           <mat-form-field
             class="input-full-width mat_form_field_width_one"
@@ -85,7 +81,6 @@
             />
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-md"></div> -->
         <div class="col-3">
           <mat-form-field
             class="input-full-width mat_form_field_width_one"
@@ -107,10 +102,7 @@
             </mat-hint>
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-lg"></div> -->
         <div class="col-3">
-          <!-- <md-input-container   class="hide_underline">
-                      <input matInput style="display:none"> -->
           <mat-form-field>
             <mat-label>Gender</mat-label>
             <mat-select [(ngModel)]="gender" name="adminGender" required>
@@ -119,8 +111,6 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
-
-          <!-- </md-input-container> -->
         </div>
         <div class="col-3">
           <mat-form-field
@@ -145,14 +135,12 @@
             </mat-hint>
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-sm visible-md"></div> -->
         <div class="col-3">
           <mat-form-field>
             <mat-label>Date of Birth </mat-label>
             <input
               matInput
               [matDatepicker]="picker"
-              placeholder="Choose a date"
               [(ngModel)]="dob"
               [max]="maxdate"
               [min]="mindate"
@@ -173,21 +161,6 @@
           <mat-hint class="errorText" *ngIf="dOB.errors && dOB.touched"
             >DOB is required</mat-hint
           >
-          <!-- <mat-datepicker
-             
-            placeholder="Date of Birth"
-            [(ngModel)]="dob"
-            name="admin_dob"
-            min="mindate"
-            max="maxdate"
-            #dOB="ngModel"
-            (keydown)="preventTyping($event)"
-            (selectionChange)="calculateAge($event)"
-            required
-          ></mat-datepicker> -->
-          <!-- <mat-hint class="errorText" *ngIf="dOB.errors && dOB.touched"
-            >DOB is required</mat-hint
-          > -->
         </div>
         <div class="col-3">
           <mat-form-field
@@ -207,7 +180,6 @@
             />
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-lg"></div> -->
         <div class="col-3">
           <mat-form-field
             class="input-full-width mat_form_field_width_one"
@@ -232,8 +204,6 @@
           </mat-form-field>
         </div>
         <div class="col-3">
-          <!-- <md-input-container   class="hide_underline">
-                      <input matInput style="display:none"> -->
           <mat-form-field>
             <mat-label>Marital Status</mat-label>
             <mat-select
@@ -248,8 +218,6 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
-
-          <!-- </md-input-container> -->
         </div>
         <div class="col-3">
           <mat-form-field
@@ -304,8 +272,6 @@
         </div>
         <div class="clearfix"></div>
         <div class="col-3">
-          <!-- <md-input-container   class="hide_underline">
-                      <input matInput style="display:none"> -->
           <mat-form-field>
             <mat-label>Educational Qualification</mat-label>
             <mat-select
@@ -321,8 +287,6 @@
               </mat-option>
             </mat-select>
           </mat-form-field>
-
-          <!-- </md-input-container> -->
         </div>
         <div class="col-3">
           <mat-form-field
@@ -347,7 +311,6 @@
             </mat-hint>
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-sm"></div> -->
         <div class="col-3">
           <mat-form-field
             class="input-full-width mat_form_field_width_one"
@@ -371,7 +334,6 @@
             </mat-hint>
           </mat-form-field>
         </div>
-        <!-- <div class="clearfix visible-md"></div> -->
         <div class="col-3">
           <mat-form-field class="input-full-width mat_form_field_width_one">
             <mat-label>Remarks</mat-label>

@@ -16,6 +16,7 @@ import { SnomedCodeSearchComponent } from './configurations/snomed-code-search/s
 import { ProviderAdminComponent } from './provider-admin.component';
 import { MatTableModule } from '@angular/material/table';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
 import { ConfigurationsModule } from './configurations/configurations.module';
 
@@ -43,6 +44,7 @@ import { ConfigurationsModule } from './configurations/configurations.module';
     HttpClientModule,
     MaterialModule,
     MatNativeDateModule,
+    MatChipsModule,
     CoreModule,
   ],
   exports: [ProviderAdminComponent],

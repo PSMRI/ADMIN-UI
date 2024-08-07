@@ -216,7 +216,7 @@
 
   <div class="row" *ngIf="showFormFlag">
     <form autocomplete="off" #mappingFieldsForm="ngForm" class="col-12 row">
-      <div class="col-6">
+      <div class="col-4">
         <span class="f-s-n-b">Store Type</span>
         <mat-radio-group [(ngModel)]="storeType" name="storeType">
           <mat-radio-button
@@ -313,8 +313,8 @@
       <!-- <div class="clearfix visible-sm"></div> -->
 
       <div class="col-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <input matInput style="display: none" />
+        <mat-form-field [style.width]="'100%'">
+          <!-- <input matInput style="display: none" /> -->
           <mat-label>Item Name</mat-label>
           <mat-select
             [disabled]="mapType || !(itemCategoryselected?.itemCategoryID > 0)"
@@ -328,7 +328,7 @@
           </mat-select>
         </mat-form-field>
       </div>
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-12 m-t-10">
+      <div class="col-2 m-t-10">
         <button
           mat-mini-fab
           class="xs-pull-right sm-pull-right md-pull-left lg-pull-right mat_icon_white"
@@ -456,7 +456,7 @@
         ></mat-paginator>
       </div>
     </div>
-    <div class="col-xs-12 col-sm-12 m-t-15 m-b-10" style="margin-bottom: 47px">
+    <div class="col-xs-12 col-sm-12" style="padding-bottom: 45px">
       <button
         mat-raised-button
         color="primary"

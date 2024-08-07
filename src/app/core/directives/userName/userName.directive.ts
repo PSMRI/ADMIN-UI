@@ -32,6 +32,15 @@ export class userNameDirective {
       ev.preventDefault();
     }
   }
+
+  @HostListener('paste', ['$event']) blockPaste(ev: ClipboardEvent) {
+    const clipboardData = ev.clipboardData || (window as any).clipboardData;
+    let paste = clipboardData.getData('text');
+    paste = paste.replace(/^\s+/g, ''); // Remove leading white spaces
+    ev.preventDefault();
+    document.execCommand('insertText', false, paste);
+  }
+
   /**
    * Commented by JA354063 as PSMRI requested to enable the copy paste functionality
  

@@ -46,6 +46,11 @@ import { Mainstroreandsubstore } from './core/services/inventory-services/mainst
 import { FacilityMasterService } from './core/services/inventory-services/facilitytypemaster.service';
 import { ItemFacilityMappingService } from './core/services/inventory-services/item-facility-mapping.service';
 import { StoreMappingService } from './core/services/inventory-services/store-mapping.service';
+import {
+  MatChipGrid,
+  MatChipInput,
+  MatChipsModule,
+} from '@angular/material/chips';
 
 @NgModule({
   declarations: [
@@ -78,6 +83,7 @@ import { StoreMappingService } from './core/services/inventory-services/store-ma
     MatPaginatorModule,
     MatInputModule,
     MatExpansionModule,
+    MatChipsModule,
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [

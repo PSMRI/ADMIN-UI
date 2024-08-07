@@ -149,6 +149,7 @@ export const environment = {
   /* serviceline and state */
   getRolesUrl: `${adminBaseUrl}m/role/search/active`,
   saveUrl: `${adminBaseUrl}m/role/configWrap`,
+
   getStatesUrl: `${adminBaseUrl}m/role/stateNew`,
   getServiceLinesUrl: `${adminBaseUrl}m/role/serviceNew`,
   get_State_new_Url: `${adminBaseUrl}m/role/stateNew`,
@@ -458,4 +459,31 @@ export const environment = {
   saveMappingUrl: `${adminBaseUrl}mapping/save/vanSpokeMapping`,
   fetchUrl: `${adminBaseUrl}mapping/get/vanSpokeMapping`,
   activeMappingStatusUrl: `${adminBaseUrl}mapping/delete/vanSpokeMapping`,
+
+  //project Master APIs
+  getProjectNames: `${commonBaseURL}customization/get/projectNames/`,
+  addProjectName: `${commonBaseURL}customization/addProject`,
+  updateProjectName: `${commonBaseURL}customization/updateProject`,
+
+  //Master Urls
+  getServicelines: `${adminBaseUrl}m/role/serviceNew`,
+  getStates: `${commonBaseURL}location/states/`,
+  getDistricts: `${commonBaseURL}location/districts/`,
+  getBranches: `${commonBaseURL}location/taluks/`,
+
+  //project-serviceline mapping urls
+  fetchMappedProjects: `${commonBaseURL}customization/fetchProjectServiceline`,
+  saveProjectToServiceline: `${commonBaseURL}customization/saveProjectToServiceline`,
+  updateProjectToServiceline: `${commonBaseURL}customization/updateProjectToServiceline`,
+
+  //project-serviceline mapping urls
+  getSectionMaster: `${commonBaseURL}customization/get/sections`,
+  fetchMappedSections: `${commonBaseURL}customization/fetchMappedSectionsInProject`,
+  mapSectionsToProject: `${commonBaseURL}customization/mapSectionToProject`,
+
+  //fetch fields mapping
+  fetchMappedFields: `${commonBaseURL}customization/fetchMappedFields`,
+  saveSectionFields: `${commonBaseURL}customization/saveSectionAndFields`,
+  updateSectionFields: `${commonBaseURL}customization/updateSectionAndFields`,
+  getFieldTypes: `${commonBaseURL}customization/get/fileldType`,
 };

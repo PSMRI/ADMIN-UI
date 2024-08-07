@@ -234,7 +234,13 @@
     <div *ngIf="formMode" class="col-xs-12 col-sm-12">
       <h4>Create Service Point</h4>
 
-      <form #servicePointForm="ngForm" autocomplete="off">
+      <form #servicePointForm="ngForm" autocomplete="off" class="row"></form>
+      <form
+        style="display: contents"
+        #servicePointForm1="ngForm"
+        autocomplete="off"
+        class="row"
+      >
         <div class="row">
           <div class="col-3 m-t-15">
             <mat-form-field [style.width]="'100%'">
@@ -311,133 +317,131 @@
               </mat-select>
             </mat-form-field>
           </div>
-          <form
-            style="display: contents"
-            #servicePointForm1="ngForm"
-            autocomplete="off"
-          >
-            <div class="col-3 m-t-15">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>District</mat-label>
-                <mat-select
-                  [(ngModel)]="district"
-                  name="district"
-                  (selectionChange)="
-                    GetTaluks(parking_Place.parkingPlaceID, district.districtID)
-                  "
-                  #mappingDistrict="ngModel"
-                >
-                  <mat-option *ngFor="let item of districts" [value]="item">
-                    {{ item.districtName }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-
-              <p class="maxRedialNote">{{ note }}</p>
-            </div>
-            <div class="col-3 m-t-15">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Taluk/Sub District</mat-label>
-                <mat-select [(ngModel)]="talukID" name="talukID">
-                  <mat-option *ngFor="let taluk of taluks" [value]="taluk">
-                    {{ taluk.districtBlockName }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </div>
-            <div class="col-3 m-t-15">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Service Point Name</mat-label>
-                <input
-                  matInput
-                  appVehicleNoSpecialCharWithCopyPaste
-                  required
-                  [(ngModel)]="servicePointName"
-                  name="servicePointName"
-                  #servicePointN="ngModel"
-                  (keyup)="checkExistance(servicePointName)"
-                  minlength="2"
-                  maxlength="50"
-                />
-                <mat-hint>
-                  <span
-                    class="error_text"
-                    *ngIf="
-                      !servicePointN.valid &&
-                      (servicePointN.dirty || servicePointN.touched)
-                    "
-                    >Please enter Service Point Name</span
-                  >
-                  <span
-                    class="error_text"
-                    *ngIf="servicePointN.valid && servicePointNameExist"
-                    >Service Point already exists</span
-                  >
-                </mat-hint>
-              </mat-form-field>
-            </div>
-            <div class="col-3 m-t-15">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Description</mat-label>
-                <input
-                  matInput
-                  appTextAreaWithCopyPaste
-                  [(ngModel)]="servicePointDesc"
-                  name="servicePointDesc"
-                  maxlength="100"
-                />
-              </mat-form-field>
-            </div>
-            <div class="col-3 m-t-15">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Address</mat-label>
-                <input
-                  required
-                  matInput
-                  appMyAddressWithCopyPaste
-                  [(ngModel)]="areaHQAddress"
-                  name="areaHQAddress"
-                  #servicePointAddress="ngModel"
-                  maxlength="300"
-                />
-                <mat-hint [hidden]="servicePointAddress.valid">
-                  <span
-                    class="error_text"
-                    *ngIf="
-                      servicePointAddress.invalid &&
-                      (servicePointAddress.dirty || servicePointAddress.touched)
-                    "
-                    >Please enter address</span
-                  >
-                </mat-hint>
-              </mat-form-field>
-            </div>
-            <div class="col-3 m-t-15" style="text-align: center">
-              <button
-                mat-mini-fab
-                color="primary"
-                class="mat_icon_white"
-                *ngIf="
-                  !editable && servicePointForm1.valid && !servicePointNameExist
+          <div class="col-3 m-t-15">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>District</mat-label>
+              <mat-select
+                [(ngModel)]="district"
+                name="district"
+                (selectionChange)="
+                  GetTaluks(parking_Place.parkingPlaceID, district.districtID)
                 "
-                (click)="
-                  addServicePointToList(servicePointForm1.value);
-                  servicePointForm1.reset()
-                "
+                #mappingDistrict="ngModel"
               >
-                <mat-icon
-                  matSuffix
-                  class="mat-icon material-icons"
-                  role="img"
-                  aria-hidden="true"
-                  style="cursor: pointer"
-                  >add</mat-icon
+                <mat-option *ngFor="let item of districts" [value]="item">
+                  {{ item.districtName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <p class="maxRedialNote">{{ note }}</p>
+          </div>
+          <div class="col-3 m-t-15">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Taluk/Sub District</mat-label>
+              <mat-select [(ngModel)]="talukID" name="talukID">
+                <mat-option *ngFor="let taluk of taluks" [value]="taluk">
+                  {{ taluk.districtBlockName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3 m-t-15">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Service Point Name</mat-label>
+              <input
+                matInput
+                appVehicleNoSpecialCharWithCopyPaste
+                required
+                [(ngModel)]="servicePointName"
+                name="servicePointName"
+                #servicePointN="ngModel"
+                (keyup)="checkExistance(servicePointName)"
+                minlength="2"
+                maxlength="50"
+              />
+              <mat-hint>
+                <span
+                  class="error_text"
+                  *ngIf="
+                    !servicePointN.valid &&
+                    (servicePointN.dirty || servicePointN.touched)
+                  "
+                  >Please enter Service Point Name</span
                 >
-              </button>
-            </div>
-          </form>
+                <span
+                  class="error_text"
+                  *ngIf="servicePointN.valid && servicePointNameExist"
+                  >Service Point already exists</span
+                >
+              </mat-hint>
+            </mat-form-field>
+          </div>
+          <div class="col-3 m-t-15">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Description</mat-label>
+              <input
+                matInput
+                appTextAreaWithCopyPaste
+                [(ngModel)]="servicePointDesc"
+                name="servicePointDesc"
+                maxlength="100"
+              />
+            </mat-form-field>
+          </div>
+          <div class="col-3 m-t-15">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Address</mat-label>
+              <input
+                required
+                matInput
+                appMyAddressWithCopyPaste
+                [(ngModel)]="areaHQAddress"
+                name="areaHQAddress"
+                #servicePointAddress="ngModel"
+                maxlength="300"
+              />
+              <mat-hint [hidden]="servicePointAddress.valid">
+                <span
+                  class="error_text"
+                  *ngIf="
+                    servicePointAddress.invalid &&
+                    (servicePointAddress.dirty || servicePointAddress.touched)
+                  "
+                  >Please enter address</span
+                >
+              </mat-hint>
+            </mat-form-field>
+          </div>
+          <div
+            class="col-xs-12 col-sm-12 col-md-4 col-lg-3 m-t-15"
+            style="text-align: end"
+          >
+            <button
+              mat-mini-fab
+              color="primary"
+              class="mat_icon_white"
+              *ngIf="
+                !editable && servicePointForm1.valid && !servicePointNameExist
+              "
+              (click)="
+                addServicePointToList(servicePointForm1.value);
+                servicePointForm1.reset()
+              "
+            >
+              <mat-icon
+                matSuffix
+                class="mat-icon material-icons"
+                role="img"
+                aria-hidden="true"
+                style="cursor: pointer"
+                >add</mat-icon
+              >
+            </button>
+          </div>
         </div>
       </form>
+
       <div class="row">
         <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t--5">
           <div
@@ -513,7 +517,7 @@
         </div>
         <div
           class="col-xs-12 col-sm-12 col-md-12 col-lg-12"
-          style="padding-bottom: 35px"
+          style="padding-bottom: 35px; margin-top: 10px"
         >
           <button
             mat-raised-button

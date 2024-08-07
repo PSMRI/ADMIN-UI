@@ -452,7 +452,7 @@
         <mat-form-field [style.width]="'100%'" class="hide_underline">
           <!-- <input matInput style="display: none" /> -->
           <mat-label>Pharmacology Category</mat-label>
-          <mat-select [(ngModel)]="pharmacology" name="pharmacology">
+          <mat-select [(ngModel)]="pharmacology" name="pharmacology" required>
             <mat-option *ngFor="let item of pharmacologies" [value]="item">
               {{ item.pharmCategoryName }}
             </mat-option>
@@ -903,7 +903,6 @@
       </div>
       <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
         <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
           <mat-label>Pharmacology Category</mat-label>
           <mat-select [(ngModel)]="edit_Pharmacology" name="pharmacology">
             <mat-option

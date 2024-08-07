@@ -133,7 +133,12 @@ export class AgentListCreationComponent implements OnInit, AfterViewInit {
     // this.services = response.data;
     this.services = response.data.filter(function (item: any) {
       console.log('item', item);
-      if (item.serviceID === 1 || item.serviceID === 3 || item.serviceID === 6)
+      if (
+        item.serviceID === 1 ||
+        item.serviceID === 3 ||
+        item.serviceID === 6 ||
+        item.serviceID === 10
+      )
         return item;
     });
   }

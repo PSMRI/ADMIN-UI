@@ -8,7 +8,6 @@
     <form #searchForm="ngForm" autocomplete="off">
       <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3">
         <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
           <mat-label>Master Type</mat-label>
           <mat-select [(ngModel)]="masterType" name="masterType" required>
             <mat-option
@@ -153,7 +152,6 @@
     >
       <div class="col-xs-3">
         <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
           <mat-label>Master Type</mat-label>
           <mat-select
             [(ngModel)]="masterType"
@@ -168,8 +166,6 @@
         </mat-form-field>
       </div>
     </form>
-
-    <!-- <div class="clearfix visible-md visible-lg"></div> -->
 
     <form #itemCreationForm="ngForm" autocomplete="off" class="col-12 row">
       <div class="col-3">
@@ -347,7 +343,6 @@
     <form #editItemCreationForm="ngForm" autocomplete="off" class="col-12 row">
       <div class="col-3">
         <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
           <mat-label>Master Type</mat-label>
           <mat-select
             [(ngModel)]="masterType"
@@ -363,14 +358,6 @@
       </div>
       <div class="clearfix visible-md visible-lg"></div>
       <div class="col-3">
-        <!-- <mat-form-field  [style.width]="'100%'" class="hide_underline width100">
-          <input matInput style="display:none">
-          <mat-select placeholder="Master Name"   name="editMasterName" [(ngModel)]="editMasterName" required>
-            <mat-option *ngFor="let snomedName of masterNames">
-              {{snomedName}}
-            </mat-option>
-          </mat-select>
-        </mat-form-field> -->
         <mat-form-field [style.width]="'100%'">
           <mat-label>Master Name</mat-label>
           <input

@@ -68,7 +68,7 @@ export class EmployeeMasterNewComponent implements OnInit {
 
   setDataSourceAttributes() {
     this.filteredsearchResult.paginator = this.paginator;
-    this.objs.paginator = this.paginator;
+    // this.objs.paginator = this.paginator;
   }
   //ngModel
   titleID: any;
@@ -1409,10 +1409,10 @@ export class EmployeeMasterNewComponent implements OnInit {
     let dob: any = '';
     let editDoj: any;
     if (this.isExternal === false) {
-      if (typeof userCreationFormValue.doj === 'string') {
+      if (typeof userCreationFormValue.user_doj === 'string') {
         doj = new Date(userCreationFormValue.doj);
       } else {
-        doj = userCreationFormValue.doj;
+        doj = userCreationFormValue.user_doj;
         console.log('doj', doj);
       }
       editDoj = new Date(

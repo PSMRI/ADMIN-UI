@@ -1,0 +1,207 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>Project Serviceline Mapping</h4>
+    </div>
+
+    <form
+      [formGroup]="projectServcelineMappingForm"
+      autocomplete="off"
+      class="row"
+    >
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Serviceline</mat-label>
+          <mat-select
+            formControlName="serviceline"
+            name="serviceline"
+            required
+            (selectionChange)="resetAllFields()"
+          >
+            <mat-option *ngFor="let item of servicelines" [value]="item">
+              {{ item.serviceName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>State</mat-label>
+          <mat-select
+            formControlName="state"
+            name="state"
+            (selectionChange)="getDistricts()"
+            required
+          >
+            <mat-option *ngFor="let item of states" [value]="item">
+              {{ item.stateName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>District</mat-label>
+          <mat-select
+            formControlName="district"
+            name="district"
+            required
+            (selectionChange)="getMappedProjectNames()"
+          >
+            <mat-option *ngFor="let item of districts" [value]="item">
+              {{ item.districtName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Block</mat-label>
+          <mat-select formControlName="block" name="block" required multiple>
+            <mat-option *ngFor="let item of blocks" [value]="item">
+              {{ item.blockName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!--  <mat-form-field [style.width]="'100%'">
+          <mat-label>Block</mat-label>
+          <mat-select
+             
+            formControlName="block"
+            name="block"
+            (selectionChange)="getMappedProjectNames()"
+            required
+          >
+            <mat-option *ngFor="let item of blocks" [value]="item">
+              {{ item.blockName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field> -->
+      </div>
+
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Project Name</mat-label>
+          <mat-select
+            formControlName="projectName"
+            name="projectName"
+            (selectionChange)="setProjectId()"
+            required
+          >
+            <mat-option
+              *ngFor="let item of projectNames"
+              [value]="item.projectName"
+            >
+              {{ item.projectName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12" style="padding-bottom: 20px">
+        <button
+          mat-raised-button
+          style="float: right"
+          class="pull-right mat_blue"
+          (click)="saveProjectToServiceline()"
+          color="primary"
+          [disabled]="!projectServcelineMappingForm.valid"
+        >
+          Map Serviceline-Project
+        </button>
+
+        <!-- <button
+          *ngIf="enableUpdate"
+          mat-raised-button
+          style="float: right"
+          class="pull-right mat_blue"
+          (click)="updateProjectToServiceline()"
+          color="primary"
+          [disabled]="
+            !projectServcelineMappingForm.valid ||
+            !projectServcelineMappingForm.dirty
+          "
+        >
+          Update Mapped Serviceline-Project
+        </button> -->
+      </div>
+    </form>
+    <div style="text-align: end" *ngIf="addedFields.length !== 0">
+      <mat-form-field id="filterbox">
+        <input
+          matInput
+          placeholder="In-Table Search"
+          #filterTerm
+          (keyup)="filterComponentList(filterTerm.value)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    <div
+      style="margin-bottom: 40px"
+      *ngIf="dataSource.data.length > 0"
+      class="table-responsive"
+    >
+      <table
+        mat-table
+        [dataSource]="dataSource"
+        class="table table-striped table-hover"
+      >
+        <ng-container matColumnDef="sno">
+          <th mat-header-cell *matHeaderCellDef>S.No.</th>
+          <td mat-cell *matCellDef="let element; let i = index">{{ i + 1 }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="projectName">
+          <th mat-header-cell *matHeaderCellDef>Project Name</th>
+          <td mat-cell *matCellDef="let element">{{ element.projectName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="block">
+          <th mat-header-cell *matHeaderCellDef>Block Name</th>
+          <td mat-cell *matCellDef="let element">{{ element.blockName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="deleted">
+          <th mat-header-cell *matHeaderCellDef>Action</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-icon
+              class="icon-remove cursorPointer"
+              (click)="updateProjectToServiceline(element)"
+              >delete</mat-icon
+            >
+            <!-- <button
+              mat-raised-button
+              style="float: right"
+              class="pull-right mat_blue"
+              color="primary"
+              (click)="updateProjectToServiceline(element)"
+            >
+              Delete
+            </button> -->
+            <!-- <button
+              *ngIf="element.deleted === false"
+              mat-raised-button
+              color="primary"
+            >
+              Deactivate
+            </button> -->
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+      <mat-paginator
+        #paginatorFirst
+        [length]="dataSource.data.length"
+        [pageSizeOptions]="[5, 10, 25]"
+        [pageSize]="5"
+        showFirstLastButtons
+      ></mat-paginator>
+    </div>
+  </div>
+</div>

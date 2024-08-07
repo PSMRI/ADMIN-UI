@@ -25,6 +25,7 @@ import {
   ViewChild,
   Inject,
   ChangeDetectorRef,
+  AfterViewInit,
 } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import {
@@ -43,7 +44,7 @@ import { dataService } from 'src/app/core/services/dataService/data.service';
   templateUrl: './feedback-type-master.component.html',
   styleUrls: ['./feedback-type-master.component.css'],
 })
-export class FeedbackTypeMasterComponent implements OnInit {
+export class FeedbackTypeMasterComponent implements OnInit, AfterViewInit {
   [x: string]: any;
   filteredfeedbackTypes = new MatTableDataSource<any>();
   objs = new MatTableDataSource<any>();

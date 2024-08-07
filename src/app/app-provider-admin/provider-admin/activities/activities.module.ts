@@ -100,6 +100,15 @@ import {
   EditInstituteSubDirectoryComponent,
   InstituteSubdirectoryMasterComponent,
 } from './institute-subdirectory-master/institute-subdirectory-master.component';
+import { ProjectMasterService } from './services/project-master-service.service';
+import { ProjectServicelineMappingService } from './services/project-serviceline-mapping.service';
+import { ProjectMasterComponent } from './project-master/project-master.component';
+import { ProjectServicelineMappingComponent } from './project-serviceline-mapping/project-serviceline-mapping.component';
+import { ProjectConfigutationScreenComponent } from './project-configutation-screen/project-configutation-screen.component';
+import { ProjectConfigurationService } from './services/project-configuration-service';
+import { AddFieldsToProjectComponent } from './add-fields-to-project/add-fields-to-project.component';
+import { AddFieldsService } from './services/add-fields-service';
+import { MatChipGrid, MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
 
 @NgModule({
@@ -148,6 +157,10 @@ import { CoreModule } from 'src/app/core/core.module';
     ComponentNameSearchComponent,
     InstituteSubdirectoryMasterComponent,
     EditInstituteSubDirectoryComponent,
+    ProjectMasterComponent,
+    ProjectServicelineMappingComponent,
+    ProjectConfigutationScreenComponent,
+    AddFieldsToProjectComponent,
   ],
   imports: [
     CommonModule,
@@ -164,6 +177,7 @@ import { CoreModule } from 'src/app/core/core.module';
     FormsModule,
     ReactiveFormsModule,
     MatNativeDateModule,
+    MatChipsModule,
     CoreModule,
   ],
   providers: [
@@ -195,6 +209,10 @@ import { CoreModule } from 'src/app/core/core.module';
     DrugStrengthService,
     ComponentMasterServiceService,
     InstituteSubDirectoryMasterService,
+    ProjectMasterService,
+    ProjectServicelineMappingService,
+    ProjectConfigurationService,
+    AddFieldsService,
   ],
   exports: [
     LocationServicelineMappingComponent,
@@ -240,6 +258,10 @@ import { CoreModule } from 'src/app/core/core.module';
     ComponentNameSearchComponent,
     InstituteSubdirectoryMasterComponent,
     EditInstituteSubDirectoryComponent,
+    ProjectMasterComponent,
+    ProjectServicelineMappingComponent,
+    ProjectConfigutationScreenComponent,
+    AddFieldsToProjectComponent,
   ],
 })
 export class ActivitiesModule {}
