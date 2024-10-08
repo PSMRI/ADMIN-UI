@@ -114,7 +114,7 @@ export class LocationServicelineMappingComponent
     public dialog: MatDialog,
     private alertService: ConfirmationDialogsService,
   ) {
-    this.userID = this.commonDataService.uid;
+    this.userID = sessionStorage.getItem('uid');
     this.serviceProviderID = sessionStorage.getItem('service_providerID'); //pass this value dynamically
     this.states = [];
     this.districts = [];

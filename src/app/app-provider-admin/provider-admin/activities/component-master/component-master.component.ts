@@ -636,9 +636,9 @@ export class ComponentMasterComponent implements OnInit {
     console.log(JSON.stringify(res, null, 4), 'res', res);
     if (res) {
       this.editMode = res.data.testComponentID;
-      if (res.data.iotComponentID != undefined) {
+      if (res.data.iotComponentID !== undefined) {
         this.iotComponentArray.forEach((ele: any) => {
-          if (ele.iotComponentID == res.data.iotComponentID) {
+          if (ele.iotComponentID === res.data.iotComponentID) {
             res.data.iotComponentID = ele;
           }
           this.componentForm.controls['iotComponentID'].setValue(
@@ -662,9 +662,9 @@ export class ComponentMasterComponent implements OnInit {
       );
 
       if (
-        this.componentForm.controls['testLoincCode'].value == null ||
-        this.componentForm.controls['testLoincCode'].value == undefined ||
-        this.componentForm.controls['testLoincCode'].value == ''
+        this.componentForm.controls['testLoincCode'].value === null ||
+        this.componentForm.controls['testLoincCode'].value === undefined ||
+        this.componentForm.controls['testLoincCode'].value === ''
       ) {
         this.componentForm.controls['testLoincCode'].enable();
         this.componentFlag = false;
@@ -675,7 +675,7 @@ export class ComponentMasterComponent implements OnInit {
         this.componentFlag = true;
       }
       this.componentForm.controls['inputType'].setValue(res.data.inputType);
-      if (res.data.inputType != 'TextBox') {
+      if (res.data.inputType !== 'TextBox') {
         const options = res.data.compOpt;
         const val = <FormArray>this.componentForm.controls['compOpt'];
         val.removeAt(0);

@@ -48,4 +48,4 @@ jobs:
       uses: actions/upload-artifact@v2 
       with:
         name: ADMIN-UI
-        path: dist/admin-ui-next/admin-ui-next.war
+        path: dist/admin-ui/admin-ui.war

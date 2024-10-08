@@ -515,7 +515,15 @@ export class HospitalMasterComponent implements OnInit {
   getServiceSuccessHandeler(response: any) {
     if (response) {
       this.services = response.data.filter(function (item: any) {
-        if (item.serviceID === 3 || item.serviceID === 1) {
+        if (
+          item.serviceID === 3 ||
+          item.serviceID === 11 ||
+          item.serviceID === 1 ||
+          item.serviceID === 6 ||
+          item.serviceID === 2 ||
+          item.serviceID === 4 ||
+          item.serviceID === 9
+        ) {
           return item;
         }
       });

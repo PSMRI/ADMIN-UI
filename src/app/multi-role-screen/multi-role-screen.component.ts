@@ -120,6 +120,13 @@ export class MultiRoleScreenComponent implements OnInit {
             'successfully logged out from CRM and session ended both sides',
           );
           sessionStorage.removeItem('authToken');
+          sessionStorage.removeItem('Userdata');
+          sessionStorage.removeItem('role');
+          sessionStorage.removeItem('uname');
+          sessionStorage.removeItem('uid');
+          sessionStorage.removeItem('userPriveliges');
+          sessionStorage.removeItem('providerServiceMapID_104');
+          sessionStorage.removeItem('service_providerID');
           this.router.navigate(['']);
         }
       },
