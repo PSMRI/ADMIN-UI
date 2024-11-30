@@ -26,6 +26,7 @@ import * as CryptoJS from 'crypto-js';
 import { ResetUserPasswordService } from 'src/app/core/services/ProviderAdminServices/reset-user-password.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-reset-user-password',
@@ -63,6 +64,7 @@ export class ResetUserPasswordComponent implements OnInit {
     private alertService: ConfirmationDialogsService,
     private data_service: dataService,
     private resetUserPasswordService: ResetUserPasswordService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this._keySize = 256;
     this._ivSize = 128;
@@ -70,7 +72,7 @@ export class ResetUserPasswordComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.getAllUserName(this.serviceProviderID);
   }
 

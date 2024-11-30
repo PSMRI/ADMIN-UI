@@ -20,7 +20,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { ServicePointMasterService } from '../../activities/services/service-point-master-services.service';
@@ -28,25 +28,16 @@ import { ProviderAdminRoleService } from '../../activities/services/state-servic
 import { ProcedureComponentMappingServiceService } from '../../inventory/services/procedure-component-mapping-service.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-procedure-component-mapping',
   templateUrl: './procedure-component-mapping.component.html',
   styleUrls: ['./procedure-component-mapping.component.css'],
 })
-export class ProcedureComponentMappingComponent
-  implements OnInit, AfterViewInit
-{
-  paginator!: MatPaginator;
-  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
-    this.paginator = mp;
-    this.setDataSourceAttributes();
-  }
+export class ProcedureComponentMappingComponent implements OnInit {
   filteredMappedList = new MatTableDataSource<any>();
-
-  setDataSourceAttributes() {
-    this.filteredMappedList.paginator = this.paginator;
-  }
+  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
 
   serviceline: any;
   searchStateID: any;
@@ -98,6 +89,7 @@ export class ProcedureComponentMappingComponent
     public alertService: ConfirmationDialogsService,
     private procedureComponentMappingServiceService: ProcedureComponentMappingServiceService,
     public stateandservices: ServicePointMasterService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.states = [];
     this.services = [];
@@ -107,16 +99,12 @@ export class ProcedureComponentMappingComponent
     this.initiateForm();
   }
 
-  ngAfterViewInit() {
-    this.filteredMappedList.paginator = this.paginator;
-  }
-
   /**
    * Initiate Form
    */
   initiateForm() {
     if (this.commonDataService.service_providerID) {
-      this.serviceProviderID = sessionStorage
+      this.serviceProviderID = this.sessionstorage
         .getItem('service_providerID')
         ?.toString();
     }
@@ -143,7 +131,6 @@ export class ProcedureComponentMappingComponent
   }
   getStates(serviceID: any) {
     this.filteredMappedList.data = [];
-    this.filteredMappedList.paginator = this.paginator;
     this.stateandservices.getStates(this.userID, serviceID, false).subscribe(
       (response: any) => this.getStatesSuccessHandeler(response, false),
       (err) => {},
@@ -193,8 +180,8 @@ export class ProcedureComponentMappingComponent
       .subscribe((res: any) => {
         this.mappedList = res.data;
         this.filteredMappedList.data = res.data;
-        this.tableMode = true;
         this.filteredMappedList.paginator = this.paginator;
+        this.tableMode = true;
       });
   }
 
@@ -215,7 +202,7 @@ export class ProcedureComponentMappingComponent
           if (this.editMode) this.saveMode = false;
           // this.selectedProcedureType = item.procedureType;
 
-          this.loadForConfig(res.data, item);
+          this.loadForConfig(res, item);
           //   this.configProcedureMapping(this.selectedProcedure, -1);
           this.procedureSelected_edit();
         } else {
@@ -348,7 +335,6 @@ export class ProcedureComponentMappingComponent
       if (index >= 0) {
         this.mappedList[index] = res.data[0];
         this.filteredMappedList.data[filterIndex] = res.data[0];
-        this.filteredMappedList.paginator = this.paginator;
         this.alertService.alert('Mapping updated successfully', 'success');
         this.showTable();
       } else {
@@ -360,7 +346,6 @@ export class ProcedureComponentMappingComponent
   filterMappingList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredMappedList.data = this.mappedList;
-      this.filteredMappedList.paginator = this.paginator;
     } else {
       this.filteredMappedList.data = [];
       this.mappedList.forEach((item: any) => {
@@ -374,7 +359,6 @@ export class ProcedureComponentMappingComponent
           }
         }
       });
-      this.filteredMappedList.paginator = this.paginator;
     }
   }
 
@@ -478,7 +462,6 @@ export class ProcedureComponentMappingComponent
     this.componentList = [];
     this.mappedList = [];
     this.filteredMappedList.data = [];
-    this.filteredMappedList.paginator = this.paginator;
   }
   // For State List
   successhandeler(response: any) {

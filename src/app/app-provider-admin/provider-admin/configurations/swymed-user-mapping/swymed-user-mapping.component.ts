@@ -27,6 +27,7 @@ import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-swymed-user-mapping',
@@ -85,11 +86,12 @@ export class SwymedUserMappingComponent implements OnInit {
     public swymedUserConfigService: SwymedUserConfigurationService,
     public dataServiceValue: dataService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.dataServiceValue.uname;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.getAllSwymedUserDetails();
   }
   /*
@@ -394,7 +396,6 @@ export class SwymedUserMappingComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredswymedUserDetails.data = this.swymedUserDetails;
-      this.filteredswymedUserDetails.paginator = this.paginator;
     } else {
       this.filteredswymedUserDetails.data = [];
       this.swymedUserDetails.forEach((item: any) => {
@@ -412,7 +413,6 @@ export class SwymedUserMappingComponent implements OnInit {
           }
         }
       });
-      this.filteredswymedUserDetails.paginator = this.paginator;
     }
   }
 }
