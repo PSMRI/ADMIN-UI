@@ -36,6 +36,7 @@ import { ProviderAdminRoleService } from '../services/state-serviceline-role.ser
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ParkingPlaceMasterService } from 'src/app/core/services/ProviderAdminServices/parking-place-master-services.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-parking-place',
@@ -120,9 +121,11 @@ export class ParkingPlaceComponent implements OnInit, AfterViewInit {
     public parkingPlaceMasterService: ParkingPlaceMasterService,
     private alertMessage: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.countryID = 1; // hardcoded as country is INDIA
     this.serviceID = this.commonDataService.serviceIDMMU;
     this.createdBy = this.commonDataService.uname;
@@ -229,7 +232,7 @@ export class ParkingPlaceComponent implements OnInit, AfterViewInit {
     this.showTableFlag = true;
     this.editable = false;
     this.createButton = true;
-    this.availableParkingPlaces = response.data;
+    this.availableParkingPlaces.data = response.data;
     this.filteredavailableParkingPlaces.data = response.data;
     for (const availableParkingPlace of this.availableParkingPlaces) {
       this.availableParkingPlaceNames.data.push(
@@ -396,8 +399,7 @@ export class ParkingPlaceComponent implements OnInit, AfterViewInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredavailableParkingPlaces.data = this.availableParkingPlaces;
-      this.filteredavailableParkingPlaces.paginator = this.paginator;
+      this.filteredavailableParkingPlaces = this.availableParkingPlaces;
     } else {
       this.filteredavailableParkingPlaces.data = [];
       this.availableParkingPlaces.forEach((item: any) => {
@@ -411,7 +413,6 @@ export class ParkingPlaceComponent implements OnInit, AfterViewInit {
           }
         }
       });
-      this.filteredavailableParkingPlaces.paginator = this.paginator;
     }
   }
   back() {

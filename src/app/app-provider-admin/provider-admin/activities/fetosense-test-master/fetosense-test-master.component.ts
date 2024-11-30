@@ -153,7 +153,6 @@ export class FetosenseTestMasterComponent implements OnInit {
   filterTestsList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredFetosenseTests.data = this.searchedFetosenseTests;
-      this.filteredFetosenseTests.paginator = this.paginator;
     } else {
       this.filteredFetosenseTests.data = [];
       this.searchedFetosenseTests.forEach((item) => {
@@ -167,7 +166,6 @@ export class FetosenseTestMasterComponent implements OnInit {
           }
         }
       });
-      this.filteredFetosenseTests.paginator = this.paginator;
     }
   }
   createTest() {

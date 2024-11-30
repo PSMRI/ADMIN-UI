@@ -210,7 +210,7 @@ export class ParkingPlaceSubDistrictMappingComponent implements OnInit {
       .subscribe((response: any) => this.getMappingSuccessHandler(response));
   }
   getMappingSuccessHandler(response: any) {
-    this.mappedParkingPlaceDistricts = response.data;
+    this.mappedParkingPlaceDistricts.data = response.data;
     this.filteredMappedParkingPlaceDistricts.data = response.data;
     this.showTable = true;
     this.enableButton = true;
@@ -460,9 +460,8 @@ export class ParkingPlaceSubDistrictMappingComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredMappedParkingPlaceDistricts.data =
-        this.mappedParkingPlaceDistricts;
-      this.filteredMappedParkingPlaceDistricts.paginator = this.paginator;
+      this.filteredMappedParkingPlaceDistricts =
+        this.mappedParkingPlaceDistricts.data;
     } else {
       this.filteredMappedParkingPlaceDistricts.data = [];
       this.mappedParkingPlaceDistricts.forEach((item: any) => {
@@ -476,7 +475,6 @@ export class ParkingPlaceSubDistrictMappingComponent implements OnInit {
           }
         }
       });
-      this.filteredMappedParkingPlaceDistricts.paginator = this.paginator;
     }
   }
 }
