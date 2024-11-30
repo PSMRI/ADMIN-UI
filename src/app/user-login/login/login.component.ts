@@ -26,7 +26,9 @@ import { Subscription } from 'rxjs';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { loginService } from '../loginService/login.service';
 import { HttpInterceptor } from '@angular/common/http';
+import { CookieService } from 'ngx-cookie-service';
 import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-login-component',
@@ -60,6 +62,8 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     public router: Router,
     private alertMessage: ConfirmationDialogsService,
     public HttpServices: HttpServices,
+    private cookieService: CookieService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this._keySize = 256;
     this._ivSize = 128;
@@ -87,9 +91,9 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   }
   gotLoginRes(res: any) {
     if (res.userName === 'Super  Admin') {
-      sessionStorage.setItem('Userdata', 'Super Admin');
-      sessionStorage.setItem('role', 'SUPERADMIN');
-      sessionStorage.setItem('uname', 'Super Admin');
+      this.sessionstorage.setItem('Userdata', 'Super Admin');
+      this.sessionstorage.setItem('role', 'SUPERADMIN');
+      this.sessionstorage.uname = 'Super Admin';
       this.router.navigate(['/MultiRoleScreenComponent']);
     } else {
       this.successCallback(res);
@@ -151,11 +155,15 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
             if (response.data) {
               if (response.data.previlegeObj.length === 0) {
                 console.log(response.data, 'SUPERADMIN VALIDATED');
+                console.error('Jwttoken', response);
+                console.log('Jwttoken', response);
+                this.cookieService.set('Jwttoken', response.data.Jwttoken);
+                delete response.data.Jwttoken;
                 sessionStorage.setItem('authToken', response.data.key);
-                sessionStorage.setItem('Userdata', 'Super Admin');
-                sessionStorage.setItem('role', 'SUPERADMIN');
-                sessionStorage.setItem('uname', 'Super Admin');
-                sessionStorage.setItem('uid', response.data.userID);
+                this.sessionstorage.setItem('Userdata', 'Super Admin');
+                this.sessionstorage.setItem('role', 'SUPERADMIN');
+                this.sessionstorage.uname = 'Super Admin';
+                this.sessionstorage.uid = response.data.userID;
                 this.router.navigate(['/MultiRoleScreenComponent']);
               } else {
                 this.alertMessage.alert('User is not super admin');
@@ -212,6 +220,9 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         .subscribe(
           (response: any) => {
             if (response && response.data) {
+              console.error('Jwttoken', response);
+              console.log('Jwttoken', response);
+              this.cookieService.set('Jwttoken', response.data.Jwttoken);
               sessionStorage.setItem('authToken', response.data.key);
               this.successCallback(response);
             } else if (response.statusCode === 5002) {
@@ -291,10 +302,10 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                     if (response.data.previlegeObj.length === 0) {
                       console.log(response, 'SUPERADMIN VALIDATED');
                       sessionStorage.setItem('authToken', response.data.key);
-                      sessionStorage.setItem('Userdata', 'Super Admin');
-                      sessionStorage.setItem('role', 'SUPERADMIN');
-                      sessionStorage.setItem('uname', 'Super Admin');
-                      sessionStorage.setItem('uid', response.data.userID);
+                      this.sessionstorage.setItem('Userdata', 'Super Admin');
+                      this.sessionstorage.setItem('role', 'SUPERADMIN');
+                      this.sessionstorage.uname = 'Super Admin';
+                      this.sessionstorage.uid = response.data.userID;
                       this.router.navigate(['/MultiRoleScreenComponent']);
                     } else {
                       this.alertMessage.alert('User is not super admin');
@@ -330,14 +341,20 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
 
   successCallback(response: any) {
     console.log(response);
-    sessionStorage.setItem('Userdata', JSON.stringify(response.data));
-    sessionStorage.setItem(
+    this.sessionstorage.setItem('Userdata', JSON.stringify(response.data));
+    this.sessionstorage.setItem(
       'userPriveliges',
       JSON.stringify(response.data.previlegeObj),
     );
-    sessionStorage.setItem('uid', response.data.userID);
-    // sessionStorage.setItem('service_providerID', response.prov)ider[0].providerID;
-    sessionStorage.setItem('uname', response.data.userName);
+    // this.sessionstorage.uid = response.data.userID;
+    this.sessionstorage.setItem('uid', response.data.userID);
+    this.sessionstorage.setItem('uname', response.data.userName);
+    this.sessionstorage.setItem(
+      'service_providerID',
+      response.data.previlegeObj[0].providerServiceMapID,
+    );
+    // this.sessionstorage.setItem('service_providerID', response.prov)ider[0].providerID;
+    // this.sessionstorage.uname = response.data.userName;
     console.log('array', response.data.previlegeObj);
 
     if (
@@ -360,28 +377,31 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         // for (let j = 0; j < response.Previlege[i].Role.length; j++) {
         if (response.data.Previlege[i].Role === 'ProviderAdmin') {
           // this.router.navigate(['/MultiRoleScreenComponent']);
-          sessionStorage.setItem('role', 'PROVIDERADMIN');
+          this.sessionstorage.setItem('role', 'PROVIDERADMIN');
           console.log('VALUE SET HOGAYI');
         } else {
-          sessionStorage.setItem('role', '');
+          this.sessionstorage.setItem('role', '');
         }
         // }
       }
-      if (
-        sessionStorage.getItem('role')?.toLowerCase().toString() ===
-        'PROVIDERADMIN'.toLowerCase()
-      ) {
-        this.router.navigate(['/MultiRoleScreenComponent']);
-      } else {
-        this.alertMessage.alert('User is not a provider admin');
-      }
+
+      setTimeout(() => {
+        if (
+          this.sessionstorage.getItem('role')?.toLowerCase().toString() ===
+          'PROVIDERADMIN'.toLowerCase()
+        ) {
+          this.router.navigate(['/MultiRoleScreenComponent']);
+        } else {
+          this.alertMessage.alert('User is not a provider admin');
+        }
+      }, 1000);
     }
     if (
       response.data.isAuthenticated === true &&
       response.data.Status === 'New'
     ) {
       this.status = 'new';
-      sessionStorage.setItem('authToken', response.data.key);
+      this.sessionstorage.setItem('authToken', response.data.key);
       this.router.navigate(['/setQuestions']);
     }
 
@@ -390,7 +410,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         response.data.previlegeObj[i].serviceDesc.toLowerCase() ===
         '104 helpline'
       ) {
-        sessionStorage.setItem(
+        this.sessionstorage.setItem(
           'providerServiceMapID_104',
           response.data.previlegeObj[i].providerServiceMapID,
         );
@@ -420,7 +440,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   getServiceProviderMapIDSuccessHandeler(response: any) {
     console.log('service provider map id', response);
     if (response && response.data) {
-      sessionStorage.setItem(
+      this.sessionstorage.setItem(
         'service_providerID',
         response.data.serviceProviderID,
       );
