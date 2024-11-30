@@ -27,6 +27,7 @@ import { NgForm } from '@angular/forms';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-main-store-and-sub-store',
@@ -102,11 +103,12 @@ export class MainStoreAndSubStoreComponent implements OnInit {
     private storeService: Mainstroreandsubstore,
     public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.uid = this.commonDataService.uid;
     this.getServices();
   }
@@ -168,25 +170,19 @@ export class MainStoreAndSubStoreComponent implements OnInit {
       });
   }
   getStoreType() {
-    let storeDetails = [];
+    //this.providerServiceMapID = providerServiceMapID;
     this.storeService
       .getStoreType(this.providerServiceMapID)
       .subscribe((response: any) => {
         if (response) {
-          console.log('All Main stores services success', response?.data);
-          storeDetails = response?.data;
-          this.storeType_array = storeDetails.filter((item: any) => {
-            if (item?.storeType === 'MAIN') {
-              return item;
-            }
-          });
+          console.log('All Main stores services success', response.data);
+          this.storeType_array = response.data;
         }
       });
   }
   filterstoreList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredstoresList.data = this.storesList;
-      this.filteredstoresList.paginator = this.paginator;
     } else {
       this.filteredstoresList.data = [];
       this.storesList.forEach((item: any) => {
@@ -206,7 +202,6 @@ export class MainStoreAndSubStoreComponent implements OnInit {
           }
         }
       });
-      this.filteredstoresList.paginator = this.paginator;
     }
   }
 

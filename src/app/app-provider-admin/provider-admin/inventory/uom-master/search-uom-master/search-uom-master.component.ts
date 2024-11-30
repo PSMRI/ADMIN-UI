@@ -32,6 +32,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { UomMasterService } from 'src/app/core/services/inventory-services/uom-master.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-search-uom-master',
@@ -60,12 +61,13 @@ export class SearchUomMasterComponent
     private uomMasterService: UomMasterService,
     private commonServices: CommonServices,
     private dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.providerID = sessionStorage.getItem('service_providerID');
-    this.createdBy = sessionStorage.getItem('uname');
-    this.userID = sessionStorage.getItem('uid');
+    this.providerID = this.sessionstorage.getItem('service_providerID');
+    this.createdBy = this.sessionstorage.getItem('uname');
+    this.userID = this.sessionstorage.getItem('uid');
 
     this.uomMasterSearchForm = this.createUOMMasterSearchForm();
     this.subscribeToServiceLineChange();
