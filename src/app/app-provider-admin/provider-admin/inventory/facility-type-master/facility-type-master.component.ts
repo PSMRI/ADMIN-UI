@@ -27,6 +27,7 @@ import { NgForm } from '@angular/forms';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-facility-type-master',
@@ -83,12 +84,13 @@ export class FacilityTypeMasterComponent implements OnInit {
     private facility: FacilityMasterService,
     public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
-    this.uid = sessionStorage.getItem('uid');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
+    this.uid = this.sessionstorage.getItem('uid');
     this.getServices();
   }
 
@@ -161,7 +163,6 @@ export class FacilityTypeMasterComponent implements OnInit {
   filterfacilityMasterList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredfacilityMasterList.data = this.facilityMasterList;
-      this.filteredfacilityMasterList.paginator = this.paginator;
     } else {
       this.filteredfacilityMasterList.data = [];
       this.facilityMasterList.forEach((item: any) => {
@@ -179,7 +180,6 @@ export class FacilityTypeMasterComponent implements OnInit {
           }
         }
       });
-      this.filteredfacilityMasterList.paginator = this.paginator;
     }
   }
   activate(facilityTypeID: any) {

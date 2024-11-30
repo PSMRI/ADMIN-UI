@@ -26,6 +26,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { Mainstroreandsubstore } from 'src/app/core/services/inventory-services/mainstoreandsubstore.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-item-issue-method-config',
@@ -67,11 +68,12 @@ export class ItemIssueMethodConfigComponent implements OnInit, AfterViewInit {
     private storeService: Mainstroreandsubstore,
     public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.uid = this.commonDataService.uid;
     this.setItemIssue();
     this.getServices();

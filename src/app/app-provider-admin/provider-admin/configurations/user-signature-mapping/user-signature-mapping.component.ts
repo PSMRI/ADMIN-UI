@@ -31,6 +31,7 @@ import {
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { EmployeeParkingPlaceMappingService } from '../../activities/services/employee-parking-place-mapping.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-user-signature-mapping',
@@ -55,12 +56,13 @@ export class UserSignatureMappingComponent implements OnInit {
     public employeeParkingPlaceMappingService: EmployeeParkingPlaceMappingService,
     private alertMessage: ConfirmationDialogsService,
     private dataService: dataService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.signUploadForm = this.createSignUploadForm();
     this.createdBy = this.dataService.uname;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.getDesignations();
   }
   createSignUploadForm() {

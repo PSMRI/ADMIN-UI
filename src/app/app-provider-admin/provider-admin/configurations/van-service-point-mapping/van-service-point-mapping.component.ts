@@ -28,6 +28,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { FormGroup, FormControl, FormBuilder, FormArray } from '@angular/forms';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-van-service-point-mapping',
@@ -114,9 +115,11 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
     public commonDataService: dataService,
     public vanServicePointMappingService: VanServicePointMappingService,
     private alertMessage: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.countryID = 1; // hardcoded as country is INDIA
     this.serviceID = this.commonDataService.serviceIDMMU;
     this.createdBy = this.commonDataService.uname;
