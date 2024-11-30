@@ -36,6 +36,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ComponentNameSearchComponent } from '../component-name-search/component-name-search.component';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 interface ComponentData {
   testComponentID: number;
@@ -133,6 +134,7 @@ export class ComponentMasterComponent implements OnInit {
     private componentMasterServiceService: ComponentMasterServiceService,
     public stateandservices: ServicePointMasterService,
     public dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.states = [];
     this.services = [];
@@ -158,7 +160,7 @@ export class ComponentMasterComponent implements OnInit {
       item.sno = i + 1;
     });
     // provide service provider ID, (As of now hardcoded, but to be fetched from login response)
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.userID = this.commonDataService.uid;
     this.getProviderServices();
     this.getDiagnosticProcedureComponent();
@@ -210,9 +212,9 @@ export class ComponentMasterComponent implements OnInit {
       range_normal_max: null,
       range_normal_min: null,
       measurementUnit: null,
-      modifiedBy: sessionStorage.getItem('uid'),
-      createdBy: sessionStorage.getItem('uid'),
-      providerServiceMapID: sessionStorage.getItem('service_providerID'),
+      modifiedBy: this.sessionstorage.getItem('uid'),
+      createdBy: this.sessionstorage.getItem('uid'),
+      providerServiceMapID: this.sessionstorage.getItem('service_providerID'),
       compOpt: this.fb.array([this.initComp()]),
       deleted: false,
       iotComponentID: null,
@@ -552,15 +554,15 @@ export class ComponentMasterComponent implements OnInit {
     this.enableAlert = false;
     if (!searchTerm) {
       this.dataSource.data = this.componentList;
-      this.dataSource.paginator = this.paginator;
     } else {
       this.dataSource.data = [];
-      this.componentList.forEach((item: any) => {
+      this.dataSource.data.forEach((item: any) => {
         for (const key in item) {
           if (key === 'testComponentName' || key === 'inputType') {
             const value: string = '' + item[key];
             if (value.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
               this.dataSource.data.push(item);
+              this.dataSource.paginator = this.paginator;
               this.dataSource.data.forEach((item: any, i: number) => {
                 item.sno = i + 1;
               });
@@ -569,7 +571,6 @@ export class ComponentMasterComponent implements OnInit {
           }
         }
       });
-      this.dataSource.paginator = this.paginator;
     }
   }
 

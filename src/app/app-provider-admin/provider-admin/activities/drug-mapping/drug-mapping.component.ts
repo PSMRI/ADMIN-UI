@@ -29,6 +29,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 @Component({
   selector: 'app-drug-mapping',
   templateUrl: './drug-mapping.component.html',
@@ -90,9 +91,11 @@ export class DrugMappingComponent implements OnInit {
     public drugMasterService: DrugMasterService,
     private alertMessage: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.serviceID104 = this.commonDataService.serviceID104;
     this.createdBy = this.commonDataService.uname;
   }
@@ -383,7 +386,6 @@ export class DrugMappingComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredavailableDrugMappings.data = this.availableDrugMappings;
-      this.filteredavailableDrugMappings.paginator = this.paginator;
     } else {
       this.filteredavailableDrugMappings.data = [];
       this.availableDrugMappings.forEach((item: any) => {
@@ -397,7 +399,6 @@ export class DrugMappingComponent implements OnInit {
           }
         }
       });
-      this.filteredavailableDrugMappings.paginator = this.paginator;
     }
   }
   back() {

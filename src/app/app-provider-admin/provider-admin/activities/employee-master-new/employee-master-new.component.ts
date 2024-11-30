@@ -27,6 +27,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { EmployeeMasterNewServices } from 'src/app/app-provider-admin/provider-admin/activities/services/employee-master-new-services.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-employee-master-new',
@@ -184,6 +185,7 @@ export class EmployeeMasterNewComponent implements OnInit {
     public dataServiceValue: dataService,
     public dialogService: ConfirmationDialogsService,
     public dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.filteredsearchResult.data = [];
   }
@@ -192,7 +194,7 @@ export class EmployeeMasterNewComponent implements OnInit {
     this.createdBy = this.dataServiceValue.uname;
     console.log('createdBY', this.createdBy);
 
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.getAllUserDetails();
     this.minDate_doj = new Date();
   }
@@ -1538,6 +1540,7 @@ export class EmployeeMasterNewComponent implements OnInit {
       this.filteredsearchResult.paginator = this.paginator;
     } else {
       this.filteredsearchResult.data = [];
+      this.filteredsearchResult.paginator = this.paginator;
       this.searchResult.forEach((item: any) => {
         for (const key in item) {
           if (
@@ -1554,7 +1557,6 @@ export class EmployeeMasterNewComponent implements OnInit {
           }
         }
       });
-      this.filteredsearchResult.paginator = this.paginator;
     }
   }
   // to enable health professional ID feild upon selecting designation

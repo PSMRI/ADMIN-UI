@@ -31,6 +31,7 @@ import { Subscription, Observable } from 'rxjs';
 import * as XLSX from 'xlsx';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-hospital-master',
@@ -147,8 +148,9 @@ export class HospitalMasterComponent implements OnInit {
     public commonDataService: dataService,
     public dialog: MatDialog,
     public alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
@@ -787,7 +789,6 @@ export class HospitalMasterComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredsearchResultArray.data = this.searchResultArray;
-      this.filteredsearchResultArray.paginator = this.paginator;
     } else {
       this.filteredsearchResultArray.data = [];
       this.searchResultArray.forEach((item: any) => {
@@ -807,7 +808,6 @@ export class HospitalMasterComponent implements OnInit {
           }
         }
       });
-      this.filteredsearchResultArray.paginator = this.paginator;
     }
   }
 }
