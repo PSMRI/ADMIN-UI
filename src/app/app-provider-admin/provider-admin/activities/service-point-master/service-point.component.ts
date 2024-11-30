@@ -30,6 +30,7 @@ import { ProviderAdminRoleService } from '../services/state-serviceline-role.ser
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ServicePointMasterService } from '../services/service-point-master-services.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-service-point',
@@ -117,9 +118,11 @@ export class ServicePointComponent implements OnInit {
     public commonDataService: dataService,
     public servicePointMasterService: ServicePointMasterService,
     private alertMessage: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.countryID = 1; // hardcoded as country is INDIA
     this.serviceID = this.commonDataService.serviceIDMMU;
     this.createdBy = this.commonDataService.uname;
@@ -256,7 +259,7 @@ export class ServicePointComponent implements OnInit {
 
   getServicePointSuccessHandler(response: any) {
     this.showServicePoints = true;
-    this.availableServicePoints = response.data;
+    this.availableServicePoints.data = response.data;
     this.filteredavailableServicePoints.data = response.data;
     for (const availableServicePoint of this.availableServicePoints) {
       this.availableServicePointNames.data.push(
@@ -497,8 +500,7 @@ export class ServicePointComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredavailableServicePoints.data = this.availableServicePoints;
-      this.filteredavailableServicePoints.paginator = this.paginator;
+      this.filteredavailableServicePoints = this.availableServicePoints;
     } else {
       this.filteredavailableServicePoints.data = [];
       this.availableServicePoints.forEach((item: any) => {
@@ -516,7 +518,6 @@ export class ServicePointComponent implements OnInit {
           }
         }
       });
-      this.filteredavailableServicePoints.paginator = this.paginator;
     }
   }
   back() {

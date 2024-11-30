@@ -102,7 +102,7 @@
     style="text-align: end"
     *ngIf="availableServicePoints.length !== 0 && showServicePoints"
   >
-    <mat-form-field>
+    <mat-form-field [style.width]="'100%'">
       <input
         matInput
         placeholder="In-Table Search"

@@ -27,6 +27,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { SpecialistMappingService } from '../services/specialist-mapping.service';
 import { ProviderAdminRoleService } from '../services/state-serviceline-role.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-specialist-mapping',
@@ -78,6 +79,7 @@ export class SpecialistMappingComponent implements OnInit {
     // private procedureMasterServiceService: ProcedureMasterServiceService,
     // public stateandservices: ServicePointMasterService,
     private specialistMappingService: SpecialistMappingService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
@@ -91,8 +93,8 @@ export class SpecialistMappingComponent implements OnInit {
    */
   initiateTable() {
     // provide service provider ID, (As of now hardcoded, but to be fetched from login response)
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
-    this.uname = sessionStorage.getItem('uname');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
+    this.uname = this.sessionstorage.getItem('uname');
 
     this.specializationList = [];
     this.filteredspecializationList.data = [];
@@ -269,7 +271,6 @@ export class SpecialistMappingComponent implements OnInit {
   filterSpecializationList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredspecializationList.data = this.specializationList;
-      this.filteredspecializationList.paginator = this.paginator;
     } else {
       this.filteredspecializationList.data = [];
       this.specializationList.forEach((item: any) => {
@@ -283,7 +284,6 @@ export class SpecialistMappingComponent implements OnInit {
           }
         }
       });
-      this.filteredspecializationList.paginator = this.paginator;
     }
   }
 }

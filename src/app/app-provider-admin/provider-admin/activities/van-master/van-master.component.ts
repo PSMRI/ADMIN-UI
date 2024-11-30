@@ -29,6 +29,7 @@ import { dataService } from 'src/app/core/services/dataService/data.service';
 import { VanMasterService } from 'src/app/core/services/ProviderAdminServices/van-master-service.service';
 import { ServicePointMasterService } from '../services/service-point-master-services.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-van-master',
@@ -109,9 +110,11 @@ export class VanComponent implements OnInit {
     public vanMasterService: VanMasterService,
     public servicePointMasterService: ServicePointMasterService,
     private alertMessage: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.countryID = 1; // hardcoded as country is INDIA
     this.serviceID = this.commonDataService.serviceIDMMU;
     this.createdBy = this.commonDataService.uname;
@@ -459,7 +462,6 @@ export class VanComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredavailableVans.data = this.availableVans;
-      this.filteredavailableVans.paginator = this.paginator;
     } else {
       this.filteredavailableVans.data = [];
       this.availableVans.forEach((item: any) => {
@@ -472,7 +474,6 @@ export class VanComponent implements OnInit {
             }
           }
       });
-      this.filteredavailableVans.paginator = this.paginator;
     }
   }
   back() {

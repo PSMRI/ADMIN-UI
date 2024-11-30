@@ -33,6 +33,7 @@ import { MatSort } from '@angular/material/sort';
 import { ProviderAdminRoleService } from '../services/state-serviceline-role.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 // declare var jQuery: any;
 
@@ -111,12 +112,13 @@ export class RoleMasterComponent implements OnInit, AfterViewInit {
     public ProviderAdminRoleService: ProviderAdminRoleService,
     public commonDataService: dataService,
     private alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.role = '';
     this.description = '';
 
     // provide service provider ID, (As of now hardcoded, but to be fetched from login response)
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
 
     // array initialization
     this.states = [];

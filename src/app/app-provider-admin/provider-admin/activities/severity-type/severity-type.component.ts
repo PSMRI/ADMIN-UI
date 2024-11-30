@@ -36,6 +36,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { NgForm } from '@angular/forms';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'src/app/core/services/session-storage.service';
 
 @Component({
   selector: 'app-severity-type',
@@ -92,10 +93,11 @@ export class SeverityTypeComponent implements OnInit, AfterViewInit {
     public dialog: MatDialog,
     private alertService: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage
+    this.serviceProviderID = this.sessionstorage
       .getItem('service_providerID')
       ?.toString();
     this.userID = this.commonDataService.uid;
@@ -368,7 +370,6 @@ export class SeverityTypeComponent implements OnInit, AfterViewInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filtereddata.data = this.data;
-      this.filtereddata.paginator = this.paginatorFirst;
     } else {
       this.filtereddata.data = [];
       this.data.forEach((item: any) => {
@@ -382,7 +383,6 @@ export class SeverityTypeComponent implements OnInit, AfterViewInit {
           }
         }
       });
-      this.filtereddata.paginator = this.paginatorFirst;
     }
   }
 }
