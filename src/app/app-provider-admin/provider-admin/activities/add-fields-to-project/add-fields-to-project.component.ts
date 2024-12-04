@@ -17,6 +17,7 @@ import { SessionStorageService } from 'src/app/core/services/session-storage.ser
 })
 export class AddFieldsToProjectComponent implements OnInit {
   dialogData: any;
+  projectId: any;
   optionList: any = [];
   addFieldsForm!: FormGroup;
   selectable = true;
@@ -47,6 +48,7 @@ export class AddFieldsToProjectComponent implements OnInit {
   }
   dataSource = new MatTableDataSource<any>();
   addedFields: any;
+  sectionId: any;
 
   constructor(
     private addFieldsService: AddFieldsService,
@@ -59,7 +61,8 @@ export class AddFieldsToProjectComponent implements OnInit {
 
   ngOnInit() {
     console.log('data', this.input);
-    this.dialogData = this.input;
+    this.dialogData = this.input.data;
+    this.projectId = this.input.projectId;
     this.fetchAddedFields();
     this.getAllSectionsData();
   }
@@ -87,7 +90,10 @@ export class AddFieldsToProjectComponent implements OnInit {
   fetchAddedFields() {
     const reqObj = {
       sectionId: this.dialogData.sectionId,
-      serviceProviderId: this.sessionstorage.getItem('service_providerID'),
+      serviceProviderId: JSON.stringify(
+        this.sessionstorage.getItem('service_providerID'),
+      ),
+      projectId: this.projectId,
     };
     this.addFieldsService.fetchFields(reqObj).subscribe(
       (res: any) => {
@@ -165,6 +171,7 @@ export class AddFieldsToProjectComponent implements OnInit {
       placeholder: item.placeholder,
       fieldType: item.fieldType,
       fieldTypeId: item.fieldTypeId,
+      projectId: this.projectId,
     };
     this.addFieldsService.updateFields(reqObj).subscribe(
       (res: any) => {
@@ -209,7 +216,10 @@ export class AddFieldsToProjectComponent implements OnInit {
       fieldType: this.addFieldsForm.get('fieldType')?.value,
       fieldTypeId: this.addFieldsForm.get('fieldTypeId')?.value,
       modifiedBy: this.sessionstorage.getItem('uname'),
-      serviceProviderId: this.sessionstorage.getItem('service_providerID'),
+      serviceProviderId: JSON.stringify(
+        this.sessionstorage.getItem('service_providerID'),
+      ),
+      projectId: this.projectId,
     };
     this.addFieldsService.updateFields(reqObj).subscribe(
       (res: any) => {
@@ -297,7 +307,10 @@ export class AddFieldsToProjectComponent implements OnInit {
     const form = this.addFieldsForm.value;
     const reqObj = {
       sectionId: this.dialogData.sectionId,
-      serviceProviderId: this.sessionstorage.getItem('service_providerID'),
+      projectId: this.projectId,
+      serviceProviderId: JSON.stringify(
+        this.sessionstorage.getItem('service_providerID'),
+      ),
       createdBy: this.sessionstorage.getItem('uname'),
       fields: [form],
     };
@@ -407,7 +420,10 @@ export class AddFieldsToProjectComponent implements OnInit {
     sectionIds.forEach((item) => {
       const reqObj = {
         sectionId: item,
-        serviceProviderId: this.sessionstorage.getItem('service_providerID'),
+        serviceProviderId: JSON.stringify(
+          this.sessionstorage.getItem('service_providerID'),
+        ),
+        projectId: this.projectId,
       };
       this.addFieldsService.fetchFields(reqObj).subscribe(
         (res: any) => {

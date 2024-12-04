@@ -161,7 +161,7 @@ export class ProjectConfigutationScreenComponent implements OnInit {
       width: '1000px',
       height: '500px',
       disableClose: true,
-      data: data,
+      data: { data: data, projectId: this.project?.projectId },
     });
   }
 }
