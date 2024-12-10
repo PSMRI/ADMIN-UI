@@ -34,7 +34,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { InstituteSubDirectoryMasterService } from '../services/institute-subdirectory-master-service.service';
 
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-institute-subdirectory-master',
   templateUrl: './institute-subdirectory-master.component.html',

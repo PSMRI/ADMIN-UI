@@ -29,7 +29,7 @@ import { CommonServices } from 'src/app/core/services/inventory-services/commonS
 import { ManufacturemasterService } from 'src/app/core/services/inventory-services/manufacturemaster.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { SuppliermasterService } from 'src/app/core/services/inventory-services/suppliermaster.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-manufacturer-master',

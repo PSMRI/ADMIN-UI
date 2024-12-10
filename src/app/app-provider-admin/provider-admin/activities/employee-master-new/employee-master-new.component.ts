@@ -27,7 +27,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { EmployeeMasterNewServices } from 'src/app/app-provider-admin/provider-admin/activities/services/employee-master-new-services.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-employee-master-new',

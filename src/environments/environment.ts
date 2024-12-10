@@ -29,11 +29,11 @@ const COMMON_API = 'https://amritwprdev.piramalswasthya.org/';
 const adminBaseUrl = `${ADMIN_API}adminapi-v3.0.0/`;
 const superadminBaseURL = `${ADMIN_API}adminapi-v3.0.0/`;
 const commonBaseURL = `${COMMON_API}commonapi-v3.0.0/`;
-import { keys } from './enckey';
+const sessionStorageEncKey = '<%= SESSION_STORAGE_ENC_KEY %>';
 
 export const environment = {
   production: false,
-  encKey: keys.dev,
+  encKey: sessionStorageEncKey,
 
   adminBaseUrl: adminBaseUrl,
   superadminBaseURL: superadminBaseURL,

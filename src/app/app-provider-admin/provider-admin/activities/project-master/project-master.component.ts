@@ -6,7 +6,7 @@ import { MatSort } from '@angular/material/sort';
 import { NgForm } from '@angular/forms';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-project-master',

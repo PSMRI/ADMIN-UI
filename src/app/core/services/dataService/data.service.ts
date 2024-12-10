@@ -20,7 +20,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Injectable } from '@angular/core';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 // import { Http, Response } from '@angular/http';
 // import { Observable } from 'rxjs/Observable';

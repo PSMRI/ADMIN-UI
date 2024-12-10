@@ -29,7 +29,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { ProviderAdminRoleService } from '../services/state-serviceline-role.service';
 import { ProcedureMasterServiceService } from '../../inventory/services/procedure-master-service.service';
 import { ServicePointMasterService } from '../services/service-point-master-services.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-procedure-master',

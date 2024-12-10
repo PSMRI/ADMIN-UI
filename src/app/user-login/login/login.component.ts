@@ -28,7 +28,7 @@ import { loginService } from '../loginService/login.service';
 import { HttpInterceptor } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service';
 import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-login-component',

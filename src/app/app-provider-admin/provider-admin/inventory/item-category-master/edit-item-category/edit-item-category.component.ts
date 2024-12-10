@@ -27,7 +27,7 @@ import {
   MatDialogRef,
 } from '@angular/material/dialog';
 import { ItemCategoryService } from 'src/app/core/services/inventory-services/item-category.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-edit-item-category',

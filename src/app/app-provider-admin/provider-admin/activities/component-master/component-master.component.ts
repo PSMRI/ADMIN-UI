@@ -36,7 +36,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ComponentNameSearchComponent } from '../component-name-search/component-name-search.component';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 interface ComponentData {
   testComponentID: number;

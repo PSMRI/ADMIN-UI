@@ -32,7 +32,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { UomMasterService } from 'src/app/core/services/inventory-services/uom-master.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-search-uom-master',

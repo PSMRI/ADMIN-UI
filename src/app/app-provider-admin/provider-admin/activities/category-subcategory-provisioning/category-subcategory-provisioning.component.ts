@@ -35,7 +35,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { CategorySubcategoryService } from 'src/app/app-provider-admin/provider-admin/activities/services/category-subcategory-master-service.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-category-subcategory-provisioning',

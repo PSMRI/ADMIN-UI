@@ -28,7 +28,7 @@ import { FormsModule, NgForm } from '@angular/forms';
 import { FormGroup, FormControl, FormBuilder, FormArray } from '@angular/forms';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-van-service-point-mapping',

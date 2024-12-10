@@ -28,7 +28,7 @@ import { ViewVersionDetailsComponent } from '../core/components/view-version-det
 import { ConfigService } from '../core/services/config/config.service';
 import { HttpServices } from '../core/services/http-services/http_services.service';
 import { loginService } from '../user-login/loginService/login.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 declare let jQuery: any;
 

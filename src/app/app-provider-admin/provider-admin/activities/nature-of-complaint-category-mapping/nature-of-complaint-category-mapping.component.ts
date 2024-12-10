@@ -28,7 +28,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-nature-of-complaint-category-mapping',
   templateUrl: './nature-of-complaint-category-mapping.component.html',

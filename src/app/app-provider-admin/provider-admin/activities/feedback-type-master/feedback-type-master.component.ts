@@ -38,7 +38,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { FeedbackTypeService } from '../services/feedback-type-master-service.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-feedback-type-master',

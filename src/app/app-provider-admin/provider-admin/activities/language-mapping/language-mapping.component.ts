@@ -26,7 +26,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { LanguageMapping } from '../services/language-mapping.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-language-mapping',
   templateUrl: './language-mapping.component.html',

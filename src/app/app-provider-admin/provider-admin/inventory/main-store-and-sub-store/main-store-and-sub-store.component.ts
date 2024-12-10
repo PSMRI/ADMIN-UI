@@ -27,7 +27,7 @@ import { NgForm } from '@angular/forms';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-main-store-and-sub-store',

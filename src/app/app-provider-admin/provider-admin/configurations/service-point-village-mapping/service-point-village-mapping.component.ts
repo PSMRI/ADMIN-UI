@@ -28,7 +28,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { ServicePointMasterService } from '../../activities/services/service-point-master-services.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-service-point-village-mapping',

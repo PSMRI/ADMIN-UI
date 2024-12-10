@@ -33,7 +33,7 @@ import { MatSort } from '@angular/material/sort';
 import { ProviderAdminRoleService } from '../services/state-serviceline-role.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 // declare var jQuery: any;
 

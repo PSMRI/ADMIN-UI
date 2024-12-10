@@ -26,7 +26,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { Mainstroreandsubstore } from 'src/app/core/services/inventory-services/mainstoreandsubstore.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-item-issue-method-config',

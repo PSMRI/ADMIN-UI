@@ -35,7 +35,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { ItemService } from '../../inventory/services/item.service';
 import { SnomedMasterService } from '../services/snomed-master.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-map-snommed-ctcode',

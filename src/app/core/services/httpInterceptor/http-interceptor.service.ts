@@ -37,7 +37,7 @@ import { ConfirmationDialogsService } from '../dialog/confirmation.service';
 import { SpinnerService } from '../spinnerService/spinner.service';
 import { environment } from 'src/environments/environment';
 import { CookieService } from 'ngx-cookie-service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Injectable({
   providedIn: 'root',

@@ -39,7 +39,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { LocationServicelineMapping } from '../services/location-serviceline-mapping.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 declare let jQuery: any;
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-location-serviceline-mapping',

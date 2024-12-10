@@ -29,7 +29,7 @@ import { CommonServices } from 'src/app/core/services/inventory-services/commonS
 import { ItemCategoryService } from 'src/app/core/services/inventory-services/item-category.service';
 import { ItemService } from '../services/item.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-item-category-master',
   templateUrl: './item-category-master.component.html',

@@ -8,7 +8,7 @@ import { ProjectConfigutationScreenComponent } from '../project-configutation-sc
 import { MatChipInputEvent } from '@angular/material/chips';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { COMMA, ENTER } from '@angular/cdk/keycodes';
-import { SessionStorageService } from 'src/app/core/services/session-storage.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-add-fields-to-project',
