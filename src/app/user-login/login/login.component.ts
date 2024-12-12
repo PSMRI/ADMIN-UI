@@ -93,7 +93,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     if (res.userName === 'Super  Admin') {
       this.sessionstorage.setItem('Userdata', 'Super Admin');
       this.sessionstorage.setItem('role', 'SUPERADMIN');
-      this.sessionstorage.uname = 'Super Admin';
+      this.sessionstorage.setItem('uname', 'Super Admin');
       this.router.navigate(['/MultiRoleScreenComponent']);
     } else {
       this.successCallback(res);
@@ -162,8 +162,8 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                 sessionStorage.setItem('authToken', response.data.key);
                 this.sessionstorage.setItem('Userdata', 'Super Admin');
                 this.sessionstorage.setItem('role', 'SUPERADMIN');
-                this.sessionstorage.uname = 'Super Admin';
-                this.sessionstorage.uid = response.data.userID;
+                this.sessionstorage.setItem('uname', 'Super Admin');
+                this.sessionstorage.setItem('uid', response.data.userID);
                 this.router.navigate(['/MultiRoleScreenComponent']);
               } else {
                 this.alertMessage.alert('User is not super admin');
@@ -304,8 +304,8 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                       sessionStorage.setItem('authToken', response.data.key);
                       this.sessionstorage.setItem('Userdata', 'Super Admin');
                       this.sessionstorage.setItem('role', 'SUPERADMIN');
-                      this.sessionstorage.uname = 'Super Admin';
-                      this.sessionstorage.uid = response.data.userID;
+                      this.sessionstorage.setItem('uname', 'Super Admin');
+                      this.sessionstorage.setItem('uid', response.data.userID);
                       this.router.navigate(['/MultiRoleScreenComponent']);
                     } else {
                       this.alertMessage.alert('User is not super admin');
