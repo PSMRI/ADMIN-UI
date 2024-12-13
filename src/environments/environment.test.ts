@@ -28,7 +28,7 @@ const ADMIN_API = 'https://amritwprdev.piramalswasthya.org/';
 const COMMON_API = 'https://amritwprdev.piramalswasthya.org/';
 const adminBaseUrl = `${ADMIN_API}adminapi-v1.0/`;
 const superadminBaseURL = `${ADMIN_API}adminapi-v1.0/`;
-const commonBaseURL = `${COMMON_API}commonapi-v1.0/`; 
+const commonBaseURL = `${COMMON_API}commonapi-v1.0/`;
 const sessionStorageEncKey = '<%= SESSION_STORAGE_ENC_KEY %>';
 
 export const environment = {
