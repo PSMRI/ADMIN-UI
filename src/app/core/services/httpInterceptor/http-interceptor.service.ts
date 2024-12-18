@@ -52,8 +52,6 @@ export class HttpInterceptorService implements HttpInterceptor {
     private http: HttpClient,
     private cookieService: CookieService,
     readonly sessionstorage: SessionStorageService,
-    // private authService: AuthService
-    // private setLanguageService: SetLanguageService
   ) {}
 
   intercept(
@@ -62,10 +60,9 @@ export class HttpInterceptorService implements HttpInterceptor {
   ): Observable<HttpEvent<any>> {
     const key: any = sessionStorage['authToken'];
     let modifiedReq = null;
-    const tokn = this.cookieService.get('Jwttoken');
     if (key !== undefined && key !== null) {
       modifiedReq = req.clone({
-        headers: req.headers.set('Authorization', key).set('Jwttoken', tokn),
+        headers: req.headers.set('Authorization', key),
       });
     } else {
       modifiedReq = req.clone({

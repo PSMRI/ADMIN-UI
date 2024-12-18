@@ -155,10 +155,6 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
             if (response.data) {
               if (response.data.previlegeObj.length === 0) {
                 console.log(response.data, 'SUPERADMIN VALIDATED');
-                console.error('Jwttoken', response);
-                console.log('Jwttoken', response);
-                this.cookieService.set('Jwttoken', response.data.Jwttoken);
-                delete response.data.Jwttoken;
                 sessionStorage.setItem('authToken', response.data.key);
                 this.sessionstorage.setItem('Userdata', 'Super Admin');
                 this.sessionstorage.setItem('role', 'SUPERADMIN');
@@ -220,9 +216,6 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         .subscribe(
           (response: any) => {
             if (response && response.data) {
-              console.error('Jwttoken', response);
-              console.log('Jwttoken', response);
-              this.cookieService.set('Jwttoken', response.data.Jwttoken);
               sessionStorage.setItem('authToken', response.data.key);
               this.successCallback(response);
             } else if (response.statusCode === 5002) {
