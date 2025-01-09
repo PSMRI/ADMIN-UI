@@ -122,7 +122,8 @@ export class WrapupTimeConfigurationComponent implements OnInit {
               if (
                 item.serviceID === 1 ||
                 item.serviceID === 3 ||
-                item.serviceID === 6
+                item.serviceID === 6 ||
+                item.serviceID === 10
               )
                 return item;
             });
