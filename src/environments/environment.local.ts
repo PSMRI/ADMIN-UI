@@ -25,11 +25,11 @@
 // The list of which env maps to which file can be found in `.angular-cli.json`.
 
 const ADMIN_API = 'http://localhost:8082';
-const COMMON_API = 'http://localhost:8083/';
-const FHIR_API = 'http://localhost:8093/';
+const COMMON_API = 'http://localhost:8083';
+const FHIR_API = 'http://localhost:8093';
 const adminBaseUrl = `${ADMIN_API}/`;
 const superadminBaseURL = `${ADMIN_API}/`;
-const commonBaseURL = `${COMMON_API}`;
+const commonBaseURL = `${COMMON_API}/`;
 const fhirBaseUrl = `${FHIR_API}/`;
 
 export const environment = {
