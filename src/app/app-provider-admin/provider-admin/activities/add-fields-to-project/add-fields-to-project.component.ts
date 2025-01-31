@@ -409,7 +409,7 @@ export class AddFieldsToProjectComponent implements OnInit {
 
     if (exists) {
       this.confirmationService.alert(
-        'Field Name already exixts in the Project, Kindly give different name',
+        'Field Name already exists in the Project, Kindly give different name',
       );
       this.addFieldsForm.get('fieldName')?.reset();
     }
