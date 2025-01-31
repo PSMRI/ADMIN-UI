@@ -29,6 +29,7 @@ import { CommonServices } from 'src/app/core/services/inventory-services/commonS
 import { ManufacturemasterService } from 'src/app/core/services/inventory-services/manufacturemaster.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { SuppliermasterService } from 'src/app/core/services/inventory-services/suppliermaster.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-manufacturer-master',
@@ -108,12 +109,13 @@ export class ManufacturerMasterComponent implements OnInit, AfterViewInit {
     private manufactureService: ManufacturemasterService,
     private supplierService: SuppliermasterService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
     console.log(this.createdBy, 'CreatedBy');
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.uid = this.commonDataService.uid;
     this.getServices();
     this.getAllCountry();

@@ -31,9 +31,11 @@ const adminBaseUrl = `${ADMIN_API}/`;
 const superadminBaseURL = `${ADMIN_API}/`;
 const commonBaseURL = `${COMMON_API}/`;
 const fhirBaseUrl = `${FHIR_API}/`;
+const sessionStorageEncKey = '';
 
 export const environment = {
   production: false,
+  encKey: sessionStorageEncKey,
 
   adminBaseUrl: adminBaseUrl,
   superadminBaseURL: superadminBaseURL,

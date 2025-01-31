@@ -84,6 +84,7 @@ export class loginService {
         userName: uname.toLowerCase(),
         password: pwd,
         doLogout: doLogout,
+        withCredentials: true,
       })
       .pipe(map(this.extractData), catchError(this.handleError));
   }
@@ -97,6 +98,7 @@ export class loginService {
       userName: uname.toLowerCase(),
       password: password,
       doLogout: doLogout,
+      withCredentials: true,
     });
     // .map(this.extractData)
     // .catch(this.handleError);

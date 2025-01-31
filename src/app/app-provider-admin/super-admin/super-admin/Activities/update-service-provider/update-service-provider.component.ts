@@ -261,7 +261,6 @@ export class UpdateServiceProviderComponent implements OnInit {
           }
         }
       });
-      this.filtereddata.paginator = this.paginator;
     }
   }
 }

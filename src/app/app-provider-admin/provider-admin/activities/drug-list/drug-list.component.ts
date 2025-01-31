@@ -29,6 +29,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-drug-list',
@@ -75,9 +76,11 @@ export class DrugListComponent implements OnInit, AfterViewInit {
     public commonDataService: dataService,
     public drugMasterService: DrugMasterService,
     private alertMessage: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.serviceID104 = this.commonDataService.serviceID104;
     this.createdBy = this.commonDataService.uname;
     this.fileteredavailableDrugs.paginator = this.paginatorFirst;
@@ -379,6 +382,7 @@ export class DrugListComponent implements OnInit, AfterViewInit {
       this.fileteredavailableDrugs.paginator = this.paginatorFirst;
     } else {
       this.fileteredavailableDrugs.data = [];
+      this.fileteredavailableDrugs.paginator = this.paginatorFirst;
       this.availableDrugs.forEach((item: any) => {
         for (const key in item) {
           if (key === 'drugName') {
@@ -390,7 +394,6 @@ export class DrugListComponent implements OnInit, AfterViewInit {
           }
         }
       });
-      this.fileteredavailableDrugs.paginator = this.paginatorFirst;
     }
   }
   back() {

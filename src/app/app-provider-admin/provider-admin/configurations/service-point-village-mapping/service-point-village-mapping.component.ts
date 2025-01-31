@@ -28,6 +28,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { ServicePointMasterService } from '../../activities/services/service-point-master-services.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-service-point-village-mapping',
@@ -116,9 +117,11 @@ export class ServicePointVillageMapComponent implements OnInit {
     public servicePointVillageMapService: ServicePointVillageMapService,
     public servicePointMasterService: ServicePointMasterService,
     private alertMessage: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.countryID = 1; // hardcoded as country is INDIA
     this.serviceID = this.commonDataService.serviceIDMMU;
     this.createdBy = this.commonDataService.uname;
@@ -567,7 +570,6 @@ export class ServicePointVillageMapComponent implements OnInit {
     if (!searchTerm) {
       this.filteredavailableServicePointVillageMaps.data =
         this.availableServicePointVillageMaps;
-      this.filteredavailableServicePointVillageMaps.paginator = this.paginator;
     } else {
       this.filteredavailableServicePointVillageMaps.data = [];
       this.availableServicePointVillageMaps.forEach((item: any) => {
@@ -589,7 +591,6 @@ export class ServicePointVillageMapComponent implements OnInit {
           }
         }
       });
-      this.filteredavailableServicePointVillageMaps.paginator = this.paginator;
     }
   }
   back() {

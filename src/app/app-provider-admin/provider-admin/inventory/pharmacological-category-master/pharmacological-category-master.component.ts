@@ -27,6 +27,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { PharmacologicalMasterService } from 'src/app/core/services/inventory-services/pharmacological-category-service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-pharmacological-category-master',
@@ -74,12 +75,13 @@ export class PharmacologicalCategoryMasterComponent
     public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
     private pharmacologicalService: PharmacologicalMasterService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
     console.log(this.createdBy, 'CreatedBy');
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.uid = this.commonDataService.uid;
     this.getServices();
   }

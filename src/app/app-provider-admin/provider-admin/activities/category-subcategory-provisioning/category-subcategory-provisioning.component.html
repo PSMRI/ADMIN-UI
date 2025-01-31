@@ -86,7 +86,7 @@
     style="text-align: end"
     *ngIf="showCategoryTable && data.length !== 0 && showTable && showDiv"
   >
-    <mat-form-field id="filterbox">
+    <mat-form-field [style.width]="'100%'" id="filterbox">
       <input
         matInput
         placeholder="In-Table Search"

@@ -27,6 +27,7 @@ import { ConfigService } from 'src/app/core/services/config/config.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { loginService } from '../loginService/login.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 declare let jQuery: any;
 
@@ -46,6 +47,7 @@ export class SetSecurityQuestionsComponent implements OnInit {
     private alertService: ConfirmationDialogsService,
     public _loginService: loginService,
     private getUserData: dataService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this._keySize = 256;
     this._ivSize = 128;
@@ -53,7 +55,7 @@ export class SetSecurityQuestionsComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.uname = sessionStorage.getItem('uname');
+    this.uname = this.sessionstorage.getItem('uname');
     this.http_calls
       .get(this.configService.getCommonBaseURL() + 'user/getsecurityquetions')
       .subscribe(
@@ -78,7 +80,7 @@ export class SetSecurityQuestionsComponent implements OnInit {
     console.log('error', this.questions);
   }
 
-  uid: any = sessionStorage.getItem('uid');
+  uid: any = this.sessionstorage.getItem('uid');
   passwordSection = false;
   questionsection = true;
   uname: any;
@@ -369,7 +371,7 @@ export class SetSecurityQuestionsComponent implements OnInit {
         this.router.navigate(['/login']).then((result) => {
           if (result) {
             localStorage.clear();
-            sessionStorage.clear();
+            this.sessionstorage.clear();
           }
         });
       },

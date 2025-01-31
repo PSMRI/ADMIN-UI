@@ -26,6 +26,7 @@ import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-hospital-institute-directory-subdirectory-mapping',
@@ -89,8 +90,9 @@ export class HospitalInstituteDirectorySubdirectoryMappingComponent
     public hospitalInstituteMappingService: HospitalInstituteMappingService,
     public commonDataService: dataService,
     public alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
@@ -524,6 +526,7 @@ export class HospitalInstituteDirectorySubdirectoryMappingComponent
       this.filteredsearchResultArray.paginator = this.paginator;
     } else {
       this.filteredsearchResultArray.data = [];
+      this.filteredsearchResultArray.paginator = this.paginator;
       this.searchResultArray.forEach((item: any) => {
         for (const key in item.institute) {
           if (key === 'institutionName') {
@@ -535,7 +538,6 @@ export class HospitalInstituteDirectorySubdirectoryMappingComponent
           }
         }
       });
-      this.filteredsearchResultArray.paginator = this.paginator;
     }
   }
 

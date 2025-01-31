@@ -429,7 +429,6 @@ export class VillageMasterComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredavailableVillages.data = this.availableVillages;
-      this.filteredavailableVillages.paginator = this.paginator;
     } else {
       this.filteredavailableVillages.data = [];
       this.availableVillages.forEach((item: any) => {
@@ -450,7 +449,6 @@ export class VillageMasterComponent implements OnInit {
           }
         }
       });
-      this.filteredavailableVillages.paginator = this.paginator;
     }
   }
 }
