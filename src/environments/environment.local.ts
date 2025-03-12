@@ -79,6 +79,8 @@ export const environment = {
   getQuestionType_url: `${commonBaseURL}questionTypeController/get/questionTypeList`,
   editQuestionnaire_url: `${adminBaseUrl}editQuestionnaire`,
   getBlockSubcentreDataUploadUrl: `${adminBaseUrl}uptsu/saveFacility`,
+  getXMLDataUploadUrl: `${adminBaseUrl}bulkRegistration`,
+
   getServiceLines_newrole_url: `${adminBaseUrl}m/role/serviceNew`,
   getStates_newparking_url: `${adminBaseUrl}m/role/stateNew`,
   _getZonesParkURL: `${adminBaseUrl}zonemaster/get/zones`,
