@@ -151,6 +151,9 @@ export class EmployeeMasterNewComponent implements OnInit {
   permanentDistricts: any = [];
   communities: any = [];
   religions: any = [];
+
+  downloadMemberExcelFile: any;
+
   // objs: any = [];
   searchTerm: any;
   selfHealthProfessionalID: any;
@@ -177,6 +180,7 @@ export class EmployeeMasterNewComponent implements OnInit {
   @ViewChild('communicationDetailsForm')
   communicationDetailsForm!: NgForm;
   disableGenerateOTP: any;
+  employeeMasterUpload = false;
 
   // md2.data: Observable<Array<item>>;
 
@@ -1578,5 +1582,21 @@ export class EmployeeMasterNewComponent implements OnInit {
     } else {
       this.enablehealthProfessionalID = false;
     }
+  }
+
+  uploadMaster() {
+    this.employeeMasterUpload = true;
+  }
+
+  downloadMaster() {
+    const filePath = 'assets/bulkuser_excel_sheet.xlsx';
+
+    // Create a temporary link to trigger the download
+    const link = document.createElement('a');
+    link.href = filePath;
+    link.download = 'bulkuser_excel_sheet.xlsx'; // Set the file name when downloaded
+
+    // Trigger the click event on the anchor element to initiate the download
+    link.click();
   }
 }

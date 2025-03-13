@@ -48,6 +48,10 @@ export class BlockSubcenterMappingService {
     return this.http.post(environment.getBlockSubcentreDataUploadUrl, formData);
   }
 
+  memberBulkUploadXML(formData: any) {
+    return this.http.post(environment.getXMLDataUploadUrl, formData);
+  }
+
   handleError(error: Response | any) {
     return throwError(error);
   }

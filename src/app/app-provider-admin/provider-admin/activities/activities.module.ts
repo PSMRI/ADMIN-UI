@@ -19,6 +19,7 @@ import {
 import { CategorySubcategoryProvisioningComponent } from './category-subcategory-provisioning/category-subcategory-provisioning.component';
 import { EditCategorySubcategoryComponent } from './category-subcategory-provisioning/edit-category-subcategory/edit-category-subcategory.component';
 import { EmployeeMasterNewComponent } from './employee-master-new/employee-master-new.component';
+import { EmployeeMasterBulkUploadComponent } from './employee-master-bulk-upload/employee-master-bulk-upload.component';
 import {
   FeedbackTypeMasterComponent,
   EditFeedbackModalComponent,
@@ -161,6 +162,7 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectServicelineMappingComponent,
     ProjectConfigutationScreenComponent,
     AddFieldsToProjectComponent,
+    EmployeeMasterBulkUploadComponent,
   ],
   imports: [
     CommonModule,
