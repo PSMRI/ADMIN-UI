@@ -27,6 +27,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { VillageMasterService } from 'src/app/core/services/adminServices/AdminVillage/village-master-service.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { WorkLocationMapping } from '../services/work-location-mapping.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-work-location-mapping',
@@ -158,12 +159,13 @@ export class WorkLocationMappingComponent implements OnInit {
     private alertService: ConfirmationDialogsService,
     private worklocationmapping: WorkLocationMapping,
     private villagemasterService: VillageMasterService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
-    this.userID = sessionStorage.getItem('uid');
-    this.createdBy = sessionStorage.getItem('uname');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
+    this.userID = this.sessionstorage.getItem('uid');
+    this.createdBy = this.sessionstorage.getItem('uname');
     this.getProviderServices(this.userID);
     this.getAllMappedWorkLocations();
     this.getUserName(this.serviceProviderID);
@@ -1958,6 +1960,7 @@ export class WorkLocationMappingComponent implements OnInit {
       this.filteredmappedWorkLocationsList.paginator = this.paginator;
     } else {
       this.filteredmappedWorkLocationsList.data = [];
+      this.filteredmappedWorkLocationsList.paginator = this.paginator;
       this.mappedWorkLocationsList.forEach((item: any) => {
         for (const key in item) {
           if (
@@ -1978,7 +1981,6 @@ export class WorkLocationMappingComponent implements OnInit {
           }
         }
       });
-      this.filteredmappedWorkLocationsList.paginator = this.paginator;
     }
   }
 

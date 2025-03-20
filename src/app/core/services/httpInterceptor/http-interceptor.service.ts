@@ -36,6 +36,8 @@ import { throwError } from 'rxjs/internal/observable/throwError';
 import { ConfirmationDialogsService } from '../dialog/confirmation.service';
 import { SpinnerService } from '../spinnerService/spinner.service';
 import { environment } from 'src/environments/environment';
+import { CookieService } from 'ngx-cookie-service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Injectable({
   providedIn: 'root',
@@ -48,8 +50,8 @@ export class HttpInterceptorService implements HttpInterceptor {
     private router: Router,
     private confirmationService: ConfirmationDialogsService,
     private http: HttpClient,
-    // private authService: AuthService
-    // private setLanguageService: SetLanguageService
+    private cookieService: CookieService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   intercept(
@@ -94,7 +96,7 @@ export class HttpInterceptorService implements HttpInterceptor {
       response.statusCode === 5002 &&
       url.indexOf('user/userAuthenticate') < 0
     ) {
-      sessionStorage.clear();
+      this.sessionstorage.clear();
       localStorage.clear();
       setTimeout(() => this.router.navigate(['/']), 0);
       // this.confirmationService.alert('error', response.errorMessage);
@@ -108,7 +110,7 @@ export class HttpInterceptorService implements HttpInterceptor {
         console.log('there', Date());
 
         if (
-          sessionStorage.getItem('authenticationToken') &&
+          this.sessionstorage.getItem('authenticationToken') &&
           sessionStorage.getItem('isAuthenticated')
         ) {
           this.confirmationService
@@ -125,7 +127,7 @@ export class HttpInterceptorService implements HttpInterceptor {
                 );
               } else if (result.action === 'timeout') {
                 clearTimeout(this.timerRef);
-                sessionStorage.clear();
+                this.sessionstorage.clear();
                 localStorage.clear();
                 this.confirmationService.alert(
                   this.currentLanguageSet.sessionExpired,
@@ -135,7 +137,7 @@ export class HttpInterceptorService implements HttpInterceptor {
               } else if (result.action === 'cancel') {
                 setTimeout(() => {
                   clearTimeout(this.timerRef);
-                  sessionStorage.clear();
+                  this.sessionstorage.clear();
                   localStorage.clear();
                   this.confirmationService.alert(
                     this.currentLanguageSet.sessionExpired,

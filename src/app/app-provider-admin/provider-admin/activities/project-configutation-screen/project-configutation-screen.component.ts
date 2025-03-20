@@ -7,6 +7,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatDialog } from '@angular/material/dialog';
 import { AddFieldsToProjectComponent } from '../add-fields-to-project/add-fields-to-project.component';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-project-configutation-screen',
@@ -30,10 +31,11 @@ export class ProjectConfigutationScreenComponent implements OnInit {
     private confirmationService: ConfirmationDialogsService,
     private projectConfigurationService: ProjectConfigurationService,
     private dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderId = sessionStorage.getItem('service_providerID');
+    this.serviceProviderId = this.sessionstorage.getItem('service_providerID');
     this.getProjects();
     this.getSections(null);
   }
@@ -137,7 +139,7 @@ export class ProjectConfigutationScreenComponent implements OnInit {
       projectName: this.project.projectName,
       projectId: this.project.projectId,
       serviceProviderId: this.serviceProviderId,
-      createdBy: sessionStorage.getItem('uname'),
+      createdBy: this.sessionstorage.getItem('uname'),
       sections: sections,
     };
     this.projectConfigurationService.mapSectionsToProject(reqObj).subscribe(

@@ -129,11 +129,7 @@
             <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
             <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
           </table>
-          <div
-            class="pull-center"
-            style="margin-top: 35px; text-align: center"
-            *ngIf="dataSource && dataSource.data.length === 0"
-          >
+          <div *ngIf="dataSource && dataSource.data.length === 0">
             <strong>No Records Found</strong>
           </div>
           <div>

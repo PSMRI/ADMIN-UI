@@ -38,10 +38,6 @@ export class LocationServicelineMapping {
     });
   }
 
-  getAbdmFacilities() {
-    return this.http.get(environment.getAbdmFacilities);
-  }
-
   getStatesNew(obj: any): Observable<any> {
     return this.http.post(environment.getStates_new_url, obj);
   }

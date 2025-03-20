@@ -31,6 +31,7 @@ import { ItemService } from '../services/item.service';
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-item-to-store-mapping',
@@ -92,8 +93,9 @@ export class ItemToStoreMappingComponent implements OnInit {
     public dialogService: ConfirmationDialogsService,
     public dialog: MatDialog,
     public itemFacilityMappingService: ItemFacilityMappingService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.providerID = sessionStorage.getItem('service_providerID');
+    this.providerID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
@@ -196,7 +198,6 @@ export class ItemToStoreMappingComponent implements OnInit {
           }
         }
       });
-      this.itemFacilityMapView.paginator = this.paginator;
     }
   }
 

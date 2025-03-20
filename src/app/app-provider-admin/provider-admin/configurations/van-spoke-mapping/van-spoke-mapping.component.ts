@@ -26,6 +26,7 @@ import { VanSpokeMappingService } from 'src/app/core/services/ProviderAdminServi
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-van-spoke-mapping',
@@ -86,6 +87,7 @@ export class VanSpokeMappingComponent implements OnInit {
     private vanSpokeMappingService: VanSpokeMappingService,
     private fb: FormBuilder,
     private confirmationDialog: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
@@ -211,7 +213,7 @@ export class VanSpokeMappingComponent implements OnInit {
     const reqObj = {
       stateID: state.stateID,
       parkingPlaceID: parkingplace.parkingPlaceID,
-      serviceProviderID: sessionStorage.getItem('service_providerID'),
+      serviceProviderID: this.sessionstorage.getItem('service_providerID'),
     };
     this.vanSpokeMappingService.getServicepoints(reqObj).subscribe(
       (servicepointResponse: any) => {

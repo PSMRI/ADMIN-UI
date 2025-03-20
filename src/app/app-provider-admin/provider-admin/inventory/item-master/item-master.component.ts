@@ -39,6 +39,7 @@ import {
 } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-item-master',
@@ -170,8 +171,9 @@ export class ItemMasterComponent implements OnInit {
     public commonServices: CommonServices,
     public dialogService: ConfirmationDialogsService,
     public dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.providerID = sessionStorage.getItem('service_providerID');
+    this.providerID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
@@ -306,7 +308,6 @@ export class ItemMasterComponent implements OnInit {
           }
         }
       });
-      this.filteredItemList.paginator = this.paginator;
     }
   }
 

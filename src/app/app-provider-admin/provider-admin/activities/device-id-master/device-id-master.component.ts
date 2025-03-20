@@ -516,7 +516,6 @@ export class DeviceIdMasterComponent implements OnInit, AfterViewInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredsearchResultArray.data = this.searchResultArray;
-      this.filteredsearchResultArray.paginator = this.paginatorFirst;
     } else {
       this.filteredsearchResultArray.data = [];
       this.searchResultArray.forEach((item: any) => {
@@ -530,7 +529,6 @@ export class DeviceIdMasterComponent implements OnInit, AfterViewInit {
           }
         }
       });
-      this.filteredsearchResultArray.paginator = this.paginatorFirst;
     }
   }
 }

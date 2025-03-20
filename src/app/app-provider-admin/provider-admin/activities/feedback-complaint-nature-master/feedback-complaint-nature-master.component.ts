@@ -38,6 +38,7 @@ import {
 } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-feedback-complaint-nature-master',
   templateUrl: './feedback-complaint-nature-master.component.html',
@@ -110,10 +111,11 @@ export class FeedbackComplaintNatureMasterComponent implements OnInit {
     private alertService: ConfirmationDialogsService,
     public dialog: MatDialog,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.userID = this.commonData.uid;
     this.getServiceLinesfromSearch(this.userID);
   }
@@ -410,7 +412,6 @@ export class FeedbackComplaintNatureMasterComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filterednatureTypes.data = this.natureTypes;
-      this.filterednatureTypes.paginator = this.paginator;
     } else {
       this.filterednatureTypes.data = [];
       this.natureTypes.forEach((item: any) => {
@@ -424,7 +425,6 @@ export class FeedbackComplaintNatureMasterComponent implements OnInit {
           }
         }
       });
-      this.filterednatureTypes.paginator = this.paginator;
     }
   }
 }

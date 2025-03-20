@@ -29,6 +29,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { ProviderAdminRoleService } from '../services/state-serviceline-role.service';
 import { ProcedureMasterServiceService } from '../../inventory/services/procedure-master-service.service';
 import { ServicePointMasterService } from '../services/service-point-master-services.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-procedure-master',
@@ -90,6 +91,7 @@ export class ProcedureMasterComponent implements OnInit {
     public providerAdminRoleService: ProviderAdminRoleService,
     private procedureMasterServiceService: ProcedureMasterServiceService,
     public stateandservices: ServicePointMasterService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.states = [];
     this.services = [];
@@ -110,7 +112,7 @@ export class ProcedureMasterComponent implements OnInit {
     });
 
     // provide service provider ID, (As of now hardcoded, but to be fetched from login response)
-    this.serviceProviderID = sessionStorage
+    this.serviceProviderID = this.sessionstorage
       .getItem('service_providerID')
       ?.toString();
     this.userID = this.commonDataService.uid;
@@ -489,7 +491,6 @@ export class ProcedureMasterComponent implements OnInit {
   filterprocedureList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredprocedureList.data = this.procedureList.data;
-      this.filteredprocedureList.paginator = this.paginator;
     } else {
       this.filteredprocedureList.data = [];
       this.procedureList.data.forEach((item: any) => {
@@ -503,7 +504,6 @@ export class ProcedureMasterComponent implements OnInit {
           }
         }
       });
-      this.filteredprocedureList.paginator = this.paginator;
     }
   }
 

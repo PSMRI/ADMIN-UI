@@ -29,6 +29,7 @@ import { CommonServices } from 'src/app/core/services/inventory-services/commonS
 import { ItemCategoryService } from 'src/app/core/services/inventory-services/item-category.service';
 import { ItemService } from '../services/item.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-item-category-master',
   templateUrl: './item-category-master.component.html',
@@ -82,10 +83,11 @@ export class ItemCategoryMasterComponent implements OnInit, AfterViewInit {
     public dialogService: ConfirmationDialogsService,
     private itemCategoryService: ItemCategoryService,
     public dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.uid = this.commonDataService.uid;
     this.createdBy = this.commonDataService.uname;
     console.log('this.createdBy', this.createdBy);

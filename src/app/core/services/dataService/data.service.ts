@@ -20,6 +20,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Injectable } from '@angular/core';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 // import { Http, Response } from '@angular/http';
 // import { Observable } from 'rxjs/Observable';
@@ -28,18 +29,21 @@ import { Injectable } from '@angular/core';
 
 @Injectable()
 export class dataService {
+  constructor(readonly sessionstorage: SessionStorageService) {}
   userNameForReset: any;
-  Userdata: any = sessionStorage.getItem('Userdata') || '[]';
-  userPriveliges: any = sessionStorage.getItem('userPriveliges') || '[]';
+  Userdata: any = this.sessionstorage.getItem('Userdata') || '[]';
+  userPriveliges: any = this.sessionstorage.getItem('userPriveliges') || '[]';
 
-  uid: any = sessionStorage.getItem('uid');
-  uname: any = sessionStorage.getItem('uname');
-  benData: any = sessionStorage.getItem('benData');
-  role: any = sessionStorage.getItem('role');
-  beneficiaryData: any = sessionStorage.getItem('beneficiaryData');
-  callData: any = sessionStorage.getItem('callData');
-  service_providerID: any = sessionStorage.getItem('service_providerID');
-  provider_serviceMapID: any = sessionStorage.getItem('provider_serviceMapID');
+  uid: any = this.sessionstorage.getItem('uid');
+  uname: any = this.sessionstorage.getItem('uname');
+  benData: any = this.sessionstorage.getItem('benData');
+  role: any = this.sessionstorage.getItem('role');
+  beneficiaryData: any = this.sessionstorage.getItem('beneficiaryData');
+  callData: any = this.sessionstorage.getItem('callData');
+  service_providerID: any = this.sessionstorage.getItem('service_providerID');
+  provider_serviceMapID: any = this.sessionstorage.getItem(
+    'provider_serviceMapID',
+  );
   serviceID104: any = 3;
   serviceIDMMU: any = 2;
   currentLanguage: any;

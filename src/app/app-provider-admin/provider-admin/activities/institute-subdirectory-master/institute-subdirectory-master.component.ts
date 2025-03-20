@@ -34,6 +34,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { InstituteSubDirectoryMasterService } from '../services/institute-subdirectory-master-service.service';
 
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-institute-subdirectory-master',
   templateUrl: './institute-subdirectory-master.component.html',
@@ -97,8 +98,9 @@ export class InstituteSubdirectoryMasterComponent implements OnInit {
     public commonDataService: dataService,
     public dialog: MatDialog,
     public alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
