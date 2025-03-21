@@ -198,6 +198,7 @@ export class ItemToStoreMappingComponent implements OnInit {
           }
         }
       });
+      this.itemFacilityMapView.paginator = this.paginator;
     }
   }
 

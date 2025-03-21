@@ -134,6 +134,13 @@
             Add Agents
           </button>
         </div>
+        <div
+          class="pull-center"
+          style="margin-top: 35px; text-align: center"
+          *ngIf="dataSource.data.length === 0"
+        >
+          <strong>No Records Found</strong>
+        </div>
         <mat-paginator
           [hidden]="dataSource.data.length === 0"
           [pageSizeOptions]="[5, 10, 20]"

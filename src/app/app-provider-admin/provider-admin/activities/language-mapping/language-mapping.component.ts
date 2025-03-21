@@ -754,7 +754,6 @@ export class LanguageMappingComponent implements OnInit, AfterViewInit {
       this.filteredLanguageMappedList.paginator = this.paginator;
     } else {
       this.filteredLanguageMappedList.data = [];
-      this.filteredLanguageMappedList.paginator = this.paginator;
       this.LanguageMappedList.forEach((item: any) => {
         for (const key in item) {
           if (key === 'userName' || key === 'languageName') {
@@ -766,6 +765,7 @@ export class LanguageMappingComponent implements OnInit, AfterViewInit {
           }
         }
       });
+      this.filteredLanguageMappedList.paginator = this.paginator;
     }
   }
 

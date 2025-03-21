@@ -308,6 +308,7 @@ export class ItemMasterComponent implements OnInit {
           }
         }
       });
+      this.filteredItemList.paginator = this.paginator;
     }
   }
 

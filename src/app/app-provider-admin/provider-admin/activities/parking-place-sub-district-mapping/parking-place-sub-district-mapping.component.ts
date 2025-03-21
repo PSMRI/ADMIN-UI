@@ -460,8 +460,9 @@ export class ParkingPlaceSubDistrictMappingComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredMappedParkingPlaceDistricts =
-        this.mappedParkingPlaceDistricts.data;
+      this.filteredMappedParkingPlaceDistricts.data =
+        this.mappedParkingPlaceDistricts;
+      this.filteredMappedParkingPlaceDistricts.paginator = this.paginator;
     } else {
       this.filteredMappedParkingPlaceDistricts.data = [];
       this.mappedParkingPlaceDistricts.forEach((item: any) => {
@@ -475,6 +476,7 @@ export class ParkingPlaceSubDistrictMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredMappedParkingPlaceDistricts.paginator = this.paginator;
     }
   }
 }

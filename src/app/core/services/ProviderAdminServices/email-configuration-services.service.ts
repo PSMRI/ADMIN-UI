@@ -51,8 +51,8 @@ export class EmailConfigurationService {
     this.getStatesUrl = this.adminBaseUrl + 'm/role/stateNew';
     this.getDistrictURL = this.commonBaseUrl + 'location/districts/';
     this.getInstituteTypesUrl =
-      this.commonBaseUrl + '/institute/getInstituteTypes';
-    this.getDesignationsUrl = this.commonBaseUrl + '/institute/getDesignations';
+      this.commonBaseUrl + 'institute/getInstituteTypes';
+    this.getDesignationsUrl = this.commonBaseUrl + 'institute/getDesignations';
     this.getTalukUrl = this.commonBaseUrl + 'location/taluks/';
     this.saveMailConfigUrl = this.adminBaseUrl + '/saveConfig';
     this.updateMailConfigUrl = this.adminBaseUrl + '/updateEmailConfig';

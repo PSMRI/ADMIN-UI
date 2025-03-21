@@ -551,6 +551,7 @@ export class BlockServiceProviderComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filtereddata.data = this.data;
+      this.filtereddata.paginator = this.paginator;
     } else {
       this.filtereddata.data = [];
       this.data.forEach((item: any) => {
@@ -562,6 +563,7 @@ export class BlockServiceProviderComponent implements OnInit {
           }
         }
       });
+      this.filtereddata.paginator = this.paginator;
     }
   }
   block_unblock_serviceOfStateSuccessHandeler(response: any) {

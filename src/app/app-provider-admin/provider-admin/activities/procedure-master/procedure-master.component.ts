@@ -491,6 +491,7 @@ export class ProcedureMasterComponent implements OnInit {
   filterprocedureList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredprocedureList.data = this.procedureList.data;
+      this.filteredprocedureList.paginator = this.paginator;
     } else {
       this.filteredprocedureList.data = [];
       this.procedureList.data.forEach((item: any) => {

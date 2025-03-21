@@ -252,6 +252,25 @@
             </mat-hint>
           </mat-form-field>
         </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>ABDM Facility</mat-label>
+            <mat-select
+              class="width100"
+              [(ngModel)]="abdmFacilityId"
+              name="abdmFacilityId"
+              #AbdmFacilityName="ngModel"
+              (ngModelChange)="getFacilityName(abdmFacilityId)"
+            >
+              <mat-option
+                *ngFor="let item of abdmFacilities"
+                value="{{ item.id }}"
+              >
+                {{ item.name }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
       </form>
     </div>
 

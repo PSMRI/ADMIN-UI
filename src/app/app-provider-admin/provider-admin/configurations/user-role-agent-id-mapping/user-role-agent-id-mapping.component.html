@@ -91,8 +91,8 @@
   </div>
   <div>
     <div
-      class="pull-right"
-      *ngIf="showTableFlag && searchResultArray.length !== 0"
+      style="text-align: end"
+      *ngIf="searchResultArray.length !== 0 && showTableFlag"
     >
       <mat-form-field id="filterbox">
         <input
@@ -116,7 +116,7 @@
           <ng-container matColumnDef="sno">
             <th mat-header-cell *matHeaderCellDef>SNo.</th>
             <td mat-cell *matCellDef="let element; let i = index">
-              {{ i + 1 }}
+              {{ filteredsearchResultArray.data.indexOf(element) + 1 }}
             </td>
           </ng-container>
           <ng-container matColumnDef="employeeName">

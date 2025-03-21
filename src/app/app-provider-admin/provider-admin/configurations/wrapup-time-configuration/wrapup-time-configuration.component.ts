@@ -57,9 +57,16 @@ export class WrapupTimeConfigurationComponent implements OnInit {
   uncheck = false;
   disableState = false;
   displayedColumns = ['role', 'isWrapupTimeRequired', 'wrapUpTime', 'action'];
+  paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
+    this.paginator = mp;
+    this.setDataSourceAttributes();
+  }
 
   dataSource = new MatTableDataSource<any>();
-  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
+  setDataSourceAttributes() {
+    this.dataSource.paginator = this.paginator;
+  }
 
   constructor(
     private dataService: dataService,
@@ -211,6 +218,7 @@ export class WrapupTimeConfigurationComponent implements OnInit {
   givePrivilegeForWrapupTime(event: any, role: any) {
     const formArray: any = this.wrapupTimeForm.controls['timings'] as FormArray;
     this.dataSource.data = formArray;
+    this.dataSource.paginator = this.paginator;
     let index = null;
     for (let i = 0; i < formArray.length; i++) {
       const element = formArray.at(i);
