@@ -1540,7 +1540,6 @@ export class EmployeeMasterNewComponent implements OnInit {
       this.filteredsearchResult.paginator = this.paginator;
     } else {
       this.filteredsearchResult.data = [];
-      this.filteredsearchResult.paginator = this.paginator;
       this.searchResult.forEach((item: any) => {
         for (const key in item) {
           if (
@@ -1557,6 +1556,7 @@ export class EmployeeMasterNewComponent implements OnInit {
           }
         }
       });
+      this.filteredsearchResult.paginator = this.paginator;
     }
   }
   // to enable health professional ID feild upon selecting designation

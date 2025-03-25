@@ -283,6 +283,7 @@ export class ProvideCtiMappingComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredcampaignArrayList.data = this.campaignArrayList;
+      this.filteredcampaignArrayList.paginator = this.paginator;
     } else {
       this.filteredcampaignArrayList.data = [];
       this.campaignArrayList.forEach((item: any) => {
@@ -300,6 +301,7 @@ export class ProvideCtiMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredcampaignArrayList.paginator = this.paginator;
     }
   }
 }

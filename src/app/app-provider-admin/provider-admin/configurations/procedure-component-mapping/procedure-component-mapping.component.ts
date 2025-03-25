@@ -20,7 +20,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { ServicePointMasterService } from '../../activities/services/service-point-master-services.service';
@@ -35,10 +35,18 @@ import { SessionStorageService } from 'Common-UI/src/registrar/services/session-
   templateUrl: './procedure-component-mapping.component.html',
   styleUrls: ['./procedure-component-mapping.component.css'],
 })
-export class ProcedureComponentMappingComponent implements OnInit {
+export class ProcedureComponentMappingComponent
+  implements OnInit, AfterViewInit
+{
+  paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
+    this.paginator = mp;
+    this.setDataSourceAttributes();
+  }
   filteredMappedList = new MatTableDataSource<any>();
-  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
-
+  setDataSourceAttributes() {
+    this.filteredMappedList.paginator = this.paginator;
+  }
   serviceline: any;
   searchStateID: any;
   provider_states: any = [];
@@ -98,6 +106,9 @@ export class ProcedureComponentMappingComponent implements OnInit {
   ngOnInit() {
     this.initiateForm();
   }
+  ngAfterViewInit() {
+    this.filteredMappedList.paginator = this.paginator;
+  }
 
   /**
    * Initiate Form
@@ -131,6 +142,7 @@ export class ProcedureComponentMappingComponent implements OnInit {
   }
   getStates(serviceID: any) {
     this.filteredMappedList.data = [];
+    this.filteredMappedList.paginator = this.paginator;
     this.stateandservices.getStates(this.userID, serviceID, false).subscribe(
       (response: any) => this.getStatesSuccessHandeler(response, false),
       (err) => {},
@@ -180,8 +192,8 @@ export class ProcedureComponentMappingComponent implements OnInit {
       .subscribe((res: any) => {
         this.mappedList = res.data;
         this.filteredMappedList.data = res.data;
-        this.filteredMappedList.paginator = this.paginator;
         this.tableMode = true;
+        this.filteredMappedList.paginator = this.paginator;
       });
   }
 
@@ -202,7 +214,7 @@ export class ProcedureComponentMappingComponent implements OnInit {
           if (this.editMode) this.saveMode = false;
           // this.selectedProcedureType = item.procedureType;
 
-          this.loadForConfig(res, item);
+          this.loadForConfig(res.data, item);
           //   this.configProcedureMapping(this.selectedProcedure, -1);
           this.procedureSelected_edit();
         } else {
@@ -335,6 +347,7 @@ export class ProcedureComponentMappingComponent implements OnInit {
       if (index >= 0) {
         this.mappedList[index] = res.data[0];
         this.filteredMappedList.data[filterIndex] = res.data[0];
+        this.filteredMappedList.paginator = this.paginator;
         this.alertService.alert('Mapping updated successfully', 'success');
         this.showTable();
       } else {
@@ -346,6 +359,7 @@ export class ProcedureComponentMappingComponent implements OnInit {
   filterMappingList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredMappedList.data = this.mappedList;
+      this.filteredMappedList.paginator = this.paginator;
     } else {
       this.filteredMappedList.data = [];
       this.mappedList.forEach((item: any) => {
@@ -359,6 +373,7 @@ export class ProcedureComponentMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredMappedList.paginator = this.paginator;
     }
   }
 
@@ -462,6 +477,7 @@ export class ProcedureComponentMappingComponent implements OnInit {
     this.componentList = [];
     this.mappedList = [];
     this.filteredMappedList.data = [];
+    this.filteredMappedList.paginator = this.paginator;
   }
   // For State List
   successhandeler(response: any) {

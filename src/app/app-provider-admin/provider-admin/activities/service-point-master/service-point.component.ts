@@ -259,7 +259,7 @@ export class ServicePointComponent implements OnInit {
 
   getServicePointSuccessHandler(response: any) {
     this.showServicePoints = true;
-    this.availableServicePoints.data = response.data;
+    this.availableServicePoints = response.data;
     this.filteredavailableServicePoints.data = response.data;
     for (const availableServicePoint of this.availableServicePoints) {
       this.availableServicePointNames.data.push(
@@ -500,7 +500,8 @@ export class ServicePointComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredavailableServicePoints = this.availableServicePoints;
+      this.filteredavailableServicePoints.data = this.availableServicePoints;
+      this.filteredavailableServicePoints.paginator = this.paginator;
     } else {
       this.filteredavailableServicePoints.data = [];
       this.availableServicePoints.forEach((item: any) => {
@@ -518,6 +519,7 @@ export class ServicePointComponent implements OnInit {
           }
         }
       });
+      this.filteredavailableServicePoints.paginator = this.paginator;
     }
   }
   back() {

@@ -450,6 +450,7 @@ export class EmailConfigurationComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredMailConfig.data = this.mailConfig;
+      this.filteredMailConfig.paginator = this.paginator;
     } else {
       this.filteredMailConfig.data = [];
       this.mailConfig.forEach((item: any) => {
@@ -471,6 +472,7 @@ export class EmailConfigurationComponent implements OnInit {
           }
         }
       });
+      this.filteredMailConfig.paginator = this.paginator;
     }
   }
 }

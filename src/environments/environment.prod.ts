@@ -26,9 +26,11 @@
 
 const ADMIN_API = 'https://amritwprdev.piramalswasthya.org/';
 const COMMON_API = 'https://amritwprdev.piramalswasthya.org/';
+const FHIR_API = 'https://amritwprdev.piramalswasthya.org/';
 const adminBaseUrl = `${ADMIN_API}adminapi-v1.0/`;
 const superadminBaseURL = `${ADMIN_API}adminapi-v1.0/`;
 const commonBaseURL = `${COMMON_API}commonapi-v1.0/`;
+const fhirBaseUrl = `${FHIR_API}fhirapi-v1.0/`;
 const sessionStorageEncKey = '';
 
 export const environment = {
@@ -489,4 +491,7 @@ export const environment = {
   saveSectionFields: `${commonBaseURL}customization/saveSectionAndFields`,
   updateSectionFields: `${commonBaseURL}customization/updateSectionAndFields`,
   getFieldTypes: `${commonBaseURL}customization/get/fileldType`,
+
+  //ABDM Facility
+  getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
 };
