@@ -52,6 +52,12 @@ export class BlockSubcenterMappingService {
     return this.http.post(environment.getXMLDataUploadUrl, formData);
   }
 
+  downloadErrorExcel(): Observable<Blob> {
+    return this.http.get(environment.getDataUploadErrorExcel, {
+      responseType: 'blob', // Important to specify that the response is a Blob
+    });
+  }
+
   handleError(error: Response | any) {
     return throwError(error);
   }

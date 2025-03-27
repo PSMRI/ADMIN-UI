@@ -1587,16 +1587,4 @@ export class EmployeeMasterNewComponent implements OnInit {
   uploadMaster() {
     this.employeeMasterUpload = true;
   }
-
-  downloadMaster() {
-    const filePath = 'assets/bulkuser_excel_sheet.xlsx';
-
-    // Create a temporary link to trigger the download
-    const link = document.createElement('a');
-    link.href = filePath;
-    link.download = 'bulkuser_excel_sheet.xlsx'; // Set the file name when downloaded
-
-    // Trigger the click event on the anchor element to initiate the download
-    link.click();
-  }
 }
