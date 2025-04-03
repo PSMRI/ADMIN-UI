@@ -1960,7 +1960,6 @@ export class WorkLocationMappingComponent implements OnInit {
       this.filteredmappedWorkLocationsList.paginator = this.paginator;
     } else {
       this.filteredmappedWorkLocationsList.data = [];
-      this.filteredmappedWorkLocationsList.paginator = this.paginator;
       this.mappedWorkLocationsList.forEach((item: any) => {
         for (const key in item) {
           if (
@@ -1981,6 +1980,7 @@ export class WorkLocationMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredmappedWorkLocationsList.paginator = this.paginator;
     }
   }
 

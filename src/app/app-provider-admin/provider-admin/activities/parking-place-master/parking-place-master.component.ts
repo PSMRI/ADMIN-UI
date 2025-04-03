@@ -399,7 +399,9 @@ export class ParkingPlaceComponent implements OnInit, AfterViewInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredavailableParkingPlaces = this.availableParkingPlaces;
+      this.filteredavailableParkingPlaces.data =
+        this.availableParkingPlaces.data;
+      this.filteredavailableParkingPlaces.paginator = this.paginator;
     } else {
       this.filteredavailableParkingPlaces.data = [];
       this.availableParkingPlaces.forEach((item: any) => {
@@ -413,6 +415,7 @@ export class ParkingPlaceComponent implements OnInit, AfterViewInit {
           }
         }
       });
+      this.filteredavailableParkingPlaces.paginator = this.paginator;
     }
   }
   back() {

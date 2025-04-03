@@ -368,6 +368,8 @@ export class ZoneComponent implements OnInit {
           }
         }
       });
+      this.filteredavailableZones.paginator = this.paginator;
+      this.filteredavailableZones.sort = this.sort;
     }
   }
   back() {
