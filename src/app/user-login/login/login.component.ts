@@ -394,7 +394,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
       response.data.Status === 'New'
     ) {
       this.status = 'new';
-      this.sessionstorage.setItem('authToken', response.data.key);
+      sessionStorage.setItem('authToken', response.data.key);
       this.router.navigate(['/setQuestions']);
     }
 
