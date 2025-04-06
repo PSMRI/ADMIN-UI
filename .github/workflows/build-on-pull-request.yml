@@ -39,4 +39,4 @@ jobs:
           npm install ng2-smart-table@1.2.1
           npm install node-sass
           npm install --force
-          npm run build
+          npm run build-ci
