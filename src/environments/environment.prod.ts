@@ -493,8 +493,8 @@ export const environment = {
   getFieldTypes: `${commonBaseURL}customization/get/fileldType`,
 
   // Customization APIs
-  getAllRegistrationData: `${COMMON_API}customization/fetchAllData`,
-  getBenIdForhealthID: `${FHIR_API}healthID/getBenIdForhealthID`,
+  getAllRegistrationData: `${commonBaseURL}customization/fetchAllData`,
+  getBenIdForhealthID: `${fhirBaseUrl}healthID/getBenIdForhealthID`,
 
   //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
