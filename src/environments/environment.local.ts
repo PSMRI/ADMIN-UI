@@ -497,5 +497,5 @@ export const environment = {
 
   
   //ABDM Facility
-  getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
+  getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`
 };
