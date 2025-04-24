@@ -292,7 +292,7 @@
                 [(ngModel)]="Serviceblock"
                 (selectionChange)="getVillageMaster(Serviceblock)"
                 name="Serviceblock"
-                required
+                [required]="isBlockRequired"
               >
                 <mat-option *ngFor="let item of blocks" [value]="item">
                   {{ item.blockName }}
@@ -309,7 +309,7 @@
                 [multiple]="true"
                 [(ngModel)]="Servicevillage"
                 name="Servicevillage"
-                required
+                [required]="isVillageRequired"
               >
                 <mat-option *ngFor="let item of village" [value]="item">
                   {{ item.villageName }}
