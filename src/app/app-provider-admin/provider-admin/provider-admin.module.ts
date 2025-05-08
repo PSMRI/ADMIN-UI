@@ -2,7 +2,10 @@ import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivitiesModule } from './activities/activities.module';
 import { InventoryModule } from './inventory/inventory.module';
-import { HttpClientModule } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
@@ -29,6 +32,7 @@ import { ConfigurationsModule } from './configurations/configurations.module';
     // MapSnommedCTCodeComponent,
     // SmsTemplateComponent,
   ],
+  exports: [ProviderAdminComponent],
   imports: [
     CommonModule,
     ActivitiesModule,
@@ -41,12 +45,11 @@ import { ConfigurationsModule } from './configurations/configurations.module';
     MatTableModule,
     ReactiveFormsModule,
     FormsModule,
-    HttpClientModule,
     MaterialModule,
     MatNativeDateModule,
     MatChipsModule,
     CoreModule,
   ],
-  exports: [ProviderAdminComponent],
+  providers: [provideHttpClient(withInterceptorsFromDi())],
 })
 export class ProviderAdminModule {}

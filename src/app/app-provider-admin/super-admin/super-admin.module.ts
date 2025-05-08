@@ -1,6 +1,9 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClientModule } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withInterceptorsFromDi,
+} from '@angular/common/http';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -19,6 +22,7 @@ import { CoreModule } from 'src/app/core/core.module';
 
 @NgModule({
   declarations: [SuperAdminComponent],
+  exports: [SuperAdminComponent],
   imports: [
     CommonModule,
     ActivitiesModule,
@@ -31,7 +35,6 @@ import { CoreModule } from 'src/app/core/core.module';
     MatTableModule,
     ReactiveFormsModule,
     FormsModule,
-    HttpClientModule,
     MaterialModule,
     MatNativeDateModule,
     MatMenuModule,
@@ -39,6 +42,6 @@ import { CoreModule } from 'src/app/core/core.module';
     MatDatepickerModule,
     CoreModule,
   ],
-  exports: [SuperAdminComponent],
+  providers: [provideHttpClient(withInterceptorsFromDi())],
 })
 export class SuperAdminModule {}

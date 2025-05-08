@@ -10,7 +10,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import {
   HTTP_INTERCEPTORS,
   HttpClient,
-  HttpClientModule,
+  provideHttpClient,
+  withInterceptorsFromDi,
 } from '@angular/common/http';
 import { HttpInterceptorService } from './core/services/httpInterceptor/http-interceptor.service';
 import { loginContentClassComponent } from './user-login/login/login.component';
@@ -61,6 +62,12 @@ import {
     SetSecurityQuestionsComponent,
     MultiRoleScreenComponent,
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  // entryComponents: [
+  //   CommonDialogComponent,
+  //   ViewVersionDetailsComponent,
+  // ],
+  bootstrap: [AppComponent],
   imports: [
     BrowserModule,
     FormsModule,
@@ -68,7 +75,6 @@ import {
     MatFormFieldModule,
     ReactiveFormsModule,
     FormsModule,
-    HttpClientModule,
     MaterialModule,
     BrowserAnimationsModule,
     AppRoutingModule,
@@ -85,7 +91,6 @@ import {
     MatExpansionModule,
     MatChipsModule,
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
     CommonServices,
     SuppliermasterService,
@@ -107,12 +112,7 @@ import {
       useClass: HttpInterceptorService,
       multi: true,
     },
+    provideHttpClient(withInterceptorsFromDi()),
   ],
-
-  // entryComponents: [
-  //   CommonDialogComponent,
-  //   ViewVersionDetailsComponent,
-  // ],
-  bootstrap: [AppComponent],
 })
 export class AppModule {}
