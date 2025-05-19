@@ -6,7 +6,7 @@
   <groupId>com.iemr.admin-ui</groupId>
   <artifactId>admin-ui</artifactId>
   <version>3.1.0</version>
-  <name>admin-ui</name>
+  <name>Admin-UI</name>
   <description>Piramal - admin: Module ui</description>
 
   <packaging>war</packaging>
