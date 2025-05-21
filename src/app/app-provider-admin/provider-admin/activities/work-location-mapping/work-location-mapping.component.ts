@@ -154,6 +154,8 @@ export class WorkLocationMappingComponent implements OnInit {
   villageIdValue: any;
   item: any;
   workplaceform: any;
+  isVillageRequired = true;
+  isBlockRequired = true;
 
   constructor(
     private alertService: ConfirmationDialogsService,
@@ -406,7 +408,19 @@ export class WorkLocationMappingComponent implements OnInit {
         mappedWorkLocations.providerServiceMapID === providerServiceMapID &&
         mappedWorkLocations.userID === userID
       ) {
-        if (!mappedWorkLocations.userServciceRoleDeleted) {
+        if (
+          (serviceID === 2 || serviceID === 4) &&
+          parseInt(mappedWorkLocations.stateID) === this.State.stateID &&
+          parseInt(mappedWorkLocations.workingDistrictID) ===
+            this.District.districtID &&
+          !mappedWorkLocations.userServciceRoleDeleted
+        ) {
+          this.existingRoles.push(mappedWorkLocations.roleID);
+        } else if (
+          serviceID !== 2 &&
+          serviceID !== 4 &&
+          !mappedWorkLocations.userServciceRoleDeleted
+        ) {
           this.existingRoles.push(mappedWorkLocations.roleID); // existing roles has roles which are already mapped.
         }
       }
@@ -2052,6 +2066,13 @@ export class WorkLocationMappingComponent implements OnInit {
     ) {
       this.blockFlag = true;
       this.villageFlag = true;
+      if (serviceline === 'TM' || serviceline === 'MMU') {
+        this.isBlockRequired = false;
+        this.isVillageRequired = false;
+      } else {
+        this.isBlockRequired = true;
+        this.isVillageRequired = true;
+      }
     } else {
       this.blockFlag = false;
       this.villageFlag = false;

@@ -27,10 +27,10 @@
 const ADMIN_API = '<%= ADMIN_API_BASE %>';
 const COMMON_API = '<%= COMMON_API_BASE %>';
 const FHIR_API = '<%= FHIR_API_BASE %>';
-const adminBaseUrl = `${ADMIN_API}/`;
-const superadminBaseURL = `${ADMIN_API}/`;
-const commonBaseURL = `${COMMON_API}/`;
-const fhirBaseUrl = `${FHIR_API}/`;
+const adminBaseUrl = `${ADMIN_API}`;
+const superadminBaseURL = `${ADMIN_API}`;
+const commonBaseURL = `${COMMON_API}`;
+const fhirBaseUrl = `${FHIR_API}`;
 const sessionStorageEncKey = '<%= SESSION_STORAGE_ENC_KEY %>';
 
 export const environment = {
@@ -491,6 +491,10 @@ export const environment = {
   saveSectionFields: `${commonBaseURL}customization/saveSectionAndFields`,
   updateSectionFields: `${commonBaseURL}customization/updateSectionAndFields`,
   getFieldTypes: `${commonBaseURL}customization/get/fileldType`,
+
+  // Customization APIs
+  getAllRegistrationData: `${commonBaseURL}customization/fetchAllData`,
+  getBenIdForhealthID: `${fhirBaseUrl}healthID/getBenIdForhealthID`,
 
 //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,

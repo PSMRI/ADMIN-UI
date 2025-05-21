@@ -491,6 +491,11 @@ export const environment = {
   updateSectionFields: `${commonBaseURL}customization/updateSectionAndFields`,
   getFieldTypes: `${commonBaseURL}customization/get/fileldType`,
 
+  // Customization APIs
+  getAllRegistrationData: `${commonBaseURL}customization/fetchAllData`,
+  getBenIdForhealthID: `${fhirBaseUrl}healthID/getBenIdForhealthID`,
+
+  
   //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
 };
