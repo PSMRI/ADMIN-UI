@@ -33,6 +33,9 @@ const commonBaseURL = `${COMMON_API}`;
 const fhirBaseUrl = `${FHIR_API}`;
 const sessionStorageEncKey = '<%= SESSION_STORAGE_ENC_KEY %>';
 
+const siteKey = '<%= siteKey %>';
+const captchaChallengeURL = '<%= captchaChallengeURL %>';
+
 export const environment = {
   production: true,
   adminIP : ADMIN_API,
@@ -498,5 +501,8 @@ export const environment = {
 
 //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
+
+  siteKey: siteKey,
+  captchaChallengeURL: captchaChallengeURL,
 
 };
