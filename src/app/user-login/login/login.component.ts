@@ -56,6 +56,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   _iterationCount: any;
   logoutUserFromPreviousSessionSubscription: Subscription = new Subscription();
   encryptPassword: any;
+  captchaToken!: string;
 
   constructor(
     public loginservice: loginService,
@@ -330,9 +331,11 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
           this.alertMessage.alert(userLogOutRes.data.errorMessage, 'error');
         }
       });
+    this.captchaToken = '';
   }
 
   successCallback(response: any) {
+    this.captchaToken = '';
     console.log(response);
     this.sessionstorage.setItem('Userdata', JSON.stringify(response.data));
     this.sessionstorage.setItem(
@@ -411,6 +414,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     }
   }
   errorCallback(error: any) {
+    this.captchaToken = '';
     if (error.status) {
       this.loginResult = error.errorMessage;
     } else {
@@ -456,6 +460,10 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   successhandeler1(response: any) {
     this.commitDetails = response;
     this.version = this.commitDetails['version'];
+  }
+
+  onCaptchaResolved(token: any) {
+    this.captchaToken = token;
   }
 
   ngOnDestroy() {

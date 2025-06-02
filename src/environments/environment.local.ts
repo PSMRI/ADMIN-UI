@@ -33,6 +33,9 @@ const commonBaseURL = `${COMMON_API}/`;
 const fhirBaseUrl = `${FHIR_API}/`;
 const sessionStorageEncKey = '';
 
+const siteKey = '';
+const captchaChallengeURL = '';
+
 export const environment = {
   production: false,
   encKey: sessionStorageEncKey,
@@ -495,7 +498,9 @@ export const environment = {
   getAllRegistrationData: `${commonBaseURL}customization/fetchAllData`,
   getBenIdForhealthID: `${fhirBaseUrl}healthID/getBenIdForhealthID`,
 
-  
   //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
+
+  siteKey: siteKey,
+  captchaChallengeURL: captchaChallengeURL,
 };

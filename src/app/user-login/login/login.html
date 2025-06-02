@@ -30,6 +30,7 @@
               <mat-form-field class="full-width">
                 <mat-label>Enter User Name</mat-label>
                 <input
+                  required
                   matInput
                   appUsernameValidator
                   type="text"
@@ -48,6 +49,7 @@
               <mat-form-field class="full-width">
                 <mat-label>Enter Password</mat-label>
                 <input
+                  required
                   matInput
                   type="{{ dynamictype }}"
                   id="password"
@@ -68,6 +70,13 @@
               </mat-form-field>
             </div>
           </div>
+          <div class="row" role="group" aria-labelledby="captcha-label">
+            <label id="captcha-label" class="sr-only">Security check</label>
+            <app-captcha
+              style="display: flex; justify-content: center"
+              (tokenResolved)="onCaptchaResolved($event)"
+            ></app-captcha>
+          </div>
           <div class="row">
             <div class="col-xs-12 col-md-12 col-sm-12">
               <button
@@ -77,6 +86,10 @@
                 color="primary"
                 type="submit"
                 class="full-width largeBtn mat_blue"
+                [ngClass]="{
+                  disabledLoginButton: !captchaToken || f.form.invalid
+                }"
+                [disabled]="!captchaToken || f.form.invalid"
               >
                 Login
               </button>
