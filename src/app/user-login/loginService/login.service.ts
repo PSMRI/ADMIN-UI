@@ -78,13 +78,19 @@ export class loginService {
   // 		// .map(this.extractData)
   // 		// .catch(this.handleError);
   // };
-  authenticateUser(uname: any, pwd: any, doLogout: any): Observable<any> {
+  authenticateUser(
+    uname: any,
+    pwd: any,
+    doLogout: any,
+    captchaToken: string,
+  ): Observable<any> {
     return this._httpInterceptor
       .post(this.newlogin, {
         userName: uname.toLowerCase(),
         password: pwd,
         doLogout: doLogout,
         withCredentials: true,
+        captchaToken: captchaToken,
       })
       .pipe(map(this.extractData), catchError(this.handleError));
   }
@@ -93,12 +99,18 @@ export class loginService {
     // .map(this.extractData)
     // .catch(this.handleError);
   }
-  superAdminAuthenticate(uname: string, password: any, doLogout: any) {
+  superAdminAuthenticate(
+    uname: string,
+    password: any,
+    doLogout: any,
+    captchaToken: string,
+  ) {
     return this._httpInterceptor.post(this.superadmin_auth_url, {
       userName: uname.toLowerCase(),
       password: password,
       doLogout: doLogout,
       withCredentials: true,
+      captchaToken: captchaToken,
     });
     // .map(this.extractData)
     // .catch(this.handleError);

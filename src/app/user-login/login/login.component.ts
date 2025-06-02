@@ -149,7 +149,12 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     if (userId.toLowerCase() === 'SUPERADMIN'.toLowerCase()) {
       // this.loginservice.superAdminAuthenticate(userId, password, doLogout)
       this.loginservice
-        .superAdminAuthenticate(userId, this.encryptPassword, doLogout)
+        .superAdminAuthenticate(
+          userId,
+          this.encryptPassword,
+          doLogout,
+          this.captchaToken,
+        )
         .subscribe(
           (response: any) => {
             // if (response.statusCode === 200) {
@@ -213,7 +218,12 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         );
     } else {
       this.loginservice
-        .authenticateUser(userId, this.encryptPassword, doLogout)
+        .authenticateUser(
+          userId,
+          this.encryptPassword,
+          doLogout,
+          this.captchaToken,
+        )
         .subscribe(
           (response: any) => {
             if (response && response.data) {
@@ -289,6 +299,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                 this.userID,
                 this.encryptPassword,
                 doLogOut,
+                this.captchaToken,
               )
               .subscribe(
                 (response: any) => {
@@ -313,7 +324,12 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
               );
           } else {
             this.loginservice
-              .authenticateUser(this.userID, this.encryptPassword, doLogOut)
+              .authenticateUser(
+                this.userID,
+                this.encryptPassword,
+                doLogOut,
+                this.captchaToken,
+              )
               .subscribe(
                 (response: any) => {
                   if (response && response.data) {
