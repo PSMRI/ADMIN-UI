@@ -19,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import * as CryptoJS from 'crypto-js';
 import { Subscription } from 'rxjs';
@@ -36,6 +36,7 @@ import { SessionStorageService } from 'Common-UI/src/registrar/services/session-
   styleUrls: ['./login.css'],
 })
 export class loginContentClassComponent implements OnInit, OnDestroy {
+  @ViewChild('captchaCmp') captchaCmp: any;
   model: any = {};
   userID: any;
   password: any;
@@ -347,11 +348,11 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
           this.alertMessage.alert(userLogOutRes.data.errorMessage, 'error');
         }
       });
-    this.captchaToken = '';
+    this.resetCaptcha();
   }
 
   successCallback(response: any) {
-    this.captchaToken = '';
+    this.resetCaptcha();
     console.log(response);
     this.sessionstorage.setItem('Userdata', JSON.stringify(response.data));
     this.sessionstorage.setItem(
@@ -430,7 +431,6 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     }
   }
   errorCallback(error: any) {
-    this.captchaToken = '';
     if (error.status) {
       this.loginResult = error.errorMessage;
     } else {
@@ -438,6 +438,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     }
     // this.loading = false;
     console.log(error);
+    this.resetCaptcha();
   }
 
   // encryptionFlag: boolean = true;
@@ -480,6 +481,13 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
 
   onCaptchaResolved(token: any) {
     this.captchaToken = token;
+  }
+
+  resetCaptcha() {
+    if (this.captchaCmp && typeof this.captchaCmp.reset === 'function') {
+      this.captchaCmp.reset();
+      this.captchaToken = '';
+    }
   }
 
   ngOnDestroy() {
