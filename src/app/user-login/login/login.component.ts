@@ -30,6 +30,7 @@ import { CookieService } from 'ngx-cookie-service';
 import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 import { environment } from 'src/environments/environment';
+import { CaptchaComponent } from '../captcha/captcha.component';
 
 @Component({
   selector: 'app-login-component',
@@ -37,7 +38,7 @@ import { environment } from 'src/environments/environment';
   styleUrls: ['./login.css'],
 })
 export class loginContentClassComponent implements OnInit, OnDestroy {
-  @ViewChild('captchaCmp') captchaCmp: any;
+  @ViewChild('captchaCmp') captchaCmp: CaptchaComponent | undefined;
   model: any = {};
   userID: any;
   password: any;
