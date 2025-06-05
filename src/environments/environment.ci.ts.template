@@ -35,6 +35,7 @@ const sessionStorageEncKey = '<%= SESSION_STORAGE_ENC_KEY %>';
 
 const siteKey = '<%= SITE_KEY %>';
 const captchaChallengeURL = '<%= CAPTCHA_CHALLENGE_URL %>';
+const enableCaptcha = '<%= ENABLE_CAPTCHA %>';
 
 export const environment = {
   production: true,
@@ -504,5 +505,6 @@ export const environment = {
 
   siteKey: siteKey,
   captchaChallengeURL: captchaChallengeURL,
+  enableCaptcha: enableCaptcha
 
 };

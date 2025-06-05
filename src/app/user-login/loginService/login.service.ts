@@ -82,16 +82,20 @@ export class loginService {
     uname: any,
     pwd: any,
     doLogout: any,
-    captchaToken: string,
+    captchaToken?: string,
   ): Observable<any> {
+    const requestBody: any = {
+      userName: uname.toLowerCase(),
+      password: pwd,
+      doLogout: doLogout,
+      withCredentials: true,
+    };
+
+    if (captchaToken) {
+      requestBody.captchaToken = captchaToken;
+    }
     return this._httpInterceptor
-      .post(this.newlogin, {
-        userName: uname.toLowerCase(),
-        password: pwd,
-        doLogout: doLogout,
-        withCredentials: true,
-        captchaToken: captchaToken,
-      })
+      .post(this.newlogin, requestBody)
       .pipe(map(this.extractData), catchError(this.handleError));
   }
   public checkAuthorisedUser() {
@@ -103,15 +107,19 @@ export class loginService {
     uname: string,
     password: any,
     doLogout: any,
-    captchaToken: string,
+    captchaToken?: string,
   ) {
-    return this._httpInterceptor.post(this.superadmin_auth_url, {
+    const requestBody: any = {
       userName: uname.toLowerCase(),
       password: password,
       doLogout: doLogout,
       withCredentials: true,
-      captchaToken: captchaToken,
-    });
+    };
+
+    if (captchaToken) {
+      requestBody.captchaToken = captchaToken;
+    }
+    return this._httpInterceptor.post(this.superadmin_auth_url, requestBody);
     // .map(this.extractData)
     // .catch(this.handleError);
   }

@@ -29,6 +29,7 @@ import { HttpInterceptor } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service';
 import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+import { environment } from 'src/environments/environment';
 
 @Component({
   selector: 'app-login-component',
@@ -58,6 +59,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   logoutUserFromPreviousSessionSubscription: Subscription = new Subscription();
   encryptPassword: any;
   captchaToken!: string;
+  enableCaptcha = environment.enableCaptcha;
 
   constructor(
     public loginservice: loginService,
@@ -154,7 +156,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
           userId,
           this.encryptPassword,
           doLogout,
-          this.captchaToken,
+          this.enableCaptcha ? this.captchaToken : undefined,
         )
         .subscribe(
           (response: any) => {
@@ -223,7 +225,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
           userId,
           this.encryptPassword,
           doLogout,
-          this.captchaToken,
+          this.enableCaptcha ? this.captchaToken : undefined,
         )
         .subscribe(
           (response: any) => {
@@ -484,7 +486,11 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   }
 
   resetCaptcha() {
-    if (this.captchaCmp && typeof this.captchaCmp.reset === 'function') {
+    if (
+      this.enableCaptcha &&
+      this.captchaCmp &&
+      typeof this.captchaCmp.reset === 'function'
+    ) {
       this.captchaCmp.reset();
       this.captchaToken = '';
     }
