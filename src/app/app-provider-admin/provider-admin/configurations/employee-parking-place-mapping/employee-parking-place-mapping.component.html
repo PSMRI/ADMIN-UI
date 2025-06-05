@@ -291,147 +291,156 @@
     </div>
   </div>
 
-  <div class="row" *ngIf="editMode">
-    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-      <h4>Edit User Parking Place Mapping</h4>
-    </div>
+  <div *ngIf="editMode" class="col-xs-12 col-sm-12 col-md-12 col-lg-12" style="margin-top: 2px;">
+    <h4>Edit User Parking Place Mapping</h4>
+  </div>
 
-    <form #updateForm="ngForm" autocomplete="off">
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Serviceline</mat-label>
-          <mat-select
-            required
-            name="Services"
-            [disabled]="editMode"
-            [(ngModel)]="serviceline"
-            (selectionChange)="getStates(serviceline.serviceID)"
-          >
-            <mat-option *ngFor="let item of services_array" [value]="item">
-              {{ item.serviceName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>State</mat-label>
-          <mat-select
-            required
-            [disabled]="editMode"
-            [(ngModel)]="searchStateID"
-            name="searchStateID"
-            (selectionChange)="
-              setProviderServiceMapID(searchStateID.providerServiceMapID)
-            "
-          >
-            <mat-option *ngFor="let state of provider_states" [value]="state">
-              {{ state.stateName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Zone</mat-label>
-          <mat-select
-            required
-            [disabled]="editMode"
-            class="width100"
-            [(ngModel)]="zoneID"
-            name="zoneID"
-            #zoneG="ngModel"
-          >
-            <mat-option *ngFor="let zone of zones" [value]="zone">
-              {{ zone.zoneName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
-        <mat-form-field [style.width]="'100%'" *ngIf="parkAndHub">
-          <mat-label>{{ parkAndHub }}</mat-label>
-        </mat-form-field>
-        <mat-select
-          class="width100"
-          [(ngModel)]="parking_Place"
-          name="parking_Place"
-          #parkingPlace="ngModel"
-          required
-          (selectionChange)="
-            getVans(
-              searchStateID.providerServiceMapID,
-              parking_Place.parkingPlaceID
-            )
-          "
-        >
-          <mat-option
-            *ngFor="let parkingPlace of availableParkingPlaces"
-            [value]="parkingPlace"
-          >
-            {{ parkingPlace.parkingPlaceName }}
-          </mat-option>
-        </mat-select>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Designation</mat-label>
-          <mat-select
-            required
-            [disabled]="editMode"
-            class="width100"
-            [(ngModel)]="designationID"
-            name="designationID"
-            #designationVal="ngModel"
-          >
-            <mat-option
-              *ngFor="let designation of designations"
-              [value]="designation"
-            >
-              {{ designation.designationName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Username</mat-label>
-          <mat-select
-            required
-            [disabled]="editMode"
-            class="width100"
-            [(ngModel)]="userID"
-            name="userID"
-            #userVal="ngModel"
-          >
-            <mat-option *ngFor="let userName of userNames" [value]="userName">
-              {{ userName.userName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div
-        class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-15"
-        *ngIf="enableVanField"
-      >
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Van</mat-label>
-          <mat-select
-            multiple
-            required
-            class="width100"
-            [(ngModel)]="vanUnderPP"
-            name="vanUnderPP"
-            #ppVan="ngModel"
-          >
-            <mat-option *ngFor="let van of availableVans" [value]="van">
-              {{ van.vanName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-    </form>
-    <div class="col-xs-12 col-sm-12" style="padding-bottom: 40px">
+  <div class="row" *ngIf="editMode" style="width: 100%; margin-left: 0px">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p-a-0">
+      <form #updateForm="ngForm" autocomplete="off">
+        <div class="col-12 row">
+          <div class="col-3">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Serviceline</mat-label>
+              <mat-select
+                required
+                name="Services"
+                [disabled]="editMode"
+                [(ngModel)]="serviceline"
+                (selectionChange)="getStates(serviceline.serviceID)"
+              >
+                <mat-option *ngFor="let item of services_array" [value]="item">
+                  {{ item.serviceName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>State</mat-label>
+              <mat-select
+                required
+                [disabled]="editMode"
+                [(ngModel)]="searchStateID"
+                name="searchStateID"
+                (selectionChange)="
+                  setProviderServiceMapID(searchStateID.providerServiceMapID)
+                "
+              >
+                <mat-option
+                  *ngFor="let state of provider_states"
+                  [value]="state"
+                >
+                  {{ state.stateName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Zone</mat-label>
+              <mat-select
+                required
+                [disabled]="editMode"
+                class="width100"
+                [(ngModel)]="zoneID"
+                name="zoneID"
+                #zoneG="ngModel"
+              >
+                <mat-option *ngFor="let zone of zones" [value]="zone">
+                  {{ zone.zoneName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3">
+            <mat-form-field [style.width]="'100%'" *ngIf="parkAndHub">
+              <mat-label>{{ parkAndHub }}</mat-label>
+              <mat-select
+                class="width100"
+                [(ngModel)]="parking_Place"
+                name="parking_Place"
+                #parkingPlace="ngModel"
+                required
+                (selectionChange)="
+                  getVans(
+                    searchStateID.providerServiceMapID,
+                    parking_Place.parkingPlaceID
+                  )
+                "
+              >
+                <mat-option
+                  *ngFor="let parkingPlace of availableParkingPlaces"
+                  [value]="parkingPlace"
+                >
+                  {{ parkingPlace.parkingPlaceName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+        <div class="col-12 row">
+          <div class="col-3">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Designation</mat-label>
+              <mat-select
+                required
+                [disabled]="editMode"
+                class="width100"
+                [(ngModel)]="designationID"
+                name="designationID"
+                #designationVal="ngModel"
+              >
+                <mat-option
+                  *ngFor="let designation of designations"
+                  [value]="designation"
+                >
+                  {{ designation.designationName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Username</mat-label>
+              <mat-select
+                required
+                [disabled]="editMode"
+                class="width100"
+                [(ngModel)]="userID"
+                name="userID"
+                #userVal="ngModel"
+              >
+                <mat-option
+                  *ngFor="let userName of userNames"
+                  [value]="userName"
+                >
+                  {{ userName.userName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3" *ngIf="enableVanField">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Van</mat-label>
+              <mat-select
+                multiple
+                required
+                class="width100"
+                [(ngModel)]="vanUnderPP"
+                name="vanUnderPP"
+                #ppVan="ngModel"
+              >
+                <mat-option *ngFor="let van of availableVans" [value]="van">
+                  {{ van.vanName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p-a-0">
       <button
         mat-raised-button
         color="accent"
