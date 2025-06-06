@@ -216,6 +216,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
             }
           },
           (err) => {
+            this.resetCaptcha();
             this.alertMessage.alert(err, 'error');
             console.log(err, 'ERR while superadmin validation');
           },
@@ -303,7 +304,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                 this.userID,
                 this.encryptPassword,
                 doLogOut,
-                this.captchaToken,
+                this.enableCaptcha ? this.captchaToken : undefined,
               )
               .subscribe(
                 (response: any) => {
@@ -322,6 +323,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                   }
                 },
                 (err) => {
+                  this.resetCaptcha();
                   this.alertMessage.alert(err, 'error');
                   console.log(err, 'ERR while superadmin validation');
                 },
@@ -348,14 +350,13 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
               );
           }
         } else {
+          this.resetCaptcha();
           this.alertMessage.alert(userLogOutRes.data.errorMessage, 'error');
         }
       });
-    this.resetCaptcha();
   }
 
   successCallback(response: any) {
-    this.resetCaptcha();
     console.log(response);
     this.sessionstorage.setItem('Userdata', JSON.stringify(response.data));
     this.sessionstorage.setItem(
