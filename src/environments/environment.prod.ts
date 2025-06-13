@@ -33,6 +33,10 @@ const commonBaseURL = `${COMMON_API}commonapi-v1.0/`;
 const fhirBaseUrl = `${FHIR_API}fhirapi-v1.0/`;
 const sessionStorageEncKey = '';
 
+const siteKey = '';
+const captchaChallengeURL = '';
+const enableCaptcha = true;
+
 export const environment = {
   production: false,
   encKey: sessionStorageEncKey,
@@ -498,4 +502,8 @@ export const environment = {
 
   //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
+
+  siteKey: siteKey,
+  captchaChallengeURL: captchaChallengeURL,
+  enableCaptcha: enableCaptcha,
 };
