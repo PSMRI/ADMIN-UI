@@ -7,6 +7,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import * as XLSX from 'xlsx';
 import { MatDialog } from '@angular/material/dialog';
 import { Location } from '@angular/common';
+import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-employee-master-bulk-upload',
@@ -125,9 +126,8 @@ export class EmployeeMasterBulkUploadComponent {
       const xmlData = this.convertJsonToXml(data);
 
       this.showProgressBar = true;
-      this.blockSubcenterMappingService
-        .memberBulkUploadXML(xmlData)
-        .subscribe((response: any) => {
+      this.blockSubcenterMappingService.memberBulkUploadXML(xmlData).subscribe(
+        (response: any) => {
           if (response) {
             this.fileuploadedCount = response.registeredUser;
             this.filetotalCount = response.totalUser;
@@ -149,7 +149,20 @@ export class EmployeeMasterBulkUploadComponent {
             this.showProgressBar = false;
             this.alertService.alert(response.errorMessage, 'error');
           }
-        });
+        },
+        (error: HttpErrorResponse) => {
+          if (
+            !navigator.onLine ||
+            (error.status === 0 && error.error instanceof ProgressEvent)
+          ) {
+            this.showProgressBar = false;
+            this.alertService.alert(
+              'Internet connection not available!',
+              'error',
+            );
+          }
+        },
+      );
       (err: any) => {
         this.showProgressBar = false;
         this.alertService.alert(err.errorMessage, 'error');
