@@ -1,7 +1,19 @@
 <div class="container-fluid">
   <div class="row">
     <div class="col-xs-12 col-sm-12 m-t-15">
-      <h4>Bulk Member Upload</h4>
+      <h4>Bulk User Upload</h4>
+    </div>
+    <div>
+      <button
+        mat-raised-button
+        color="primary"
+        class="pull-right mat_blue ml-10"
+        style="margin-right: 10px; margin-top: -10px"
+        (click)="downloadMaster()"
+        label="sample excel"
+      >
+        Download Bulk User Template
+      </button>
     </div>
     <div class="overlay" *ngIf="showProgressBar">
       <div class="overlay-content">
@@ -27,6 +39,7 @@
         <input
           class="m-t-10"
           style="margin-left: 60px"
+          id="upload-file"
           type="file"
           accept=".xls, .xlsx, .xlsm, .xlsb"
           size="100"
@@ -36,11 +49,12 @@
           ngModel
           #uploadfile="ngModel"
         />
-        <span class="help-block" *ngIf="inValidFileName"
-          >Invalid file name</span
-        >
+
         <span class="help-block" *ngIf="invalid_file_flag"
           >Supported File Formats(.xls, .xlsx, .xlsm, .xlsb)</span
+        >
+        <span class="help-block" *ngIf="error2"
+          >File size should not exceed {{ maxFileSize }}MB</span
         >
       </div>
       <div class="m-t-20" style="margin-left: 60px; margin-bottom: 20px">
@@ -51,5 +65,17 @@
         <span class="help-block" *ngIf="errorloglist">{{ errorloglist }}</span>
       </div>
     </form>
+    <div class="row col-md-12">
+      <div class="col-md-3">
+        <button
+          mat-raised-button
+          color="primary"
+          class="pull- mat_blue"
+          (click)="back()"
+        >
+          Back
+        </button>
+      </div>
+    </div>
   </div>
 </div>

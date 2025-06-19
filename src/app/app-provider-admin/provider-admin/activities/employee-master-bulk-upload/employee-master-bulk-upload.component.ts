@@ -1,8 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ViewChild, OnInit } from '@angular/core';
 import { BlockSubcenterMappingService } from '../services/block-subcenter-mapping-service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { MatTableDataSource } from '@angular/material/table';
+import { MatPaginator } from '@angular/material/paginator';
 import * as XLSX from 'xlsx';
+import { MatDialog } from '@angular/material/dialog';
+import { Location } from '@angular/common';
 
 @Component({
   selector: 'app-employee-master-bulk-upload',
@@ -10,9 +14,25 @@ import * as XLSX from 'xlsx';
   styleUrls: ['./employee-master-bulk-upload.component.css'],
 })
 export class EmployeeMasterBulkUploadComponent {
+  objs = new MatTableDataSource<any>();
+
+  paginator!: MatPaginator;
+  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
+    this.paginator = mp;
+    this.setDataSourceAttributes();
+  }
+
+  filteredsearchResult = new MatTableDataSource<any>();
+
+  setDataSourceAttributes() {
+    this.filteredsearchResult.paginator = this.paginator;
+    // this.objs.paginator = this.paginator;
+  }
+
   file: any;
   fileList!: FileList;
   error1 = false;
+  error2 = false;
   successcount = false;
   invalid_file_flag = false;
   inValidFileName = false;
@@ -29,10 +49,15 @@ export class EmployeeMasterBulkUploadComponent {
   filetotalCount = 0;
   errorloglist: any;
 
+  tableMode = true;
+  editMode = false;
+
   constructor(
     public dataService: dataService,
     public blockSubcenterMappingService: BlockSubcenterMappingService,
     public alertService: ConfirmationDialogsService,
+    public dialog: MatDialog,
+    private location: Location,
   ) {}
 
   ngOnInit() {
@@ -43,33 +68,6 @@ export class EmployeeMasterBulkUploadComponent {
     return this.showUpload;
   }
 
-  checkExtension(file: any) {
-    let count = 0;
-    console.log('FILE DETAILS', file);
-    if (file) {
-      const array_after_split = file.name.split('.');
-      if (array_after_split.length === 2) {
-        const file_extension = array_after_split[array_after_split.length - 1];
-        for (let i = 0; i < this.valid_file_extensions.length; i++) {
-          if (
-            file_extension.toUpperCase() ===
-            this.valid_file_extensions[i].toUpperCase()
-          ) {
-            count = count + 1;
-          }
-        }
-        if (count > 0) {
-          return true;
-        } else {
-          return false;
-        }
-      } else {
-        return false;
-      }
-    } else {
-      return true;
-    }
-  }
   onLoadFileCallback = (event: any) => {
     this.fileContent = event.currentTarget.result;
     this.showProgressBar = false;
@@ -80,6 +78,41 @@ export class EmployeeMasterBulkUploadComponent {
     if (target.files.length !== 1) {
       throw new Error('Cannot use multiple files');
     }
+
+    const file = target.files[0];
+
+    // Validate file size (e.g., max size 10 MB)
+    const maxSizeInMB = 5; // Set your max file size (in MB)
+    const fileSizeInMB = file.size / 1000 / 1000; // Convert file size to MB
+
+    // Check if the file size exceeds the limit
+    if (fileSizeInMB > maxSizeInMB) {
+      this.alertService.alert(
+        `File size exceeds the maximum allowed size of ${maxSizeInMB} MB`,
+        'error',
+      );
+      this.resetFileInput();
+      return; // Exit early if the file is too large
+    }
+
+    // Validate file extension
+
+    const valid_file_extensions = ['.xls', '.xlsx', '.xlsm']; // Define the allowed extensions
+    const fileExtension = file.name.split('.').pop()?.toLowerCase(); // Extract file extension
+
+    // Check if the file extension is valid
+    if (
+      !fileExtension ||
+      !valid_file_extensions.includes(`.${fileExtension}`)
+    ) {
+      this.alertService.alert(
+        'Invalid file extension. Please upload a valid Excel',
+        'error',
+      );
+      this.resetFileInput();
+      return; // Exit early if the extension is not valid
+    }
+
     const reader: FileReader = new FileReader();
     reader.readAsBinaryString(target.files[0]);
     reader.onload = (e: any) => {
@@ -92,31 +125,39 @@ export class EmployeeMasterBulkUploadComponent {
       const xmlData = this.convertJsonToXml(data);
 
       this.showProgressBar = true;
-      this.blockSubcenterMappingService.memberBulkUploadXML(xmlData).subscribe(
-        (response: any) => {
+      this.blockSubcenterMappingService
+        .memberBulkUploadXML(xmlData)
+        .subscribe((response: any) => {
           if (response) {
+            this.fileuploadedCount = response.registeredUser;
+            this.filetotalCount = response.totalUser;
+
+            if (
+              Number(this.fileuploadedCount) !== Number(this.filetotalCount)
+            ) {
+              this.downloadFile();
+            }
             this.showProgressBar = false;
-            this.alertService.alert('File Uploaded successfully', 'success');
+            this.alertService.alert('File Uploaded', 'success');
+
             this.resetFileInput();
             this.file = undefined;
             this.successcount = true;
-            this.fileuploadedCount = response.registeredUser;
-            this.filetotalCount = response.totalUser;
+
             this.errorloglist = response.error;
           } else {
             this.showProgressBar = false;
             this.alertService.alert(response.errorMessage, 'error');
           }
-        },
-        (err: any) => {
-          this.showProgressBar = false;
-          this.alertService.alert(err.errorMessage, 'error');
-          this.resetFileInput();
-          this.file = undefined;
-          this.fileContent = null;
-          this.disableUpload = true;
-        },
-      );
+        });
+      (err: any) => {
+        this.showProgressBar = false;
+        this.alertService.alert(err.errorMessage, 'error');
+        this.resetFileInput();
+        this.file = undefined;
+        this.fileContent = null;
+        this.disableUpload = true;
+      };
     };
   }
 
@@ -139,5 +180,46 @@ export class EmployeeMasterBulkUploadComponent {
       'upload-file',
     ) as HTMLInputElement;
     fileInput.value = '';
+  }
+
+  downloadMaster() {
+    const filePath = 'assets/bulkuser_excel_sheet.xlsx';
+
+    // Create a temporary link to trigger the download
+    const link = document.createElement('a');
+    link.href = filePath;
+    link.download = 'bulkuser_excel_sheet.xlsx'; // Set the file name when downloaded
+
+    // Trigger the click event on the anchor element to initiate the download
+    link.click();
+  }
+
+  downloadFile(): void {
+    this.blockSubcenterMappingService.downloadErrorExcel().subscribe(
+      (blob: Blob) => {
+        const link = document.createElement('a');
+        const url = window.URL.createObjectURL(blob); // Create a URL for the Blob
+        link.href = url;
+        link.download = 'Error-log-file.xlsx'; // Set the desired filename
+        link.click(); // Programmatically trigger the download
+        window.URL.revokeObjectURL(url); // Clean up the URL object
+      },
+      (error) => {
+        console.error('Download failed', error);
+      },
+    );
+  }
+
+  back() {
+    this.alertService
+      .confirm(
+        'confirm',
+        'Do you really want to cancel? Any unsaved data would be lost',
+      )
+      .subscribe((res) => {
+        if (res) {
+          this.location.back();
+        }
+      });
   }
 }
