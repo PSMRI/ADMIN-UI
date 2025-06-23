@@ -27,10 +27,10 @@
 const ADMIN_API = 'https://amritwprdev.piramalswasthya.org/';
 const COMMON_API = 'https://amritwprdev.piramalswasthya.org/';
 const FHIR_API = 'https://amritwprdev.piramalswasthya.org/';
-const adminBaseUrl = `${ADMIN_API}adminapi-v1.0/`;
-const superadminBaseURL = `${ADMIN_API}adminapi-v1.0/`;
-const commonBaseURL = `${COMMON_API}commonapi-v1.0/`;
-const fhirBaseUrl = `${FHIR_API}fhirapi-v1.0/`;
+const adminBaseUrl = `${ADMIN_API}admin-api/`;
+const superadminBaseURL = `${ADMIN_API}admin-api/`;
+const commonBaseURL = `${COMMON_API}common-api/`;
+const fhirBaseUrl = `${FHIR_API}fhir-api/`;
 const sessionStorageEncKey = '';
 
 export const environment = {
