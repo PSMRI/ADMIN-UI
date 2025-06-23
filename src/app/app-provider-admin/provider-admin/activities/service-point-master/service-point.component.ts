@@ -386,8 +386,8 @@ export class ServicePointComponent implements OnInit {
   servicePointSuccessHandler(response: any) {
     this.servicePointList.data = [];
     this.alertMessage.alert('Saved successfully', 'success');
-    this.servicePointForm1.resetForm();
     this.showList();
+    this.servicePointForm1.resetForm();
   }
 
   //* Activate and Deactivate method */
@@ -430,14 +430,14 @@ export class ServicePointComponent implements OnInit {
   showList() {
     if (!this.editMode) {
       this.getServicePoints(
-        this.searchStateID.stateID,
-        this.parking_Place.parkingPlaceID,
+        this.servicePointObj.stateID,
+        this.servicePointObj.parkingPlaceID,
       );
       this.servicePointForm1.resetForm();
     } else {
       this.getServicePoints(
-        this.searchStateID.stateID,
-        this.parking_Place.parkingPlaceID,
+        this.servicePointObj.stateID,
+        this.servicePointObj.parkingPlaceID,
       );
       this.servicePointForm2.resetForm();
     }
