@@ -200,8 +200,8 @@ export class SmsTemplateComponent implements OnInit, AfterViewInit {
           this.showTableFlag = true;
           this.createForm = false;
           for (let i = 0; i < this.dataSource.data.length; i++) {
-            if (this.dataSource.data[i].deleted === false) {
-              if (this.dataSource.data[i].smsType && this.dataSource.data[i].smsType.smsTypeID !== undefined) {
+            if (this.dataSource.data[i]?.deleted === false) {
+              if (this.dataSource.data[i]?.smsType && this.dataSource.data[i]?.smsType?.smsTypeID !== undefined) {
                 this.smsType_ID_array.push(this.dataSource.data[i].smsType.smsTypeID);
               } else {
                 this.smsType_ID_array.push(null);
