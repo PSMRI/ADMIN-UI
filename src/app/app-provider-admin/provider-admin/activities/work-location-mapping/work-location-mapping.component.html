@@ -168,6 +168,7 @@
           <strong>No Records Found</strong>
         </div>
         <mat-paginator
+          #paginatorFirst
           [hidden]="filteredmappedWorkLocationsList.data.length === 0"
           [pageSizeOptions]="[5, 10, 20]"
           [pageSize]="5"
@@ -230,7 +231,8 @@
                   allowSingleRoleOnlyForECD(Serviceline.serviceName);
                   showBlockDrop(Serviceline.serviceName);
                   resetBlockVillageFields();
-                  eSanjeevaniSaveFunction('Serviceline', Serviceline)
+                  resetRole();
+                  teleConsultationSaveFunction('Serviceline', Serviceline)
                 "
                 required
               >
@@ -373,7 +375,7 @@
                 [(ngModel)]="Role"
                 name="role"
                 required
-                (selectionChange)="eSanjeevaniSaveFunction('Role', Role)"
+                (selectionChange)="teleConsultationSaveFunction('Role', Role)"
               >
                 <mat-option *ngFor="let item of availableRoles" [value]="item">
                   {{ item.roleName }}
@@ -381,38 +383,31 @@
               </mat-select>
             </mat-form-field>
           </div>
-          <div class="col-3" style="text-align: center">
-            <button
-              mat-mini-fab
-              color="primary"
-              *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles"
-              (click)="addWorkLocation(workplaceform.value, Role)"
-            >
-              <mat-icon
-                matSuffix
-                class="mat-icon material-icons"
-                role="img"
-                aria-hidden="true"
-                style="cursor: pointer"
-                >add</mat-icon
-              >
-            </button>
-          </div>
         </div>
 
         <div
-          *ngIf="eSanjivaniFlag"
-          class="col-xs-6 col-sm-4 col-md-4 col-lg-3"
+          *ngIf="teleConsultationFlag"
+          class="col-xs-12 col-sm-12 col-md-12 col-lg-12"
           style="margin-top: 10px"
         >
-          <mat-checkbox
-            color="primary"
-            [(ngModel)]="isSanjeevani"
-            name="eSanjeevani"
-            [checked]="isSanjeevani"
-            (selectionChange)="onESanjeevaniChange($event)"
-            >ESanjeevani</mat-checkbox
+          <span class="f-s-b">Tele Consultation: </span>
+          <mat-radio-group
+            [(ngModel)]="teleConsultation"
+            name="teleConsultation"
           >
+            <mat-radio-button color="primary" class="p-l-10" value="ESanjeevani"
+              >ESanjeevani</mat-radio-button
+            >
+            <mat-radio-button color="primary" class="p-l-10" value="Swymed"
+              >Swymed</mat-radio-button
+            >
+            <mat-radio-button
+              color="primary"
+              class="p-l-10"
+              value="Not Required"
+              >Not Required</mat-radio-button
+            >
+          </mat-radio-group>
         </div>
 
         <div
@@ -436,6 +431,28 @@
             (selectionChange)="setOutbound($event)"
             >Outbound</mat-checkbox
           >
+        </div>
+
+        <div
+          class="col-3"
+          style="text-align: center; float: right"
+          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles"
+        >
+          <button
+            md-mini-fab
+            color="primary"
+            (click)="addWorkLocation(workplaceform.value, Role)"
+            class="mat_icon_white"
+          >
+            <mat-icon
+              matSuffix
+              class="mat-icon material-icons"
+              role="img"
+              aria-hidden="true"
+              style="cursor: pointer"
+              >add</mat-icon
+            >
+          </button>
         </div>
       </form>
     </div>
@@ -512,10 +529,10 @@
               {{ element.outbound }}
             </td>
           </ng-container>
-          <ng-container matColumnDef="ESanjeevani">
-            <th mat-header-cell *matHeaderCellDef>ESanjeevani</th>
+          <ng-container matColumnDef="TeleConsultation">
+            <th mat-header-cell *matHeaderCellDef>Tele Consultation</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.isSanjeevani }}
+              {{ element.teleConsultation }}
             </td>
           </ng-container>
           <ng-container matColumnDef="delete">
@@ -543,6 +560,7 @@
           ></tr>
         </table>
         <mat-paginator
+          #paginatorSecond
           [hidden]="bufferArray.data.length === 0"
           [pageSizeOptions]="[5, 10, 25]"
           [pageSize]="5"
@@ -609,13 +627,7 @@
                 [style.width]="'100%'"
                 [(ngModel)]="serviceID_duringEdit"
                 name="serviceID"
-                (selectionChange)="
-                  refresh2();
-                  eSanjeevaniEditSaveFunction(
-                    item.serviceName,
-                    roleID_duringEdit
-                  )
-                "
+                (selectionChange)="refresh2()"
                 required
               >
                 <mat-option
@@ -631,7 +643,11 @@
                       item.serviceName,
                       roleID_duringEdit
                     );
-                    showEditBlockDrop(item.serviceName)
+                    showEditBlockDrop(item.serviceName);
+                    teleConsultationEditSaveFunction(
+                      item.serviceName,
+                      roleID_duringEdit
+                    )
                   "
                 >
                   {{ item.serviceName }}
@@ -779,7 +795,7 @@
                     serviceID_duringEdit,
                     roleID_duringEdit
                   );
-                  eSanjeevaniEditSaveFunction(
+                  teleConsultationEditSaveFunction(
                     serviceID_duringEdit,
                     roleID_duringEdit
                   )
@@ -798,17 +814,28 @@
         </div>
 
         <div
-          *ngIf="eSanjivaniEditFlag"
-          class="col-xs-6 col-sm-4 col-md-4 col-lg-3 m-t-35"
+          *ngIf="teleConsultationEditFlag"
+          class="col-xs-12 col-sm-12 col-md-12 col-lg-12"
+          style="margin-top: 10px"
         >
-          <mat-checkbox
-            color="primary"
-            [(ngModel)]="eSanjeevaniEdit"
-            name="eSanjeevaniEdit"
-            [checked]="eSanjeevaniEdit"
-            (selectionChange)="onESanjeevaniChange($event)"
-            >ESanjeevani</mat-checkbox
+          <span class="f-s-b">Tele Consultation: </span>
+          <mat-radio-group
+            [(ngModel)]="teleConsultationEdit"
+            name="teleConsultationEdit"
           >
+            <mat-radio-button color="primary" class="p-l-10" value="ESanjeevani"
+              >ESanjeevani</mat-radio-button
+            >
+            <mat-radio-button color="primary" class="p-l-10" value="Swymed"
+              >Swymed</mat-radio-button
+            >
+            <mat-radio-button
+              color="primary"
+              class="p-l-10"
+              value="Not Required"
+              >Not Required</mat-radio-button
+            >
+          </mat-radio-group>
         </div>
 
         <div
