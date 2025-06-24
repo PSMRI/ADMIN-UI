@@ -26,6 +26,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { LanguageMapping } from '../services/language-mapping.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-language-mapping',
   templateUrl: './language-mapping.component.html',
@@ -131,10 +132,11 @@ export class LanguageMappingComponent implements OnInit, AfterViewInit {
     private alertService: ConfirmationDialogsService,
     private saved_data: dataService,
     private languageMapping: LanguageMapping,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.createdBy = this.createdBy = this.saved_data.uname;
     this.WeightageList = [
       { value: 10, Name: '25%' },
@@ -752,7 +754,6 @@ export class LanguageMappingComponent implements OnInit, AfterViewInit {
       this.filteredLanguageMappedList.paginator = this.paginator;
     } else {
       this.filteredLanguageMappedList.data = [];
-      this.filteredLanguageMappedList.paginator = this.paginator;
       this.LanguageMappedList.forEach((item: any) => {
         for (const key in item) {
           if (key === 'userName' || key === 'languageName') {
@@ -764,6 +765,7 @@ export class LanguageMappingComponent implements OnInit, AfterViewInit {
           }
         }
       });
+      this.filteredLanguageMappedList.paginator = this.paginator;
     }
   }
 

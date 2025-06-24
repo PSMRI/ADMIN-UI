@@ -29,6 +29,7 @@ import { ProviderAdminRoleService } from '../services/state-serviceline-role.ser
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { ZoneMasterService } from '../services/zone-master-services.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-zone',
@@ -110,9 +111,11 @@ export class ZoneComponent implements OnInit {
     public zoneMasterService: ZoneMasterService,
     private alertMessage: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.countryID = 1; // hardcoded as country is INDIA
     this.createdBy = this.commonDataService.uname;
   }
@@ -365,6 +368,8 @@ export class ZoneComponent implements OnInit {
           }
         }
       });
+      this.filteredavailableZones.paginator = this.paginator;
+      this.filteredavailableZones.sort = this.sort;
     }
   }
   back() {

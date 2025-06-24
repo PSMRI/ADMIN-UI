@@ -27,6 +27,7 @@ import { NgForm } from '@angular/forms';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-main-store-and-sub-store',
@@ -102,11 +103,12 @@ export class MainStoreAndSubStoreComponent implements OnInit {
     private storeService: Mainstroreandsubstore,
     public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.uid = this.commonDataService.uid;
     this.getServices();
   }

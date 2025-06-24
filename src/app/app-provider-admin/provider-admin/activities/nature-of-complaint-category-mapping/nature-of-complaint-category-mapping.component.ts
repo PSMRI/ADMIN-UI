@@ -28,6 +28,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 @Component({
   selector: 'app-nature-of-complaint-category-mapping',
   templateUrl: './nature-of-complaint-category-mapping.component.html',
@@ -92,10 +93,11 @@ export class NatureOfComplaintCategoryMappingComponent implements OnInit {
     public complaintMappingService: NatureOfCompaintCategoryMappingService,
     public dialog: MatDialog,
     private alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.userID = sessionStorage.getItem('uid');
+    this.userID = this.sessionstorage.getItem('uid');
     this.createdBy = this.commonDataService.uname;
     this.getServicelines();
   }
@@ -377,6 +379,7 @@ export class NatureOfComplaintCategoryMappingComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredMappings.data = this.mappings;
+      this.filteredMappings.paginator = this.paginatorFirst;
     } else {
       this.filteredMappings.data = [];
       this.mappings.forEach((item: any) => {
@@ -390,6 +393,7 @@ export class NatureOfComplaintCategoryMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredMappings.paginator = this.paginatorFirst;
     }
   }
 }

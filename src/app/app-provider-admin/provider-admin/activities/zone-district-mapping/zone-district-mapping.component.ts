@@ -30,6 +30,7 @@ import { ProviderAdminRoleService } from '../services/state-serviceline-role.ser
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ZoneMasterService } from '../services/zone-master-services.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-zone-district-mapping',
@@ -106,9 +107,11 @@ export class ZoneDistrictMappingComponent implements OnInit {
     public commonDataService: dataService,
     public zoneMasterService: ZoneMasterService,
     private alertMessage: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.data = [];
-    this.service_provider_id = sessionStorage.getItem('service_providerID');
+    this.service_provider_id =
+      this.sessionstorage.getItem('service_providerID');
     this.createdBy = this.commonDataService.uname;
     this.filteredavailableZoneDistrictMappings.paginator = this.paginator;
     this.filteredavailableZoneDistrictMappings.sort = this.sort;
@@ -492,8 +495,9 @@ export class ZoneDistrictMappingComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredavailableZoneDistrictMappings =
+      this.filteredavailableZoneDistrictMappings.data =
         this.availableZoneDistrictMappings;
+      this.filteredavailableZoneDistrictMappings.paginator = this.paginator;
     } else {
       this.filteredavailableZoneDistrictMappings.data = [];
       this.availableZoneDistrictMappings.forEach((item: any) => {
@@ -507,6 +511,7 @@ export class ZoneDistrictMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredavailableZoneDistrictMappings.paginator = this.paginator;
     }
   }
 }

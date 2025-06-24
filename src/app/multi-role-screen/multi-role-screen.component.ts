@@ -28,6 +28,7 @@ import { ViewVersionDetailsComponent } from '../core/components/view-version-det
 import { ConfigService } from '../core/services/config/config.service';
 import { HttpServices } from '../core/services/http-services/http_services.service';
 import { loginService } from '../user-login/loginService/login.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 declare let jQuery: any;
 
@@ -50,12 +51,13 @@ export class MultiRoleScreenComponent implements OnInit {
     public _loginService: loginService,
     public configService: ConfigService,
     private dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {
     location.onPopState((e: any) => {
       window.history.forward();
     });
-    this.role = sessionStorage.getItem('role');
-    this.id = sessionStorage.getItem('uid');
+    this.role = this.sessionstorage.getItem('role');
+    this.id = this.sessionstorage.getItem('uid');
     console.log(this.role, 'ROLE NAME AS OF NOW');
   }
 
@@ -70,8 +72,8 @@ export class MultiRoleScreenComponent implements OnInit {
 
   ngOnInit() {
     this.language_change = 'english';
-    console.log('userdata', sessionStorage.getItem('Userdata'));
-    this.data = sessionStorage.getItem('Userdata');
+    console.log('userdata', this.sessionstorage.getItem('Userdata'));
+    this.data = this.sessionstorage.getItem('Userdata');
     this.data = JSON.parse(this.data);
     // this.router.navigate(['/MultiRoleScreenComponent']);
     this.getLanguageObject(this.language_change);
@@ -120,6 +122,13 @@ export class MultiRoleScreenComponent implements OnInit {
             'successfully logged out from CRM and session ended both sides',
           );
           sessionStorage.removeItem('authToken');
+          this.sessionstorage.removeItem('Userdata');
+          this.sessionstorage.removeItem('role');
+          sessionStorage.removeItem('uname');
+          sessionStorage.removeItem('uid');
+          this.sessionstorage.removeItem('userPriveliges');
+          this.sessionstorage.removeItem('providerServiceMapID_104');
+          this.sessionstorage.removeItem('service_providerID');
           this.router.navigate(['']);
         }
       },

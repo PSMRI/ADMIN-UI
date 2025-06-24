@@ -38,6 +38,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { FeedbackTypeService } from '../services/feedback-type-master-service.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-feedback-type-master',
@@ -99,10 +100,11 @@ export class FeedbackTypeMasterComponent implements OnInit, AfterViewInit {
     private alertService: ConfirmationDialogsService,
     public dialog: MatDialog,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.userID = this.commonData.uid;
     this.getServiceLinesfromSearch(this.userID);
   }
@@ -384,6 +386,7 @@ export class FeedbackTypeMasterComponent implements OnInit, AfterViewInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredfeedbackTypes.data = this.feedbackTypes;
+      this.filteredfeedbackTypes.paginator = this.paginatorFirst;
     } else {
       this.filteredfeedbackTypes.data = [];
       this.feedbackTypes.forEach((item: any) => {
@@ -397,6 +400,7 @@ export class FeedbackTypeMasterComponent implements OnInit, AfterViewInit {
           }
         }
       });
+      this.filteredfeedbackTypes.paginator = this.paginatorFirst;
     }
   }
 }

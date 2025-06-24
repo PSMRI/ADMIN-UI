@@ -36,6 +36,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { ComponentNameSearchComponent } from '../component-name-search/component-name-search.component';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 interface ComponentData {
   testComponentID: number;
@@ -133,6 +134,7 @@ export class ComponentMasterComponent implements OnInit {
     private componentMasterServiceService: ComponentMasterServiceService,
     public stateandservices: ServicePointMasterService,
     public dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.states = [];
     this.services = [];
@@ -158,7 +160,7 @@ export class ComponentMasterComponent implements OnInit {
       item.sno = i + 1;
     });
     // provide service provider ID, (As of now hardcoded, but to be fetched from login response)
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.userID = this.commonDataService.uid;
     this.getProviderServices();
     this.getDiagnosticProcedureComponent();
@@ -210,9 +212,9 @@ export class ComponentMasterComponent implements OnInit {
       range_normal_max: null,
       range_normal_min: null,
       measurementUnit: null,
-      modifiedBy: sessionStorage.getItem('uid'),
-      createdBy: sessionStorage.getItem('uid'),
-      providerServiceMapID: sessionStorage.getItem('service_providerID'),
+      modifiedBy: this.sessionstorage.getItem('uid'),
+      createdBy: this.sessionstorage.getItem('uid'),
+      providerServiceMapID: this.sessionstorage.getItem('service_providerID'),
       compOpt: this.fb.array([this.initComp()]),
       deleted: false,
       iotComponentID: null,
@@ -636,9 +638,9 @@ export class ComponentMasterComponent implements OnInit {
     console.log(JSON.stringify(res, null, 4), 'res', res);
     if (res) {
       this.editMode = res.data.testComponentID;
-      if (res.data.iotComponentID != undefined) {
+      if (res.data.iotComponentID !== undefined) {
         this.iotComponentArray.forEach((ele: any) => {
-          if (ele.iotComponentID == res.data.iotComponentID) {
+          if (ele.iotComponentID === res.data.iotComponentID) {
             res.data.iotComponentID = ele;
           }
           this.componentForm.controls['iotComponentID'].setValue(
@@ -662,9 +664,9 @@ export class ComponentMasterComponent implements OnInit {
       );
 
       if (
-        this.componentForm.controls['testLoincCode'].value == null ||
-        this.componentForm.controls['testLoincCode'].value == undefined ||
-        this.componentForm.controls['testLoincCode'].value == ''
+        this.componentForm.controls['testLoincCode'].value === null ||
+        this.componentForm.controls['testLoincCode'].value === undefined ||
+        this.componentForm.controls['testLoincCode'].value === ''
       ) {
         this.componentForm.controls['testLoincCode'].enable();
         this.componentFlag = false;
@@ -675,7 +677,7 @@ export class ComponentMasterComponent implements OnInit {
         this.componentFlag = true;
       }
       this.componentForm.controls['inputType'].setValue(res.data.inputType);
-      if (res.data.inputType != 'TextBox') {
+      if (res.data.inputType !== 'TextBox') {
         const options = res.data.compOpt;
         const val = <FormArray>this.componentForm.controls['compOpt'];
         val.removeAt(0);

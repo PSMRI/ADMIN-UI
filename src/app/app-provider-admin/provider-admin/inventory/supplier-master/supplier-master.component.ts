@@ -26,6 +26,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { SuppliermasterService } from 'src/app/core/services/inventory-services/suppliermaster.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-supplier-master',
@@ -107,13 +108,14 @@ export class SupplierMasterComponent implements OnInit, AfterViewInit {
     public commonservice: CommonServices,
     private supplierService: SuppliermasterService,
     public dialogService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.createdBy = sessionStorage.getItem('uname');
+    this.createdBy = this.sessionstorage.getItem('uname');
     console.log(this.createdBy, 'CreatedBy');
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
-    this.uid = sessionStorage.getItem('uid');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
+    this.uid = this.sessionstorage.getItem('uid');
     this.getServices();
     this.getAllCountry();
   }

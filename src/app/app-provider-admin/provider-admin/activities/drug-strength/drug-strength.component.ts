@@ -34,6 +34,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatSort } from '@angular/material/sort';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-drug-strength',
@@ -78,6 +79,7 @@ export class DrugStrengthComponent implements OnInit, AfterViewInit {
     public data_service: dataService,
     public alertService: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
@@ -128,7 +130,7 @@ export class DrugStrengthComponent implements OnInit, AfterViewInit {
           ? formValue.strength_desc.trim()
           : null,
       createdBy: this.createdBy,
-      serviceProviderID: sessionStorage.getItem('service_providerID'),
+      serviceProviderID: this.sessionstorage.getItem('service_providerID'),
     };
     this.checkDuplicates(tempDrugStrengthObj);
     this.drugStrengthForm.resetForm();
@@ -224,7 +226,7 @@ export class DrugStrengthComponent implements OnInit, AfterViewInit {
           ? this.strength_desc.trim()
           : null,
       modifiedBy: this.createdBy,
-      serviceProviderID: sessionStorage.getItem('service_providerID'),
+      serviceProviderID: this.sessionstorage.getItem('service_providerID'),
     };
     this.drugStrengthService
       .updateDrugStrength(updateDrugStrengthObj)

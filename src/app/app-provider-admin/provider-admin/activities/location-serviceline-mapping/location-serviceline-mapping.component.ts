@@ -39,6 +39,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { LocationServicelineMapping } from '../services/location-serviceline-mapping.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 declare let jQuery: any;
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-location-serviceline-mapping',
@@ -105,6 +106,9 @@ export class LocationServicelineMappingComponent
   showForm: boolean;
   nationalFlag: any;
   disableSelection = false;
+  abdmFacilityId: any;
+  abdmFacilityName: any;
+  abdmFacilities: any = [];
 
   @ViewChild('f')
   form!: NgForm;
@@ -113,9 +117,10 @@ export class LocationServicelineMappingComponent
     public commonDataService: dataService,
     public dialog: MatDialog,
     private alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.userID = this.commonDataService.uid;
-    this.serviceProviderID = sessionStorage.getItem('service_providerID'); //pass this value dynamically
+    this.userID = this.sessionstorage.getItem('uid');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID'); //pass this value dynamically
     this.states = [];
     this.districts = [];
     this.servicelines = [];
@@ -175,6 +180,7 @@ export class LocationServicelineMappingComponent
       if (!this.nationalFlag) {
         this.getDistricts(this.serviceProviderID, this.search_state.stateID);
       }
+      this.getAbdmFacilities();
       this.providerServiceMapIDs = [];
       if (
         this.PSMID_searchService !== null &&
@@ -194,6 +200,7 @@ export class LocationServicelineMappingComponent
       .subscribe((res) => {
         if (res) {
           this.form.resetForm();
+          this.abdmFacilityName = null;
           this.changeTableFlag(flag_val);
         }
       });
@@ -270,6 +277,29 @@ export class LocationServicelineMappingComponent
           //this.alertService.alert(err, 'error')
         },
       );
+  }
+
+  getAbdmFacilities() {
+    this.provider_admin_location_serviceline_mapping
+      .getAbdmFacilities()
+      .subscribe(
+        (res: any) => {
+          if (res.statusCode === 200 && res.data !== null) {
+            this.abdmFacilities = res.data;
+          } else {
+            this.alertService.notify('No ABDM Facilities Found', 'info');
+          }
+        },
+        (err: any) => {
+          this.alertService.alert(err, 'error');
+        },
+      );
+  }
+
+  getFacilityName(facilityId: any) {
+    this.abdmFacilities.find((item: any) => {
+      if (item.id === facilityId) this.abdmFacilityName = item.name;
+    });
   }
 
   getServiceLines(serviceProviderID: any, stateID: any) {
@@ -363,6 +393,8 @@ export class LocationServicelineMappingComponent
           ? this.office_address2.trim()
           : this.office_address2),
       createdBy: this.commonDataService.uname,
+      abdmFacilityName: this.abdmFacilityName,
+      abdmFacilityId: this.abdmFacilityId,
     };
     let count = 0;
     if (newreqobj.stateID === '') {
@@ -638,6 +670,9 @@ export class EditLocationModalComponent implements OnInit {
   originalOfficeID: any;
   officeNameExist = false;
   msg: any = '';
+  abdmFacilities: any = [];
+  abdmFacilityName: any;
+  abdmFacilityId: any;
 
   constructor(
     @Inject(MAT_DIALOG_DATA) public data: any,
@@ -649,7 +684,7 @@ export class EditLocationModalComponent implements OnInit {
 
   ngOnInit() {
     console.log(this.data, 'modal content');
-
+    this.getAbdmFacilities();
     this.serviceProviderName = this.data.toBeEditedOBJ.serviceProviderName;
     this.stateName =
       this.data.toBeEditedOBJ.stateName === undefined
@@ -660,6 +695,10 @@ export class EditLocationModalComponent implements OnInit {
     this.officeID = this.data.toBeEditedOBJ.locationName;
 
     this.originalOfficeID = this.data.toBeEditedOBJ.locationName;
+    if (this.data.toBeEditedOBJ.abdmFacilityId) {
+      this.abdmFacilityId = this.data.toBeEditedOBJ.abdmFacilityId;
+      this.getFacilityName(this.abdmFacilityId);
+    }
   }
 
   checkOfficeName(value: any) {
@@ -702,7 +741,10 @@ export class EditLocationModalComponent implements OnInit {
           ? this.address.trim()
           : null,
       districtID: this.data.toBeEditedOBJ.districtID,
+      abdmFacilityId: this.abdmFacilityId,
+      abdmFacilityName: this.abdmFacilityName,
       createdBy: this.data.toBeEditedOBJ.CreatedBy,
+      deleted: false,
     };
 
     console.log(editedObj, 'edit rwq obj in modal');
@@ -716,6 +758,29 @@ export class EditLocationModalComponent implements OnInit {
           //this.alertService.alert(err, 'error')
         },
       );
+  }
+
+  getAbdmFacilities() {
+    this.provider_admin_location_serviceline_mapping
+      .getAbdmFacilities()
+      .subscribe(
+        (res: any) => {
+          if (res.statusCode === 200 && res.data !== null) {
+            this.abdmFacilities = res.data;
+          } else {
+            this.alertService.notify('No ABDM Facilities Found', 'info');
+          }
+        },
+        (err: any) => {
+          this.alertService.alert(err, 'error');
+        },
+      );
+  }
+
+  getFacilityName(facilityId: any) {
+    this.abdmFacilities.find((item: any) => {
+      if (item.id === facilityId) this.abdmFacilityName = item.name;
+    });
   }
 
   editOfficeSuccessHandeler(response: any) {

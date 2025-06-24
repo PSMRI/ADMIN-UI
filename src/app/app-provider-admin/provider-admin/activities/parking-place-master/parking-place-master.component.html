@@ -93,10 +93,11 @@
       <mat-label>In-Table Search</mat-label>
       <input
         matInput
+        placeholder="In-Table Search"
         #filterTerm
         (keyup)="filterComponentList(filterTerm.value)"
       />
-      <mat-icon mdSuffix>search</mat-icon>
+      <mat-icon matSuffix>search</mat-icon>
     </mat-form-field>
   </div>
   <div class="row" *ngIf="showListOfParking && showTableFlag && !editable">

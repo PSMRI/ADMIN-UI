@@ -39,7 +39,12 @@ const environmentTemplate = fs.readFileSync(
 
 const defaultEnvValues = {
   COMMON_API_BASE: '',
-  ADMIN_API_BASE: ''
+  ADMIN_API_BASE: '',
+  FHIR_API_BASE: '',
+  SESSION_STORAGE_ENC_KEY:  '',
+  SITE_KEY:'',
+  CAPTCHA_CHALLENGE_URL:'',
+  ENABLE_CAPTCHA: false,
 };
 
 // Generate output data

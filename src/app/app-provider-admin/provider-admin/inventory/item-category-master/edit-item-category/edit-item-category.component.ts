@@ -27,6 +27,7 @@ import {
   MatDialogRef,
 } from '@angular/material/dialog';
 import { ItemCategoryService } from 'src/app/core/services/inventory-services/item-category.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-edit-item-category',
@@ -48,10 +49,11 @@ export class EditItemCategoryComponent implements OnInit {
     public dialog: MatDialog,
     public itemCategoryService: ItemCategoryService,
     public dialogRef: MatDialogRef<EditItemCategoryComponent>,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.modifiedBy = sessionStorage.getItem('uname');
+    this.modifiedBy = this.sessionstorage.getItem('uname');
     this.getData();
   }
   getData() {

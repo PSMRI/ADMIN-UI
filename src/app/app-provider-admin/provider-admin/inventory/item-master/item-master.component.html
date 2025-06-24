@@ -71,7 +71,9 @@
         <!-- S.No. Column -->
         <ng-container matColumnDef="sno">
           <mat-header-cell *matHeaderCellDef>S.No.</mat-header-cell>
-          <mat-cell *matCellDef="let item; let i = index">{{ i + 1 }}</mat-cell>
+          <mat-cell *matCellDef="let item; let i = index">
+            {{ filteredItemList.data.indexOf(item) + 1 }}</mat-cell
+          >
         </ng-container>
 
         <!-- Category Code Column -->
@@ -213,6 +215,7 @@
         </button>
       </div>
       <mat-paginator
+        #paginatorMain
         [hidden]="filteredItemList.data.length === 0"
         [pageSizeOptions]="[5, 10, 25]"
         [pageSize]="5"
@@ -452,7 +455,7 @@
         <mat-form-field [style.width]="'100%'" class="hide_underline">
           <!-- <input matInput style="display: none" /> -->
           <mat-label>Pharmacology Category</mat-label>
-          <mat-select [(ngModel)]="pharmacology" name="pharmacology" required>
+          <mat-select [(ngModel)]="pharmacology" name="pharmacology">
             <mat-option *ngFor="let item of pharmacologies" [value]="item">
               {{ item.pharmCategoryName }}
             </mat-option>
@@ -564,7 +567,7 @@
           <ng-container matColumnDef="sno">
             <mat-header-cell *matHeaderCellDef>S.No.</mat-header-cell>
             <mat-cell *matCellDef="let item; let i = index">{{
-              i + 1
+              itemArrayObj.data.indexOf(item) + 1
             }}</mat-cell>
           </ng-container>
 
@@ -578,7 +581,7 @@
           <ng-container matColumnDef="isMedical">
             <mat-header-cell *matHeaderCellDef>Item Type</mat-header-cell>
             <mat-cell *matCellDef="let item; let i = index">{{
-              item.isMedical
+              item.isMedical ? "Medical" : "Non-Medical"
             }}</mat-cell>
           </ng-container>
 
@@ -653,12 +656,13 @@
             "
           ></mat-row>
         </mat-table>
-
         <mat-paginator
-          [length]="itemArrayObj.data.length"
-          [pageSize]="5"
+          #paginatorSub
           [pageSizeOptions]="[5, 10, 20]"
-        ></mat-paginator>
+          [pageSize]="5"
+          showFirstLastButtons
+        >
+        </mat-paginator>
       </div>
     </div>
     <div

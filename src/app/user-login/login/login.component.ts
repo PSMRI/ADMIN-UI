@@ -19,14 +19,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import * as CryptoJS from 'crypto-js';
 import { Subscription } from 'rxjs';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { loginService } from '../loginService/login.service';
 import { HttpInterceptor } from '@angular/common/http';
+import { CookieService } from 'ngx-cookie-service';
 import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+import { environment } from 'src/environments/environment';
+import { CaptchaComponent } from '../captcha/captcha.component';
 
 @Component({
   selector: 'app-login-component',
@@ -34,6 +38,7 @@ import { HttpServices } from 'src/app/core/services/http-services/http_services.
   styleUrls: ['./login.css'],
 })
 export class loginContentClassComponent implements OnInit, OnDestroy {
+  @ViewChild('captchaCmp') captchaCmp: CaptchaComponent | undefined;
   model: any = {};
   userID: any;
   password: any;
@@ -54,12 +59,16 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   _iterationCount: any;
   logoutUserFromPreviousSessionSubscription: Subscription = new Subscription();
   encryptPassword: any;
+  captchaToken!: string;
+  enableCaptcha = environment.enableCaptcha;
 
   constructor(
     public loginservice: loginService,
     public router: Router,
     private alertMessage: ConfirmationDialogsService,
     public HttpServices: HttpServices,
+    private cookieService: CookieService,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this._keySize = 256;
     this._ivSize = 128;
@@ -87,9 +96,9 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   }
   gotLoginRes(res: any) {
     if (res.userName === 'Super  Admin') {
-      sessionStorage.setItem('Userdata', 'Super Admin');
-      sessionStorage.setItem('role', 'SUPERADMIN');
-      sessionStorage.setItem('uname', 'Super Admin');
+      this.sessionstorage.setItem('Userdata', 'Super Admin');
+      this.sessionstorage.setItem('role', 'SUPERADMIN');
+      this.sessionstorage.setItem('uname', 'Super Admin');
       this.router.navigate(['/MultiRoleScreenComponent']);
     } else {
       this.successCallback(res);
@@ -144,7 +153,12 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     if (userId.toLowerCase() === 'SUPERADMIN'.toLowerCase()) {
       // this.loginservice.superAdminAuthenticate(userId, password, doLogout)
       this.loginservice
-        .superAdminAuthenticate(userId, this.encryptPassword, doLogout)
+        .superAdminAuthenticate(
+          userId,
+          this.encryptPassword,
+          doLogout,
+          this.enableCaptcha ? this.captchaToken : undefined,
+        )
         .subscribe(
           (response: any) => {
             // if (response.statusCode === 200) {
@@ -152,10 +166,10 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
               if (response.data.previlegeObj.length === 0) {
                 console.log(response.data, 'SUPERADMIN VALIDATED');
                 sessionStorage.setItem('authToken', response.data.key);
-                sessionStorage.setItem('Userdata', 'Super Admin');
-                sessionStorage.setItem('role', 'SUPERADMIN');
-                sessionStorage.setItem('uname', 'Super Admin');
-                sessionStorage.setItem('uid', response.data.userID);
+                this.sessionstorage.setItem('Userdata', 'Super Admin');
+                this.sessionstorage.setItem('role', 'SUPERADMIN');
+                this.sessionstorage.setItem('uname', 'Super Admin');
+                this.sessionstorage.setItem('uid', response.data.userID);
                 this.router.navigate(['/MultiRoleScreenComponent']);
               } else {
                 this.alertMessage.alert('User is not super admin');
@@ -202,13 +216,19 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
             }
           },
           (err) => {
+            this.resetCaptcha();
             this.alertMessage.alert(err, 'error');
             console.log(err, 'ERR while superadmin validation');
           },
         );
     } else {
       this.loginservice
-        .authenticateUser(userId, this.encryptPassword, doLogout)
+        .authenticateUser(
+          userId,
+          this.encryptPassword,
+          doLogout,
+          this.enableCaptcha ? this.captchaToken : undefined,
+        )
         .subscribe(
           (response: any) => {
             if (response && response.data) {
@@ -284,6 +304,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                 this.userID,
                 this.encryptPassword,
                 doLogOut,
+                this.enableCaptcha ? this.captchaToken : undefined,
               )
               .subscribe(
                 (response: any) => {
@@ -291,10 +312,10 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                     if (response.data.previlegeObj.length === 0) {
                       console.log(response, 'SUPERADMIN VALIDATED');
                       sessionStorage.setItem('authToken', response.data.key);
-                      sessionStorage.setItem('Userdata', 'Super Admin');
-                      sessionStorage.setItem('role', 'SUPERADMIN');
-                      sessionStorage.setItem('uname', 'Super Admin');
-                      sessionStorage.setItem('uid', response.data.userID);
+                      this.sessionstorage.setItem('Userdata', 'Super Admin');
+                      this.sessionstorage.setItem('role', 'SUPERADMIN');
+                      this.sessionstorage.setItem('uname', 'Super Admin');
+                      this.sessionstorage.setItem('uid', response.data.userID);
                       this.router.navigate(['/MultiRoleScreenComponent']);
                     } else {
                       this.alertMessage.alert('User is not super admin');
@@ -302,13 +323,19 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                   }
                 },
                 (err) => {
+                  this.resetCaptcha();
                   this.alertMessage.alert(err, 'error');
                   console.log(err, 'ERR while superadmin validation');
                 },
               );
           } else {
             this.loginservice
-              .authenticateUser(this.userID, this.encryptPassword, doLogOut)
+              .authenticateUser(
+                this.userID,
+                this.encryptPassword,
+                doLogOut,
+                this.captchaToken,
+              )
               .subscribe(
                 (response: any) => {
                   if (response && response.data) {
@@ -323,6 +350,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
               );
           }
         } else {
+          this.resetCaptcha();
           this.alertMessage.alert(userLogOutRes.data.errorMessage, 'error');
         }
       });
@@ -330,14 +358,20 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
 
   successCallback(response: any) {
     console.log(response);
-    sessionStorage.setItem('Userdata', JSON.stringify(response.data));
-    sessionStorage.setItem(
+    this.sessionstorage.setItem('Userdata', JSON.stringify(response.data));
+    this.sessionstorage.setItem(
       'userPriveliges',
       JSON.stringify(response.data.previlegeObj),
     );
-    sessionStorage.setItem('uid', response.data.userID);
-    // sessionStorage.setItem('service_providerID', response.prov)ider[0].providerID;
-    sessionStorage.setItem('uname', response.data.userName);
+    // this.sessionstorage.uid = response.data.userID;
+    this.sessionstorage.setItem('uid', response.data.userID);
+    this.sessionstorage.setItem('uname', response.data.userName);
+    this.sessionstorage.setItem(
+      'service_providerID',
+      response.data.previlegeObj[0].providerServiceMapID,
+    );
+    // this.sessionstorage.setItem('service_providerID', response.prov)ider[0].providerID;
+    // this.sessionstorage.uname = response.data.userName;
     console.log('array', response.data.previlegeObj);
 
     if (
@@ -360,21 +394,24 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         // for (let j = 0; j < response.Previlege[i].Role.length; j++) {
         if (response.data.Previlege[i].Role === 'ProviderAdmin') {
           // this.router.navigate(['/MultiRoleScreenComponent']);
-          sessionStorage.setItem('role', 'PROVIDERADMIN');
+          this.sessionstorage.setItem('role', 'PROVIDERADMIN');
           console.log('VALUE SET HOGAYI');
         } else {
-          sessionStorage.setItem('role', '');
+          this.sessionstorage.setItem('role', '');
         }
         // }
       }
-      if (
-        sessionStorage.getItem('role')?.toLowerCase().toString() ===
-        'PROVIDERADMIN'.toLowerCase()
-      ) {
-        this.router.navigate(['/MultiRoleScreenComponent']);
-      } else {
-        this.alertMessage.alert('User is not a provider admin');
-      }
+
+      setTimeout(() => {
+        if (
+          this.sessionstorage.getItem('role')?.toLowerCase().toString() ===
+          'PROVIDERADMIN'.toLowerCase()
+        ) {
+          this.router.navigate(['/MultiRoleScreenComponent']);
+        } else {
+          this.alertMessage.alert('User is not a provider admin');
+        }
+      }, 1000);
     }
     if (
       response.data.isAuthenticated === true &&
@@ -390,7 +427,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
         response.data.previlegeObj[i].serviceDesc.toLowerCase() ===
         '104 helpline'
       ) {
-        sessionStorage.setItem(
+        this.sessionstorage.setItem(
           'providerServiceMapID_104',
           response.data.previlegeObj[i].providerServiceMapID,
         );
@@ -405,6 +442,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     }
     // this.loading = false;
     console.log(error);
+    this.resetCaptcha();
   }
 
   // encryptionFlag: boolean = true;
@@ -420,7 +458,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   getServiceProviderMapIDSuccessHandeler(response: any) {
     console.log('service provider map id', response);
     if (response && response.data) {
-      sessionStorage.setItem(
+      this.sessionstorage.setItem(
         'service_providerID',
         response.data.serviceProviderID,
       );
@@ -443,6 +481,21 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   successhandeler1(response: any) {
     this.commitDetails = response;
     this.version = this.commitDetails['version'];
+  }
+
+  onCaptchaResolved(token: any) {
+    this.captchaToken = token;
+  }
+
+  resetCaptcha() {
+    if (
+      this.enableCaptcha &&
+      this.captchaCmp &&
+      typeof this.captchaCmp.reset === 'function'
+    ) {
+      this.captchaCmp.reset();
+      this.captchaToken = '';
+    }
   }
 
   ngOnDestroy() {

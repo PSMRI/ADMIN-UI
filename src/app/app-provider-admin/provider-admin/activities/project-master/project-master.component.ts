@@ -6,6 +6,7 @@ import { MatSort } from '@angular/material/sort';
 import { NgForm } from '@angular/forms';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-project-master',
@@ -36,10 +37,11 @@ export class ProjectMasterComponent implements OnInit {
     private projectMasterService: ProjectMasterService,
     private confirmationService: ConfirmationDialogsService,
     private dataService: dataService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
-    this.serviceProviderId = sessionStorage.getItem('service_providerID');
+    this.serviceProviderId = this.sessionstorage.getItem('service_providerID');
     this.getProjects();
   }
 
@@ -92,7 +94,7 @@ export class ProjectMasterComponent implements OnInit {
     const reqObj = {
       serviceProviderId: this.serviceProviderId,
       projectName: this.projectName,
-      createdBy: sessionStorage.getItem('uname'),
+      createdBy: this.sessionstorage.getItem('uname'),
     };
     this.projectMasterService.addProject(reqObj).subscribe(
       (res: any) => {
@@ -170,11 +172,12 @@ export class ProjectMasterComponent implements OnInit {
       .subscribe((response: any) => {
         if (response) {
           const reqObj = {
-            serviceProviderId: sessionStorage.getItem('service_providerID'),
+            serviceProviderId:
+              this.sessionstorage.getItem('service_providerID'),
             projectId: element.projectId,
             projectName: element.projectName,
             deleted: deactivate,
-            modifiedBy: sessionStorage.getItem('uname'),
+            modifiedBy: this.sessionstorage.getItem('uname'),
           };
           this.projectMasterService.updateProject(reqObj).subscribe(
             (res: any) => {
@@ -215,11 +218,11 @@ export class ProjectMasterComponent implements OnInit {
       this.confirmationService.alert('Project Name already exists', 'error');
     } else {
       const reqObj = {
-        serviceProviderId: sessionStorage.getItem('service_providerID'),
+        serviceProviderId: this.sessionstorage.getItem('service_providerID'),
         projectId: this.projectId,
         projectName: this.projectName,
         deleted: false,
-        modifiedBy: sessionStorage.getItem('uname'),
+        modifiedBy: this.sessionstorage.getItem('uname'),
       };
       this.projectMasterService.updateProject(reqObj).subscribe(
         (res: any) => {

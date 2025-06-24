@@ -26,6 +26,7 @@ import { VanSpokeMappingService } from 'src/app/core/services/ProviderAdminServi
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-van-spoke-mapping',
@@ -86,6 +87,7 @@ export class VanSpokeMappingComponent implements OnInit {
     private vanSpokeMappingService: VanSpokeMappingService,
     private fb: FormBuilder,
     private confirmationDialog: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
@@ -124,7 +126,7 @@ export class VanSpokeMappingComponent implements OnInit {
   getProviderMappedServiceline() {
     this.vanSpokeMappingService.getServiceLines(this.userID).subscribe(
       (serviceresponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true) {
+        if (this.enabletmSpokeDetailsForm === true) {
           this.tm_servicelines = serviceresponse.data.filter((item: any) => {
             if (item.serviceID === 4) {
               return item;
@@ -153,7 +155,7 @@ export class VanSpokeMappingComponent implements OnInit {
     };
     this.vanSpokeMappingService.getStates(obj).subscribe(
       (statesResponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true && booleanValue == true) {
+        if (this.enabletmSpokeDetailsForm === true && booleanValue === true) {
           this.tm_states = statesResponse.data;
         } else {
           this.states = statesResponse.data;
@@ -170,7 +172,7 @@ export class VanSpokeMappingComponent implements OnInit {
     };
     this.vanSpokeMappingService.getZones(reqObj).subscribe(
       (zonesResponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true && booleanValue == true) {
+        if (this.enabletmSpokeDetailsForm === true && booleanValue === true) {
           this.tm_zones = zonesResponse.data;
         } else {
           this.zones = zonesResponse.data;
@@ -192,7 +194,7 @@ export class VanSpokeMappingComponent implements OnInit {
     };
     this.vanSpokeMappingService.getParkingPlace(reqObj).subscribe(
       (parkingPlaceResponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true && booleanValue == true) {
+        if (this.enabletmSpokeDetailsForm === true && booleanValue === true) {
           this.tm_hubs = parkingPlaceResponse.data;
         } else {
           this.parkingPlaces = parkingPlaceResponse.data;
@@ -211,11 +213,11 @@ export class VanSpokeMappingComponent implements OnInit {
     const reqObj = {
       stateID: state.stateID,
       parkingPlaceID: parkingplace.parkingPlaceID,
-      serviceProviderID: sessionStorage.getItem('service_providerID'),
+      serviceProviderID: this.sessionstorage.getItem('service_providerID'),
     };
     this.vanSpokeMappingService.getServicepoints(reqObj).subscribe(
       (servicepointResponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true && booleanValue == true) {
+        if (this.enabletmSpokeDetailsForm === true && booleanValue === true) {
           this.tm_servicepoints = servicepointResponse.data;
         } else {
           this.servicepoints = servicepointResponse.data;
@@ -232,7 +234,7 @@ export class VanSpokeMappingComponent implements OnInit {
     };
     this.vanSpokeMappingService.getVanTypes(reqObj).subscribe(
       (vantypeResponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true && booleanValue == true) {
+        if (this.enabletmSpokeDetailsForm === true && booleanValue === true) {
           this.tm_vantypes = vantypeResponse.data;
         } else {
           this.vantypes = vantypeResponse.data;
@@ -293,7 +295,7 @@ export class VanSpokeMappingComponent implements OnInit {
     this.vanSpokeMappingService
       .getVansOrspoke(reqObj)
       .subscribe((vansResponse: any) => {
-        if (this.enabletmSpokeDetailsForm == true && booleanValue == true) {
+        if (this.enabletmSpokeDetailsForm === true && booleanValue === true) {
           this.tm_spokes = vansResponse.data;
           this.enableMappingForm = true;
         } else {

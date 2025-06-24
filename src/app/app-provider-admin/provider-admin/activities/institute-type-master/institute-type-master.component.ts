@@ -31,6 +31,7 @@ import {
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-institute-type-master',
@@ -95,8 +96,9 @@ export class InstituteTypeMasterComponent implements OnInit {
     public commonDataService: dataService,
     public dialog: MatDialog,
     public alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
     this.userID = this.commonDataService.uid;
   }
 
@@ -123,7 +125,17 @@ export class InstituteTypeMasterComponent implements OnInit {
   getServicesSuccessHandeler(response: any) {
     console.log('SERVICES', response.data);
     this.services = response.data.filter(function (item: any) {
-      if (item.serviceID === 3 || item.serviceID === 1) return item;
+      if (
+        item.serviceID === 3 ||
+        item.serviceID === 11 ||
+        item.serviceID === 1 ||
+        item.serviceID === 6 ||
+        item.serviceID === 2 ||
+        item.serviceID === 4 ||
+        item.serviceID === 9
+      ) {
+        return item;
+      }
     });
   }
 
@@ -368,6 +380,7 @@ export class InstituteTypeMasterComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredsearchResultArray.data = this.searchResultArray;
+      this.filteredsearchResultArray.paginator = this.paginator;
     } else {
       this.filteredsearchResultArray.data = [];
       this.searchResultArray.forEach((item: any) => {
@@ -381,6 +394,7 @@ export class InstituteTypeMasterComponent implements OnInit {
           }
         }
       });
+      this.filteredsearchResultArray.paginator = this.paginator;
     }
   }
 }

@@ -35,6 +35,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { ItemService } from '../../inventory/services/item.service';
 import { SnomedMasterService } from '../services/snomed-master.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-map-snommed-ctcode',
@@ -141,12 +142,13 @@ export class MapSnommedCTCodeComponent implements OnInit, AfterViewInit {
     public dialogService: ConfirmationDialogsService,
     public dialog: MatDialog,
     public sctService: SnomedMasterService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.providerID = sessionStorage.getItem('service_providerID');
+    this.providerID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
-    this.createdBy = sessionStorage.getItem('uname');
+    this.createdBy = this.sessionstorage.getItem('uname');
     console.log('this.createdBy', this.createdBy);
     this.itemCodeExist = false;
     this.itemCodeExistEdit = true;

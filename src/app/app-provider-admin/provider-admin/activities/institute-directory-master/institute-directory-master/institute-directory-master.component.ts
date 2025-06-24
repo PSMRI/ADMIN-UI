@@ -14,6 +14,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { InstituteDirectoryMasterService } from '../../services/institute-directory-master-service.service';
 import { NgForm } from '@angular/forms';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-institute-directory-master',
@@ -69,8 +70,9 @@ export class InstituteDirectoryMasterComponent
     public dialog: MatDialog,
     public alertService: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
   }
   ngOnInit() {
     this.userID = this.commonDataService.uid;

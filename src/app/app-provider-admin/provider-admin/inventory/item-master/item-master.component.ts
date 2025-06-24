@@ -39,6 +39,7 @@ import {
 } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-item-master',
@@ -147,21 +148,32 @@ export class ItemMasterComponent implements OnInit {
   //   'action'
   // ];
   paginator!: MatPaginator;
-  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
+  @ViewChild('paginatorMain') set mainPaginator(mp: MatPaginator) {
     this.paginator = mp;
     this.setDataSourceAttributes();
   }
   setDataSourceAttributes() {
     this.filteredItemList.paginator = this.paginator;
   }
+
+  paginatorAddItems!: MatPaginator;
+  @ViewChild('paginatorSub') set subPaginator(mp: MatPaginator) {
+    this.paginatorAddItems = mp;
+    this.setDataSourceAttributesForItems();
+  }
+  setDataSourceAttributesForItems() {
+    this.itemArrayObj.paginator = this.paginatorAddItems;
+  }
+
   constructor(
     public commonDataService: dataService,
     public itemService: ItemService,
     public commonServices: CommonServices,
     public dialogService: ConfirmationDialogsService,
     public dialog: MatDialog,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.providerID = sessionStorage.getItem('service_providerID');
+    this.providerID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
@@ -296,6 +308,7 @@ export class ItemMasterComponent implements OnInit {
           }
         }
       });
+      this.filteredItemList.paginator = this.paginator;
     }
   }
 
@@ -481,7 +494,7 @@ export class ItemMasterComponent implements OnInit {
     this.itemCreationForm.controls['description'].reset();
     this.drugType = false;
     this.drugName = 'EDL';
-
+    this.itemCreationForm.controls['drugType'].patchValue(false);
     this.enableAlert = true;
     this.snomedFlag = false;
     this.itemCreationForm.controls['testsnomedCode'].enable();
@@ -514,15 +527,15 @@ export class ItemMasterComponent implements OnInit {
               sctCode: this.testsnomedCode,
               sctTerm: this.testSnomedName,
               itemDesc: formValue.description,
-              itemCategoryID: formValue.category.itemCategoryID,
-              itemFormID: formValue.dose.itemFormID,
+              itemCategoryID: formValue.category?.itemCategoryID,
+              itemFormID: formValue.dose?.itemFormID,
               pharmacologyCategoryID:
                 formValue.pharmacology !== null
-                  ? formValue.pharmacology.pharmacologyCategoryID
+                  ? formValue.pharmacology?.pharmacologyCategoryID
                   : null,
               manufacturerID:
                 formValue.manufacturer !== null
-                  ? formValue.manufacturer.manufacturerID
+                  ? formValue.manufacturer?.manufacturerID
                   : null,
               strength: formValue.strength,
               uomID: formValue.uom.uOMID,
@@ -559,15 +572,15 @@ export class ItemMasterComponent implements OnInit {
         sctCode: this.testsnomedCode,
         sctTerm: this.testSnomedName,
         itemDesc: formValue.description,
-        itemCategoryID: formValue.category.itemCategoryID,
+        itemCategoryID: formValue.category?.itemCategoryID,
         itemFormID: formValue.dose.itemFormID,
         pharmacologyCategoryID:
           formValue.pharmacology !== null
-            ? formValue.pharmacology.pharmacologyCategoryID
+            ? formValue.pharmacology?.pharmacologyCategoryID
             : null,
         manufacturerID:
           formValue.manufacturer !== null
-            ? formValue.manufacturer.manufacturerID
+            ? formValue.manufacturer?.manufacturerID
             : null,
         strength: formValue.strength,
         uomID: formValue.uom.uOMID,
@@ -593,7 +606,7 @@ export class ItemMasterComponent implements OnInit {
     let duplicateStatus = 0;
     if (this.itemArrayObj.data.length === 0) {
       this.itemArrayObj.data.push(multipleItem);
-      this.itemArrayObj.paginator = this.paginator;
+      this.itemArrayObj.paginator = this.paginatorAddItems;
     } else {
       for (let i = 0; i < this.itemArrayObj.data.length; i++) {
         if (this.itemArrayObj.data[i].itemCode === multipleItem.itemCode) {
@@ -602,12 +615,13 @@ export class ItemMasterComponent implements OnInit {
       }
       if (duplicateStatus === 0) {
         this.itemArrayObj.data.push(multipleItem);
-        this.itemArrayObj.paginator = this.paginator;
+        this.itemArrayObj.paginator = this.paginatorAddItems;
       }
     }
   }
   removeRow(index: any) {
     this.itemArrayObj.data.splice(index, 1);
+    this.itemArrayObj.paginator = this.paginatorAddItems;
   }
   showTable() {
     this.showTableFlag = true;
@@ -622,6 +636,7 @@ export class ItemMasterComponent implements OnInit {
           console.log(response, 'item created');
           this.resetItemCreationForm();
           this.itemArrayObj.data = [];
+          this.itemArrayObj.paginator = this.paginatorAddItems;
           this.dialogService.alert('Saved Successfully', 'success');
           this.showTable();
 
@@ -643,6 +658,7 @@ export class ItemMasterComponent implements OnInit {
       .subscribe((res) => {
         if (res) {
           this.itemArrayObj.data = [];
+          this.itemArrayObj.paginator = this.paginatorAddItems;
           this.tableMode = true;
           this.editMode = false;
           this.showTableFlag = true;

@@ -6,6 +6,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ProjectMasterService } from '../services/project-master-service.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-project-serviceline-mapping',
@@ -44,11 +45,12 @@ export class ProjectServicelineMappingComponent implements OnInit {
     private projectMasterService: ProjectMasterService,
     private dataService: dataService,
     private fb: FormBuilder,
+    readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createProjectServicelineForm();
-    this.serviceProviderId = sessionStorage.getItem('service_providerID');
+    this.serviceProviderId = this.sessionstorage.getItem('service_providerID');
     this.getProviderServices();
     this.projectServcelineMappingForm.get('projectName')?.disable();
   }
@@ -87,7 +89,7 @@ export class ProjectServicelineMappingComponent implements OnInit {
   }
   getProviderServices() {
     const reqObj = {
-      userID: sessionStorage.getItem('uid'),
+      userID: this.sessionstorage.getItem('uid'),
     };
     this.projectServicelineMappingService.getServices(reqObj).subscribe(
       (res: any) => {
@@ -200,7 +202,7 @@ export class ProjectServicelineMappingComponent implements OnInit {
   //       this.projectServcelineMappingForm.get('district')?.value.districtID,
   //     districtName:
   //       this.projectServcelineMappingForm.get('district')?.value.districtName,
-  //     serviceProviderId: sessionStorage.getItem('service_providerID'),
+  //     serviceProviderId: this.sessionstorage.getItem('service_providerID'),
   //     blockId: this.projectServcelineMappingForm.get('block')?.value.blockID,
   //     blockName:
   //       this.projectServcelineMappingForm.get('block')?.value.blockName,
@@ -258,7 +260,7 @@ export class ProjectServicelineMappingComponent implements OnInit {
         this.projectServcelineMappingForm.get('district')?.value.districtID,
       districtName:
         this.projectServcelineMappingForm.get('district')?.value.districtName,
-      serviceProviderId: sessionStorage.getItem('service_providerID'),
+      serviceProviderId: this.sessionstorage.getItem('service_providerID'),
       // blockId: this.projectServcelineMappingForm.get('block')?.value.blockID,
       // blockName:
       //   this.projectServcelineMappingForm.get('block')?.value.blockName,
@@ -268,6 +270,7 @@ export class ProjectServicelineMappingComponent implements OnInit {
         if (res && res.data && res.statusCode === 200) {
           if (res.data && res.data.length > 0) {
             this.dataSource.data = res.data;
+            this.dataSource.paginator = this.paginator;
             this.addedFields = res.data;
             console.log('this.dataSource.data', this.dataSource.data);
             this.getBlocks();
@@ -301,7 +304,7 @@ export class ProjectServicelineMappingComponent implements OnInit {
     );
   }
   getProjects() {
-    const serviceProviderId = sessionStorage.getItem('service_providerID');
+    const serviceProviderId = this.sessionstorage.getItem('service_providerID');
     this.projectMasterService.getProjectMasters(serviceProviderId).subscribe(
       (res: any) => {
         if (res && res.statusCode === 200) {
@@ -345,14 +348,14 @@ export class ProjectServicelineMappingComponent implements OnInit {
   //       this.projectServcelineMappingForm.get('district')?.value.districtID,
   //     districtName:
   //       this.projectServcelineMappingForm.get('district')?.value.districtName,
-  //     serviceProviderId: sessionStorage.getItem('service_providerID'),
+  //     serviceProviderId: this.sessionstorage.getItem('service_providerID'),
   //     blockId: item.blockID,
   //     blockName: item.blockName,
   //     projectName: this.projectServcelineMappingForm.get('projectName')?.value,
   //     projectId: this.projectServcelineMappingForm.get('projectId')?.value,
   //     deleted: false,
-  //     modifiedBy: sessionStorage.getItem('uname'),
-  //     createdBy: sessionStorage.getItem('uname'),
+  //     modifiedBy: this.sessionstorage.getItem('uname'),
+  //     createdBy: this.sessionstorage.getItem('uname'),
   //   }));
   //   // const reqObj = {
   //   //   id: this.projectServcelineMappingForm.get('serviceline')?.value.id,
@@ -367,15 +370,15 @@ export class ProjectServicelineMappingComponent implements OnInit {
   //   //     this.projectServcelineMappingForm.get('district')?.value.districtID,
   //   //   districtName:
   //   //     this.projectServcelineMappingForm.get('district')?.value.districtName,
-  //   //   serviceProviderId: sessionStorage.getItem('service_providerID'),
+  //   //   serviceProviderId: this.sessionstorage.getItem('service_providerID'),
   //   //   blockId: this.projectServcelineMappingForm.get('block')?.value.blockID,
   //   //   blockName:
   //   //     this.projectServcelineMappingForm.get('block')?.value.blockName,
   //   //   projectName: this.projectServcelineMappingForm.get('projectName')?.value,
   //   //   projectId: this.projectServcelineMappingForm.get('projectId')?.value,
   //   //   deleted: false,
-  //   //   modifiedBy: sessionStorage.getItem('uname'),
-  //   //   createdBy: sessionStorage.getItem('uname'),
+  //   //   modifiedBy: this.sessionstorage.getItem('uname'),
+  //   //   createdBy: this.sessionstorage.getItem('uname'),
   //   // };
   //   this.projectServicelineMappingService
   //     .updateProjectToServiceline(reqObjUpdateArray)
@@ -407,14 +410,14 @@ export class ProjectServicelineMappingComponent implements OnInit {
       stateName: element.stateName,
       districtId: element.districtId,
       districtName: element.districtName,
-      serviceProviderId: sessionStorage.getItem('service_providerID'),
+      serviceProviderId: this.sessionstorage.getItem('service_providerID'),
       blockId: element.blockId,
       blockName: element.blockName,
       projectName: element.projectName,
       projectId: element.projectId,
       deleted: true,
-      modifiedBy: sessionStorage.getItem('uname'),
-      createdBy: sessionStorage.getItem('uname'),
+      modifiedBy: this.sessionstorage.getItem('uname'),
+      createdBy: this.sessionstorage.getItem('uname'),
     };
     this.projectServicelineMappingService
       .updateProjectToServiceline(reqObj)
@@ -427,6 +430,7 @@ export class ProjectServicelineMappingComponent implements OnInit {
             );
             this.projectServcelineMappingForm.reset();
             this.dataSource.data = [];
+            this.dataSource.paginator = this.paginator;
             this.enableUpdate = false;
           } else {
             this.confirmationService.alert(res.errorMessage, 'error');
@@ -454,12 +458,12 @@ export class ProjectServicelineMappingComponent implements OnInit {
   //       this.projectServcelineMappingForm.get('district')?.value.districtID,
   //     districtName:
   //       this.projectServcelineMappingForm.get('district')?.value.districtName,
-  //     serviceProviderId: sessionStorage.getItem('service_providerID'),
+  //     serviceProviderId: this.sessionstorage.getItem('service_providerID'),
   //     blockId: this.projectServcelineMappingForm.get('block')?.value.blockID,
   //     blockName: this.projectServcelineMappingForm.get('block')?.value.blockName,
   //     projectName: this.projectServcelineMappingForm.get('projectName')?.value,
   //     projectId: this.projectServcelineMappingForm.get('projectId')?.value,
-  //     createdBy: sessionStorage.getItem('uname'),
+  //     createdBy: this.sessionstorage.getItem('uname'),
   //   };
   //   this.projectServicelineMappingService
   //     .saveProjectToServiceline(reqObj)
@@ -496,12 +500,12 @@ export class ProjectServicelineMappingComponent implements OnInit {
         this.projectServcelineMappingForm.get('district')?.value.districtID,
       districtName:
         this.projectServcelineMappingForm.get('district')?.value.districtName,
-      serviceProviderId: sessionStorage.getItem('service_providerID'),
+      serviceProviderId: this.sessionstorage.getItem('service_providerID'),
       blockId: block.blockID,
       blockName: block.blockName,
       projectName: this.projectServcelineMappingForm.get('projectName')?.value,
       projectId: this.projectServcelineMappingForm.get('projectId')?.value,
-      createdBy: sessionStorage.getItem('uname'),
+      createdBy: this.sessionstorage.getItem('uname'),
     }));
 
     this.projectServicelineMappingService
@@ -514,7 +518,9 @@ export class ProjectServicelineMappingComponent implements OnInit {
               'success',
             );
             this.projectServcelineMappingForm.reset();
+            this.addedFields = [];
             this.dataSource.data = [];
+            this.dataSource.paginator = this.paginator;
           } else {
             this.confirmationService.alert(res.errorMessage, 'error');
           }
@@ -535,5 +541,6 @@ export class ProjectServicelineMappingComponent implements OnInit {
     this.blocks = [];
     this.projectNames = [];
     this.dataSource.data = [];
+    this.dataSource.paginator = this.paginator;
   }
 }

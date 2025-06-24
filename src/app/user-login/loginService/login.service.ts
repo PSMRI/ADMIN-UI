@@ -78,13 +78,24 @@ export class loginService {
   // 		// .map(this.extractData)
   // 		// .catch(this.handleError);
   // };
-  authenticateUser(uname: any, pwd: any, doLogout: any): Observable<any> {
+  authenticateUser(
+    uname: any,
+    pwd: any,
+    doLogout: any,
+    captchaToken?: string,
+  ): Observable<any> {
+    const requestBody: any = {
+      userName: uname.toLowerCase(),
+      password: pwd,
+      doLogout: doLogout,
+      withCredentials: true,
+    };
+
+    if (captchaToken) {
+      requestBody.captchaToken = captchaToken;
+    }
     return this._httpInterceptor
-      .post(this.newlogin, {
-        userName: uname.toLowerCase(),
-        password: pwd,
-        doLogout: doLogout,
-      })
+      .post(this.newlogin, requestBody)
       .pipe(map(this.extractData), catchError(this.handleError));
   }
   public checkAuthorisedUser() {
@@ -92,12 +103,23 @@ export class loginService {
     // .map(this.extractData)
     // .catch(this.handleError);
   }
-  superAdminAuthenticate(uname: string, password: any, doLogout: any) {
-    return this._httpInterceptor.post(this.superadmin_auth_url, {
+  superAdminAuthenticate(
+    uname: string,
+    password: any,
+    doLogout: any,
+    captchaToken?: string,
+  ) {
+    const requestBody: any = {
       userName: uname.toLowerCase(),
       password: password,
       doLogout: doLogout,
-    });
+      withCredentials: true,
+    };
+
+    if (captchaToken) {
+      requestBody.captchaToken = captchaToken;
+    }
+    return this._httpInterceptor.post(this.superadmin_auth_url, requestBody);
     // .map(this.extractData)
     // .catch(this.handleError);
   }

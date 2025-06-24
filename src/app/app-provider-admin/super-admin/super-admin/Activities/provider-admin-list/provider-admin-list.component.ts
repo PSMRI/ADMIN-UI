@@ -654,6 +654,7 @@ export class ProviderAdminListComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredsearchResult.data = this.searchResult;
+      this.filteredsearchResult.paginator = this.paginator;
     } else {
       this.filteredsearchResult.data = [];
       this.searchResult.forEach((item: any) => {
@@ -672,6 +673,7 @@ export class ProviderAdminListComponent implements OnInit {
           }
         }
       });
+      this.filteredsearchResult.paginator = this.paginator;
     }
   }
 }

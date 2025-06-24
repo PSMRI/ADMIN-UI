@@ -356,6 +356,7 @@ export class CreateSubServiceComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filtereddata.data = this.data;
+      this.filtereddata.paginator = this.paginator;
     } else {
       this.filtereddata.data = [];
       this.data.forEach((item: any) => {
@@ -369,6 +370,7 @@ export class CreateSubServiceComponent implements OnInit {
           }
         }
       });
+      this.filtereddata.paginator = this.paginator;
     }
   }
 }

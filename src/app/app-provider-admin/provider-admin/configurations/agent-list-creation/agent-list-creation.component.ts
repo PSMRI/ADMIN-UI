@@ -25,6 +25,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { AgentListCreationService } from '../services/agent-list-creation-service.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-agent-list-creation',
@@ -76,13 +77,14 @@ export class AgentListCreationComponent implements OnInit, AfterViewInit {
   constructor(
     public _AgentListCreationService: AgentListCreationService,
     public alertService: ConfirmationDialogsService,
+    readonly sessionstorage: SessionStorageService,
   ) {
-    this.serviceProviderID = sessionStorage.getItem('service_providerID');
+    this.serviceProviderID = this.sessionstorage.getItem('service_providerID');
   }
 
   ngOnInit() {
     this.radio_option = '1';
-    this.userID = sessionStorage.getItem('uid');
+    this.userID = this.sessionstorage.getItem('uid');
     console.log('userID', this.userID);
     this.getServices(this.userID);
     this.dataSource.data = this.agentsResponse.data;
@@ -227,7 +229,7 @@ export class AgentListCreationComponent implements OnInit, AfterViewInit {
         agentPassword: this.password,
         providerServiceMapID: this.providerServiceMapID,
         cti_CampaignName: this.campaign_name,
-        createdBy: sessionStorage.getItem('uname'),
+        createdBy: this.sessionstorage.getItem('uname'),
       };
       console.log('agent obj', obj);
 
@@ -278,7 +280,7 @@ export class AgentListCreationComponent implements OnInit, AfterViewInit {
         agentPassword: this.password,
         providerServiceMapID: this.providerServiceMapID,
         cti_CampaignName: this.campaign_name,
-        createdBy: sessionStorage.getItem('uname'),
+        createdBy: this.sessionstorage.getItem('uname'),
       };
 
       if (this.resultArray.length === 0) {
@@ -341,7 +343,7 @@ export class AgentListCreationComponent implements OnInit, AfterViewInit {
           agentPassword: this.password,
           providerServiceMapID: this.providerServiceMapID,
           cti_CampaignName: this.campaign_name,
-          createdBy: sessionStorage.getItem('uname'),
+          createdBy: this.sessionstorage.getItem('uname'),
         };
 
         if (this.resultArray.length === 0) {

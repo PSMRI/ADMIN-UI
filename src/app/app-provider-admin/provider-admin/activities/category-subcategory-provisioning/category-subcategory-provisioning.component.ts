@@ -35,6 +35,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { CategorySubcategoryService } from 'src/app/app-provider-admin/provider-admin/activities/services/category-subcategory-master-service.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Component({
   selector: 'app-category-subcategory-provisioning',
@@ -139,12 +140,13 @@ export class CategorySubcategoryProvisioningComponent
     public CategorySubcategoryService: CategorySubcategoryService,
     private messageBox: ConfirmationDialogsService,
     private cdr: ChangeDetectorRef,
+    readonly sessionstorage: SessionStorageService,
   ) {
     this.api_choice = '0';
     this.searchChoice = '0';
     this.Add_Category_Subcategory_flag = true;
     this.showTable = true;
-    this.serviceproviderID = sessionStorage.getItem('service_providerID');
+    this.serviceproviderID = this.sessionstorage.getItem('service_providerID');
     this.createdBy = this.commonDataService.uname;
   }
 

@@ -426,7 +426,6 @@
               "
               (click)="
                 addServicePointToList(servicePointForm1.value);
-                servicePointForm1.reset()
               "
             >
               <mat-icon
@@ -525,7 +524,7 @@
             [disabled]="!(servicePointList.data.length > 0)"
             color="accent"
             class="pull-right m-b-10 mat_green"
-            (click)="storeServicePoints(); servicePointForm1.reset()"
+            (click)="storeServicePoints()"
           >
             Save
           </button>
