@@ -180,7 +180,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                   });
               } else if (
                 response.errorMessage.includes(
-                  'User login failed due to incorrect username/password',
+                  'Invalid username or password',
                 )
               ) {
                 this.alertMessage
@@ -232,7 +232,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                   });
               } else if (
                 response.errorMessage.includes(
-                  'User login failed due to incorrect username/password',
+                  'Invalid username or password',
                 )
               ) {
                 this.alertMessage
