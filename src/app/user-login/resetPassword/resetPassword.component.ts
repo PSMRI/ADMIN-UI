@@ -24,6 +24,7 @@ import { Router } from '@angular/router';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { loginService } from '../loginService/login.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
+import { AuthService } from 'src/app/core/services/authentication/auth.service';
 
 @Component({
   selector: 'app-reset-component',
@@ -38,6 +39,8 @@ export class ResetComponent {
     public getUserData: dataService,
     public router: Router,
     public alertService: ConfirmationDialogsService,
+    private authService: AuthService,
+
   ) {}
 
   public response: any;
@@ -79,16 +82,16 @@ export class ResetComponent {
   }
 
   handleSuccess(data: any) {
-    console.log(data.data);
+    console.error(data);
     if (
       data !== undefined &&
       data !== null &&
       data.forgetPassword !== 'user Not Found'
     ) {
       if (
-        data.data.SecurityQuesAns !== undefined &&
-        data.data.SecurityQuesAns !== null &&
-        data.data.SecurityQuesAns.length > 0
+        data?.data?.SecurityQuesAns !== undefined &&
+        data?.data?.SecurityQuesAns !== null &&
+        data?.data?.SecurityQuesAns.length > 0
       ) {
         this.securityQuestions = data.data.SecurityQuesAns;
         this.showQuestions = true;
@@ -97,9 +100,10 @@ export class ResetComponent {
         this.splitQuestionAndQuestionID();
       } else {
         this.router.navigate(['/']);
-        this.alertService.alert('Questions are not set for this User');
+        this.alertService.alert(data.errorMessage);
+
       }
-    }
+    } 
   }
 
   showPWD() {
