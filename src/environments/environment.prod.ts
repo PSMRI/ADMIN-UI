@@ -27,11 +27,15 @@
 const ADMIN_API = 'https://amritwprdev.piramalswasthya.org/';
 const COMMON_API = 'https://amritwprdev.piramalswasthya.org/';
 const FHIR_API = 'https://amritwprdev.piramalswasthya.org/';
-const adminBaseUrl = `${ADMIN_API}adminapi-v1.0/`;
-const superadminBaseURL = `${ADMIN_API}adminapi-v1.0/`;
-const commonBaseURL = `${COMMON_API}commonapi-v1.0/`;
-const fhirBaseUrl = `${FHIR_API}fhirapi-v1.0/`;
+const adminBaseUrl = `${ADMIN_API}admin-api/`;
+const superadminBaseURL = `${ADMIN_API}admin-api/`;
+const commonBaseURL = `${COMMON_API}common-api/`;
+const fhirBaseUrl = `${FHIR_API}fhir-api/`;
 const sessionStorageEncKey = '';
+
+const siteKey = '';
+const captchaChallengeURL = '';
+const enableCaptcha = true;
 
 export const environment = {
   production: false,
@@ -498,4 +502,8 @@ export const environment = {
 
   //ABDM Facility
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
+
+  siteKey: siteKey,
+  captchaChallengeURL: captchaChallengeURL,
+  enableCaptcha: enableCaptcha,
 };

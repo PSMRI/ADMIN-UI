@@ -225,11 +225,6 @@ export class UserRoleAgentIDMappingComponent implements OnInit {
     console.log(response, 'employees fetched as per condition');
     if (response) {
       this.searchResultArray = response.data.filter(function (obj: any) {
-        return obj.uSRMDeleted === false && obj.roleName === 'ProviderAdmin';
-      });
-      this.filteredsearchResultArray.data = response.data.filter(function (
-        obj: any,
-      ) {
         return obj.uSRMDeleted === false && obj.roleName !== 'ProviderAdmin';
       });
       this.filteredsearchResultArray.data = this.searchResultArray;

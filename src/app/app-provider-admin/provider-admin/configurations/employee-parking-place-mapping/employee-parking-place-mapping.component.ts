@@ -302,6 +302,7 @@ export class EmployeeParkingPlaceMappingComponent
   employeeObj: any = {};
   getEmployeeParkingPlaceMappings(searchStateID: any, designationID: any) {
     this.userID = null;
+    this.vanUnderPP = [];
     this.employeeObj = {};
     this.employeeObj.providerServiceMapID = searchStateID.providerServiceMapID;
     this.employeeObj.parkingPlaceID =
