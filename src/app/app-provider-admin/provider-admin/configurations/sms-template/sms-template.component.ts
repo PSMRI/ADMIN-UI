@@ -124,7 +124,7 @@ export class SmsTemplateComponent implements OnInit, AfterViewInit {
     public commonDataService: dataService,
     public commonDialogService: ConfirmationDialogsService,
     private changeDetector: ChangeDetectorRef,
-  ) {}
+  ) { }
 
   setDataSourceAttributes() {
     this.dataSource.paginator = this.paginator;
@@ -201,8 +201,10 @@ export class SmsTemplateComponent implements OnInit, AfterViewInit {
           this.createForm = false;
           for (let i = 0; i < this.dataSource.data.length; i++) {
             if (this.dataSource.data[i]?.deleted === false) {
-              if (this.dataSource.data[i]?.smsType && this.dataSource.data[i]?.smsType?.smsTypeID !== undefined) {
-                this.smsType_ID_array.push(this.dataSource.data[i].smsType.smsTypeID);
+              if (this.dataSource.data[i]?.smsType && 
+                this.dataSource.data[i]?.smsType?.smsTypeID !== undefined) {
+                this.smsType_ID_array.push(
+                  this.dataSource.data[i].smsType.smsTypeID);
               } else {
                 this.smsType_ID_array.push(null);
               }
@@ -273,7 +275,7 @@ export class SmsTemplateComponent implements OnInit, AfterViewInit {
           }
         }
       },
-      (err) => {},
+      (err) => { },
     );
   }
 
@@ -398,7 +400,7 @@ export class SmsTemplateComponent implements OnInit, AfterViewInit {
       smsTemplate: form_values.smsTemplate,
       smsTemplateName:
         form_values.templateName !== undefined &&
-        form_values.templateName !== null
+          form_values.templateName !== null
           ? form_values.templateName.trim()
           : null,
       smsTypeID: form_values.smsType,
