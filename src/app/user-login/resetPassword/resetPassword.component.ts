@@ -24,7 +24,6 @@ import { Router } from '@angular/router';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { loginService } from '../loginService/login.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
-import { AuthService } from 'src/app/core/services/authentication/auth.service';
 
 @Component({
   selector: 'app-reset-component',
@@ -39,8 +38,6 @@ export class ResetComponent {
     public getUserData: dataService,
     public router: Router,
     public alertService: ConfirmationDialogsService,
-    private authService: AuthService,
-
   ) {}
 
   public response: any;
