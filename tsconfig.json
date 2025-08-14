@@ -12,7 +12,6 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
     "declaration": false,
-    "downlevelIteration": true,
     "experimentalDecorators": true,
     "types": ["node"],
     "moduleResolution": "node",
@@ -20,7 +19,6 @@
     "target": "ES2022",
     "module": "ES2022",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
     "useDefineForClassFields": false,
     "lib": [
       "ES2022",

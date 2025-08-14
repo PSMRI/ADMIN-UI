@@ -10,7 +10,8 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import {
   HTTP_INTERCEPTORS,
   HttpClient,
-  HttpClientModule,
+  provideHttpClient,
+  withInterceptorsFromDi,
 } from '@angular/common/http';
 import { HttpInterceptorService } from './core/services/httpInterceptor/http-interceptor.service';
 import { loginContentClassComponent } from './user-login/login/login.component';
@@ -63,6 +64,12 @@ import { CaptchaComponent } from './user-login/captcha/captcha.component';
     MultiRoleScreenComponent,
     CaptchaComponent,
   ],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  // entryComponents: [
+  //   CommonDialogComponent,
+  //   ViewVersionDetailsComponent,
+  // ],
+  bootstrap: [AppComponent],
   imports: [
     BrowserModule,
     FormsModule,
@@ -70,7 +77,6 @@ import { CaptchaComponent } from './user-login/captcha/captcha.component';
     MatFormFieldModule,
     ReactiveFormsModule,
     FormsModule,
-    HttpClientModule,
     MaterialModule,
     BrowserAnimationsModule,
     AppRoutingModule,
@@ -87,7 +93,6 @@ import { CaptchaComponent } from './user-login/captcha/captcha.component';
     MatExpansionModule,
     MatChipsModule,
   ],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   providers: [
     CommonServices,
     SuppliermasterService,
@@ -109,12 +114,7 @@ import { CaptchaComponent } from './user-login/captcha/captcha.component';
       useClass: HttpInterceptorService,
       multi: true,
     },
+    provideHttpClient(withInterceptorsFromDi()),
   ],
-
-  // entryComponents: [
-  //   CommonDialogComponent,
-  //   ViewVersionDetailsComponent,
-  // ],
-  bootstrap: [AppComponent],
 })
 export class AppModule {}
