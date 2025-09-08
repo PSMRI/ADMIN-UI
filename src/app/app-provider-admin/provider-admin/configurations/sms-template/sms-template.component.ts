@@ -392,7 +392,7 @@ export class SmsTemplateComponent implements OnInit, AfterViewInit {
 
   saveSMStemplate(form_values: any) {
     const requestObject = {
-      createdBy: this.commonData.Userdata.userName,
+      createdBy: this.commonData.uname,
       providerServiceMapID: this.providerServiceMapID,
       smsParameterMaps: this.smsParameterData.data,
       smsTemplate: form_values.smsTemplate,
