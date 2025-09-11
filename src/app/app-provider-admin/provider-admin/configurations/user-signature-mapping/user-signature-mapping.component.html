@@ -8,79 +8,117 @@
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Designation</mat-label>
-            <mat-select
-              name="designation"
-              formControlName="designation"
-              (selectionChange)="getUserNames()"
-            >
+            <mat-select name="designation" formControlName="designation" (selectionChange)="getUserNames()">
               <mat-option *ngFor="let item of designations" [value]="item">
                 {{ item.designationName }}
               </mat-option>
             </mat-select>
           </mat-form-field>
         </div>
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'">
-            <mat-label>UserName</mat-label>
-            <mat-select
-              name="username"
-              formControlName="username"
-              (selectionChange)="checkUsersignExist()"
-            >
-              <mat-option *ngFor="let item of userNames" [value]="item">
-                {{ item.userName }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="col-3">
-          <button
-            mat-raised-button
-            color="primary"
-            class="pull-right mat_blue"
-            [disabled]="!signExist"
-            (click)="file.click()"
-          >
-            Select Sign
-          </button>
-          <span class="span-style">
-            <input
-              type="file"
-              #file
-              (change)="preview(file.files)"
-              accept="image/*"
-              class="pull-right"
-            />
-          </span>
-        </div>
       </div>
-      <div
-        class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t-50"
-        *ngIf="imgURL"
-      >
+      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t-50" *ngIf="imgURL">
         <img [src]="imgURL" alt="img" height="80" />
-        <button
-          mat-raised-button
-          color="primary"
-          class="m-l-50 mat_blue"
-          (click)="uploadSign()"
-        >
+        <button mat-raised-button color="primary" class="mat_blue" (click)="uploadSign()">
           Upload
         </button>
       </div>
-      <div
-        class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t-50"
-        *ngIf="enableDownloadButton"
-      >
-        <button
-          mat-raised-button
-          color="primary"
-          class="m-l-50 pull-right mat_blue"
-          (click)="downloadSign()"
-        >
-          Download signature
-        </button>
+      <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t-50" *ngIf="enableDownloadButton">
       </div>
     </form>
   </div>
-</div>
+
+
+  <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t-10" *ngIf="userSignatureTable.length > 0">
+
+    <div style="text-align: end">
+      <mat-form-field id="filterbox">
+        <input matInput placeholder="Search by user name" #filterTerm (keyup)="applyFilter($event)" />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    <div class="table-responsive">
+      <table mat-table [dataSource]="dataSource" class="table table-striped table-hover" matsort
+        aria-label="User Signature Table">
+
+        <!-- Role Column -->
+        <ng-container matColumnDef="role">
+          <th mat-header-cell *matHeaderCellDef> Role </th>
+          <td mat-cell *matCellDef="let element"> {{ element.role }} </td>
+        </ng-container>
+
+        <!-- Username Column -->
+        <ng-container matColumnDef="username">
+          <th mat-header-cell *matHeaderCellDef> Username </th>
+          <td mat-cell *matCellDef="let element"> {{ element.username }} </td>
+        </ng-container>
+
+        <!-- Upload Column -->
+        <ng-container matColumnDef="upload">
+          <th mat-header-cell *matHeaderCellDef> Upload </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-raised-button color="primary" class="mat_blue" (click)="fileInput.click()">Upload
+              Signature</button>
+            <input type="file" #fileInput hidden (change)="preview(fileInput.files, element)" accept="image/*" />
+          </td>
+        </ng-container>
+
+        <!-- Download Column -->
+        <ng-container matColumnDef="download">
+          <th mat-header-cell *matHeaderCellDef> Download </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-raised-button color="primary" class="mat_blue" (click)="downloadSign(element)"
+              [disabled]="element.signExist === 'false'">
+              Download
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- View Column -->
+        <ng-container matColumnDef="view">
+          <th mat-header-cell *matHeaderCellDef> View </th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-raised-button color="primary" class="mat_blue" (click)="openSignatureDialog(element)"
+              [disabled]="element.signExist === 'false'">View</button>
+          </td>
+        </ng-container>
+
+        <!-- Active Toggle Column -->
+        <ng-container matColumnDef="active">
+          <th mat-header-cell *matHeaderCellDef> Active </th>
+          <td mat-cell *matCellDef="let element">
+            <button *ngIf="element.signatureStatus === 'InActive'" mat-raised-button color="accent" class="mat_green"
+              (click)="toggleActive(element,true)" [disabled]="element.signExist === 'false'">
+              Activate
+            </button>
+            <button *ngIf="element.signatureStatus === 'Active'" mat-raised-button class="mat_blue" color="primary"
+              (click)="toggleActive(element,false)">
+              Deactivate
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Header + Row -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      </table>
+
+    </div>
+    <mat-paginator #paginator [pageSizeOptions]="[5, 10, 20]" [pageSize]="5" showFirstLastButtons>
+    </mat-paginator>
+
+    <ng-template #signatureDialog let-data>
+      <h3 class="title info">{{ data.username }}'s Signature</h3>
+
+      <div class="signature-container">
+        <img [src]="data.signatureUrl" alt="signature" class="signature-img" />
+      </div>
+
+      <div class="action">
+        <button mat-raised-button class="mat_blue ok-btn" (click)="closeDialog()">
+          OK
+        </button>
+      </div>
+    </ng-template>
+
+  </div>

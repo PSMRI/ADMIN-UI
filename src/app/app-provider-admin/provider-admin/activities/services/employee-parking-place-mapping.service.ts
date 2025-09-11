@@ -124,4 +124,8 @@ export class EmployeeParkingPlaceMappingService {
       observe: 'response',
     });
   }
+
+  activateOrDeActivateSignature(data: any) {
+    return this.http.post(environment.signatureStatus, data);
+  } 
 }
