@@ -37,7 +37,7 @@
       </mat-form-field>
     </div>
     <div class="table-responsive">
-      <table mat-table [dataSource]="dataSource" class="table table-striped table-hover" matsort
+      <table mat-table [dataSource]="dataSource" class="table table-striped table-hover" matSort
         aria-label="User Signature Table">
 
         <!-- Role Column -->
@@ -67,7 +67,7 @@
           <th mat-header-cell *matHeaderCellDef> Download </th>
           <td mat-cell *matCellDef="let element">
             <button mat-raised-button color="primary" class="mat_blue" (click)="downloadSign(element)"
-              [disabled]="element.signExist === 'false'">
+              [disabled]="!element.signExist">
               Download
             </button>
           </td>
@@ -78,7 +78,7 @@
           <th mat-header-cell *matHeaderCellDef> View </th>
           <td mat-cell *matCellDef="let element">
             <button mat-raised-button color="primary" class="mat_blue" (click)="openSignatureDialog(element)"
-              [disabled]="element.signExist === 'false'">View</button>
+              [disabled]="!element.signExist">View</button>
           </td>
         </ng-container>
 
@@ -87,7 +87,7 @@
           <th mat-header-cell *matHeaderCellDef> Active </th>
           <td mat-cell *matCellDef="let element">
             <button *ngIf="element.signatureStatus === 'InActive'" mat-raised-button color="accent" class="mat_green"
-              (click)="toggleActive(element,true)" [disabled]="element.signExist === 'false'">
+              (click)="toggleActive(element,true)" [disabled]="!element.signExist">
               Activate
             </button>
             <button *ngIf="element.signatureStatus === 'Active'" mat-raised-button class="mat_blue" color="primary"

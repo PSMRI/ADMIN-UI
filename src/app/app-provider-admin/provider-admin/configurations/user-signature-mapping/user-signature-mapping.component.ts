@@ -95,6 +95,11 @@ export class UserSignatureMappingComponent implements OnInit {
     }
   }
 
+  ngOnDestroy(): void {
+     this.destroy$.next();
+     this.destroy$.complete();
+   }
+
   createSignUploadForm() {
     return this.fb.group({
       designation: [null, Validators.required],
@@ -143,7 +148,7 @@ export class UserSignatureMappingComponent implements OnInit {
                   userID: user.userID,
                   signatureStatus: user?.signatureStatus || 'InActive',
                   signatureUrl: signRes?.data?.signatureUrl || null,
-                  signExist: signRes?.data?.response || false,
+                  signExist: String(signRes?.data?.response).toLowerCase() === 'true',
                   active: signRes?.data?.active || false,
                   statusID: String(signRes?.data?.response).toLowerCase() === 'true',
                 }))
@@ -282,7 +287,12 @@ export class UserSignatureMappingComponent implements OnInit {
         }
       }
     }
-    const blob = new Blob([response.body!], { type: response.body!.type });
+    // const blob = new Blob([response.body!], { type: response.body!.type });
+    const body: Blob | null = response.body as Blob;
+    if (!body) {
+      throw new Error('Empty response body');
+    }
+    const blob = new Blob([body], { type: (body as any).type || 'application/octet-stream' });
     const url = URL.createObjectURL(blob);
 
     return { filename, url };
