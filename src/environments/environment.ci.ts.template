@@ -507,4 +507,5 @@ export const environment = {
   captchaChallengeURL: captchaChallengeURL,
   enableCaptcha: enableCaptcha
 
+  signatureStatus: `${adminBaseUrl}signature1/activateOrdeActivateSignature`,
 };
