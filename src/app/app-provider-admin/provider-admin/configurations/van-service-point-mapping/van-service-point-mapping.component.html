@@ -171,8 +171,8 @@
             <td mat-cell *matCellDef="let element; let i = index">
               <mat-checkbox
                 color="primary"
-                (change)="checkboxChange($event, 'vanSession1', i)"
-                [checked]="getCheckedData('vanSession1', i)"
+                (change)="checkboxChange($event, 'vanSession1', element)"
+                [checked]="getCheckedData('vanSession1', element)"
                 *ngIf="service.serviceID !== 4"
               ></mat-checkbox>
             </td>
@@ -183,8 +183,8 @@
             <td mat-cell *matCellDef="let element; let i = index">
               <mat-checkbox
                 color="primary"
-                (change)="checkboxChange($event, 'vanSession2', i)"
-                [checked]="getCheckedData('vanSession2', i)"
+                (change)="checkboxChange($event, 'vanSession2', element)"
+                [checked]="getCheckedData('vanSession2', element)"
                 *ngIf="service.serviceID !== 4"
               ></mat-checkbox>
             </td>
@@ -195,7 +195,7 @@
             <td mat-cell *matCellDef="let element; let i = index">
               <mat-checkbox
                 color="primary"
-                [checked]="getCheckedData('vanSession3', i)"
+                [checked]="getCheckedData('vanSession3', element)"
                 *ngIf="service.serviceID === 4"
                 (change)="setvansession(i)"
               ></mat-checkbox>
