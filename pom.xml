@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.iemr.admin-ui</groupId>
-  <artifactId>admin-ui</artifactId
-  <version>3.4.0</version>
+  <artifactId>admin-ui</artifactId>
+  <version>3.4.1</version>
   <name>Admin-UI</name>
   <description>Piramal - admin: Module ui</description>
 
