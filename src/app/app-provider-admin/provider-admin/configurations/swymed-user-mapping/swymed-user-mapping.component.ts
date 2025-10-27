@@ -348,6 +348,7 @@ export class SwymedUserMappingComponent implements OnInit {
       } else {
         this.status = 'Activate';
       }
+      const modifiedBy: any = this.sessionstorage.getItem('uname');
       this.dialogService
         .confirm('Confirm', 'Are you sure you want to ' + this.status + '?')
         .subscribe(
@@ -357,16 +358,20 @@ export class SwymedUserMappingComponent implements OnInit {
                 .mappingActivationDeactivation(
                   item.userVideoConsultationMapID,
                   flag,
-                  item.modifiedBy,
+                  modifiedBy,
                 )
                 .subscribe(
-                  (res) => {
-                    console.log('Activation or deactivation response', res);
-                    this.dialogService.alert(
-                      this.status + 'd successfully',
-                      'success',
-                    );
-                    this.getAllSwymedUserDetails();
+                  (res: any) => {
+                    if (res && res.statusCode === 200) {
+                      console.log('Activation or deactivation response', res);
+                      this.dialogService.alert(
+                        this.status + 'd successfully',
+                        'success',
+                      );
+                      this.getAllSwymedUserDetails();
+                    } else {
+                      this.dialogService.alert(res.errorMessage, 'error');
+                    }
                   },
                   (err) => {
                     if (err._body !== undefined) {
@@ -396,6 +401,7 @@ export class SwymedUserMappingComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredswymedUserDetails.data = this.swymedUserDetails;
+      this.filteredswymedUserDetails.paginator = this.paginator;
     } else {
       this.filteredswymedUserDetails.data = [];
       this.swymedUserDetails.forEach((item: any) => {
@@ -413,6 +419,7 @@ export class SwymedUserMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredswymedUserDetails.paginator = this.paginator;
     }
   }
 }

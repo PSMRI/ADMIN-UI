@@ -113,6 +113,7 @@ export class ViewStoreMappingComponent implements OnInit, OnDestroy {
       (value: any) => {
         if (value) {
           this.filteredStoreList.data = [];
+          this.filteredStoreList.paginator = this.paginator;
           this.storeList = [];
           this.getState(this.userID, value);
         }
@@ -174,6 +175,7 @@ export class ViewStoreMappingComponent implements OnInit, OnDestroy {
   filterStoreList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredStoreList.data = this.storeList.slice();
+      this.filteredStoreList.paginator = this.paginator;
     } else {
       this.filteredStoreList.data = [];
       this.storeList.forEach((item) => {
@@ -192,6 +194,7 @@ export class ViewStoreMappingComponent implements OnInit, OnDestroy {
           }
         }
       });
+      this.filteredStoreList.paginator = this.paginator;
     }
   }
 

@@ -259,7 +259,7 @@ export class ServicePointComponent implements OnInit {
 
   getServicePointSuccessHandler(response: any) {
     this.showServicePoints = true;
-    this.availableServicePoints.data = response.data;
+    this.availableServicePoints = response.data;
     this.filteredavailableServicePoints.data = response.data;
     for (const availableServicePoint of this.availableServicePoints) {
       this.availableServicePointNames.data.push(
@@ -386,8 +386,8 @@ export class ServicePointComponent implements OnInit {
   servicePointSuccessHandler(response: any) {
     this.servicePointList.data = [];
     this.alertMessage.alert('Saved successfully', 'success');
-    this.servicePointForm1.resetForm();
     this.showList();
+    this.servicePointForm1.resetForm();
   }
 
   //* Activate and Deactivate method */
@@ -430,14 +430,14 @@ export class ServicePointComponent implements OnInit {
   showList() {
     if (!this.editMode) {
       this.getServicePoints(
-        this.searchStateID.stateID,
-        this.parking_Place.parkingPlaceID,
+        this.servicePointObj.stateID,
+        this.servicePointObj.parkingPlaceID,
       );
       this.servicePointForm1.resetForm();
     } else {
       this.getServicePoints(
-        this.searchStateID.stateID,
-        this.parking_Place.parkingPlaceID,
+        this.servicePointObj.stateID,
+        this.servicePointObj.parkingPlaceID,
       );
       this.servicePointForm2.resetForm();
     }
@@ -500,7 +500,8 @@ export class ServicePointComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredavailableServicePoints = this.availableServicePoints;
+      this.filteredavailableServicePoints.data = this.availableServicePoints;
+      this.filteredavailableServicePoints.paginator = this.paginator;
     } else {
       this.filteredavailableServicePoints.data = [];
       this.availableServicePoints.forEach((item: any) => {
@@ -518,6 +519,7 @@ export class ServicePointComponent implements OnInit {
           }
         }
       });
+      this.filteredavailableServicePoints.paginator = this.paginator;
     }
   }
   back() {

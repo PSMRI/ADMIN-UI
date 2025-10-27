@@ -20,7 +20,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { FormBuilder, FormGroup, NgForm } from '@angular/forms';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
@@ -36,11 +36,16 @@ import { SessionStorageService } from 'Common-UI/src/registrar/services/session-
   selector: 'app-employee-parking-place-mapping',
   templateUrl: './employee-parking-place-mapping.component.html',
 })
-export class EmployeeParkingPlaceMappingComponent implements OnInit {
+export class EmployeeParkingPlaceMappingComponent
+  implements OnInit, AfterViewInit
+{
+  paginator!: MatPaginator;
+  @ViewChild('paginatorFirst') paginatorFirst!: MatPaginator;
+  @ViewChild('paginatorSecond') paginatorSecond!: MatPaginator;
+
   [x: string]: any;
   filteredavailableEmployeeParkingPlaceMappings = new MatTableDataSource<any>();
   employeeParkingPlaceMappingList = new MatTableDataSource<any>();
-  @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
 
   // filteredavailableEmployeeParkingPlaceMappings: any = [];
   searchParkingPlaceID_edit: any;
@@ -116,6 +121,12 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     this.login_userID = this.commonDataService.uid;
   }
 
+  ngAfterViewInit() {
+    this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+      this.paginatorSecond;
+    this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
+  }
+
   ngOnInit() {
     this.MappingForm = this.formBuilder.group({
       mappings: this.formBuilder.array([]),
@@ -160,6 +171,8 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
       this.provider_states = response.data;
       this.availableEmployeeParkingPlaceMappings = [];
       this.filteredavailableEmployeeParkingPlaceMappings.data = [];
+      this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+        this.paginatorSecond;
     }
   }
   setProviderServiceMapID(providerServiceMapID: any) {
@@ -167,6 +180,8 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     this.availableParkingPlaces = [];
     this.taluks = [];
     this.filteredavailableEmployeeParkingPlaceMappings.data = [];
+    this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+      this.paginatorSecond;
     this.providerServiceMapID = providerServiceMapID;
     this.getAvailableZones(this.providerServiceMapID);
   }
@@ -199,6 +214,8 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     this.availableParkingPlaces = response.data;
     this.availableEmployeeParkingPlaceMappings = [];
     this.filteredavailableEmployeeParkingPlaceMappings.data = [];
+    this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+      this.paginatorSecond;
     for (const availableParkingPlaces of this.availableParkingPlaces) {
       if (availableParkingPlaces.deleted) {
         const index: number = this.availableParkingPlaces.indexOf(
@@ -235,8 +252,11 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
   }
   getDesignationsSuccessHandeler(response: any) {
     this.filteredavailableEmployeeParkingPlaceMappings.data = [];
+    this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+      this.paginatorSecond;
     this.designations = response.data;
     this.employeeParkingPlaceMappingList.data = [];
+    this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
     console.log('designation', response.data);
   }
   showTable() {
@@ -249,6 +269,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     this.formMode = true;
     this.editMode = false;
     this.employeeParkingPlaceMappingList.data = [];
+    this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
     this.getUsernames(
       searchStateID.providerServiceMapID,
       designationID.designationID,
@@ -269,6 +290,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
         if (res) {
           this.showTable();
           this.employeeParkingPlaceMappingList.data = [];
+          this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
           this.getEmployeeParkingPlaceMappings(
             this.searchStateID,
             this.designationID.designationID,
@@ -280,6 +302,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
   employeeObj: any = {};
   getEmployeeParkingPlaceMappings(searchStateID: any, designationID: any) {
     this.userID = null;
+    this.vanUnderPP = [];
     this.employeeObj = {};
     this.employeeObj.providerServiceMapID = searchStateID.providerServiceMapID;
     this.employeeObj.parkingPlaceID =
@@ -302,7 +325,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     this.availableEmployeeParkingPlaceMappings = response.data;
     this.filteredavailableEmployeeParkingPlaceMappings.data = response.data;
     this.filteredavailableEmployeeParkingPlaceMappings.paginator =
-      this.paginator;
+      this.paginatorSecond;
   }
   parkingPlaceID: any;
   selectedParkingPlace(
@@ -401,6 +424,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
 
   deleteRow(i: any) {
     this.employeeParkingPlaceMappingList.data.splice(i, 1);
+    this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
     this.getUsernames(
       this.searchStateID.providerServiceMapID,
       this.designationID.designationID,
@@ -421,6 +445,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
         this.designationID.designationID,
       );
     }
+    this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
   }
   vanlist: any = [];
   addParkingPlaceMapping(objectToBeAdded: any) {
@@ -451,6 +476,7 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     };
     console.log('parkingObj', parkingObj);
     this.employeeParkingPlaceMappingList.data.push(parkingObj);
+    this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
     this.getUsernames(
       this.searchStateID.providerServiceMapID,
       this.designationID.designationID,
@@ -627,6 +653,8 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
     if (!searchTerm) {
       this.filteredavailableEmployeeParkingPlaceMappings.data =
         this.availableEmployeeParkingPlaceMappings;
+      this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+        this.paginatorSecond;
     } else {
       this.filteredavailableEmployeeParkingPlaceMappings.data = [];
       this.availableEmployeeParkingPlaceMappings.forEach((item: any) => {
@@ -642,6 +670,8 @@ export class EmployeeParkingPlaceMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredavailableEmployeeParkingPlaceMappings.paginator =
+        this.paginatorSecond;
     }
   }
   resetDesignation() {

@@ -38,11 +38,12 @@
     </div>
   </div>
   <div
-    class="pull-right"
+    class=""
+    style="text-align: end"
     *ngIf="showRoles && activeRoles.length > 0"
-    style="margin-top: -10px"
   >
     <mat-form-field id="filterbox">
+      <mat-label>In-Table Search</mat-label>
       <input
         matInput
         placeholder="In-Table Search"
@@ -158,6 +159,13 @@
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
         </table>
+        <div
+          class="pull-center"
+          style="margin-top: 35px; text-align: center"
+          *ngIf="dataSource.data.length === 0"
+        >
+          <strong>No Records Found</strong>
+        </div>
         <mat-paginator
           [hidden]="dataSource.data.length === 0"
           [pageSizeOptions]="[5, 10, 20]"

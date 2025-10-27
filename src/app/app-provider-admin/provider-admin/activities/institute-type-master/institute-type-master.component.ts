@@ -380,6 +380,7 @@ export class InstituteTypeMasterComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredsearchResultArray.data = this.searchResultArray;
+      this.filteredsearchResultArray.paginator = this.paginator;
     } else {
       this.filteredsearchResultArray.data = [];
       this.searchResultArray.forEach((item: any) => {
@@ -393,6 +394,7 @@ export class InstituteTypeMasterComponent implements OnInit {
           }
         }
       });
+      this.filteredsearchResultArray.paginator = this.paginator;
     }
   }
 }

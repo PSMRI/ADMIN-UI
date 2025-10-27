@@ -662,7 +662,6 @@ export class AddQuestionnaireComponent implements OnInit, AfterViewInit {
       this.dataSource.paginator = this.paginator;
     } else {
       this.dataSource.data = [];
-      this.dataSource.paginator = this.paginator;
       console.log('questionrowsfilter', this.questionrowsfilter);
       this.questionrowsfilter.forEach((item: any) => {
         for (const key in item) {
@@ -680,9 +679,9 @@ export class AddQuestionnaireComponent implements OnInit, AfterViewInit {
               break;
             }
           }
-          this.dataSource.paginator = this.paginator;
         }
       });
+      this.dataSource.paginator = this.paginator;
     }
   }
   enableoptionField(i: any) {

@@ -56,7 +56,7 @@
         <ng-container matColumnDef="smsType">
           <th mat-header-cell *matHeaderCellDef>Template Type</th>
           <td mat-cell *matCellDef="let element">
-            {{ element.smsType.smsType }}
+            {{ element.smsType?.smsType || ''}}
           </td>
         </ng-container>
 
@@ -186,12 +186,12 @@
               required
               [readonly]="isReadonly"
               minlength="20"
-              maxlength="200"
+              maxlength="300"
               #sms
               name="smsTemplate"
             ></textarea>
             <mat-hint align="end"
-              >{{ sms.value.length ? sms.value.length : 0 }}/200</mat-hint
+              >{{ sms.value.length ? sms.value.length : 0 }}/300</mat-hint
             >
           </mat-form-field>
         </div>

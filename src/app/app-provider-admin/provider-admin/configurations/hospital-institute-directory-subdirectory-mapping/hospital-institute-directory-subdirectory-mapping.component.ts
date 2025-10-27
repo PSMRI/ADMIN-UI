@@ -538,6 +538,7 @@ export class HospitalInstituteDirectorySubdirectoryMappingComponent
           }
         }
       });
+      this.filteredsearchResultArray.paginator = this.paginator;
     }
   }
 

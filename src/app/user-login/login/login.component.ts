@@ -19,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Router } from '@angular/router';
 import * as CryptoJS from 'crypto-js';
 import { Subscription } from 'rxjs';
@@ -29,6 +29,8 @@ import { HttpInterceptor } from '@angular/common/http';
 import { CookieService } from 'ngx-cookie-service';
 import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+import { environment } from 'src/environments/environment';
+import { CaptchaComponent } from '../captcha/captcha.component';
 
 @Component({
   selector: 'app-login-component',
@@ -36,6 +38,7 @@ import { SessionStorageService } from 'Common-UI/src/registrar/services/session-
   styleUrls: ['./login.css'],
 })
 export class loginContentClassComponent implements OnInit, OnDestroy {
+  @ViewChild('captchaCmp') captchaCmp: CaptchaComponent | undefined;
   model: any = {};
   userID: any;
   password: any;
@@ -56,6 +59,8 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   _iterationCount: any;
   logoutUserFromPreviousSessionSubscription: Subscription = new Subscription();
   encryptPassword: any;
+  captchaToken!: string;
+  enableCaptcha = environment.enableCaptcha;
 
   constructor(
     public loginservice: loginService,
@@ -148,7 +153,12 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     if (userId.toLowerCase() === 'SUPERADMIN'.toLowerCase()) {
       // this.loginservice.superAdminAuthenticate(userId, password, doLogout)
       this.loginservice
-        .superAdminAuthenticate(userId, this.encryptPassword, doLogout)
+        .superAdminAuthenticate(
+          userId,
+          this.encryptPassword,
+          doLogout,
+          this.enableCaptcha ? this.captchaToken : undefined,
+        )
         .subscribe(
           (response: any) => {
             // if (response.statusCode === 200) {
@@ -206,13 +216,19 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
             }
           },
           (err) => {
+            this.resetCaptcha();
             this.alertMessage.alert(err, 'error');
             console.log(err, 'ERR while superadmin validation');
           },
         );
     } else {
       this.loginservice
-        .authenticateUser(userId, this.encryptPassword, doLogout)
+        .authenticateUser(
+          userId,
+          this.encryptPassword,
+          doLogout,
+          this.enableCaptcha ? this.captchaToken : undefined,
+        )
         .subscribe(
           (response: any) => {
             if (response && response.data) {
@@ -288,6 +304,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                 this.userID,
                 this.encryptPassword,
                 doLogOut,
+                this.enableCaptcha ? this.captchaToken : undefined,
               )
               .subscribe(
                 (response: any) => {
@@ -306,13 +323,19 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                   }
                 },
                 (err) => {
+                  this.resetCaptcha();
                   this.alertMessage.alert(err, 'error');
                   console.log(err, 'ERR while superadmin validation');
                 },
               );
           } else {
             this.loginservice
-              .authenticateUser(this.userID, this.encryptPassword, doLogOut)
+              .authenticateUser(
+                this.userID,
+                this.encryptPassword,
+                doLogOut,
+                this.captchaToken,
+              )
               .subscribe(
                 (response: any) => {
                   if (response && response.data) {
@@ -327,6 +350,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
               );
           }
         } else {
+          this.resetCaptcha();
           this.alertMessage.alert(userLogOutRes.data.errorMessage, 'error');
         }
       });
@@ -394,7 +418,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
       response.data.Status === 'New'
     ) {
       this.status = 'new';
-      this.sessionstorage.setItem('authToken', response.data.key);
+      sessionStorage.setItem('authToken', response.data.key);
       this.router.navigate(['/setQuestions']);
     }
 
@@ -418,6 +442,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
     }
     // this.loading = false;
     console.log(error);
+    this.resetCaptcha();
   }
 
   // encryptionFlag: boolean = true;
@@ -456,6 +481,21 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
   successhandeler1(response: any) {
     this.commitDetails = response;
     this.version = this.commitDetails['version'];
+  }
+
+  onCaptchaResolved(token: any) {
+    this.captchaToken = token;
+  }
+
+  resetCaptcha() {
+    if (
+      this.enableCaptcha &&
+      this.captchaCmp &&
+      typeof this.captchaCmp.reset === 'function'
+    ) {
+      this.captchaCmp.reset();
+      this.captchaToken = '';
+    }
   }
 
   ngOnDestroy() {

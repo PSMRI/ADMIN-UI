@@ -271,6 +271,7 @@ export class SpecialistMappingComponent implements OnInit {
   filterSpecializationList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredspecializationList.data = this.specializationList;
+      this.filteredspecializationList.paginator = this.paginator;
     } else {
       this.filteredspecializationList.data = [];
       this.specializationList.forEach((item: any) => {
@@ -284,6 +285,7 @@ export class SpecialistMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredspecializationList.paginator = this.paginator;
     }
   }
 }

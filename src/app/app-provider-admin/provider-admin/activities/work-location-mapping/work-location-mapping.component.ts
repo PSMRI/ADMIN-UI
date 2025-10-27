@@ -87,11 +87,11 @@ export class WorkLocationMappingComponent implements OnInit {
   searchTerm: any;
   enableEditBlockFlag = false;
   enableEditVillageFlag = false;
-  eSanjivaniFlag = false;
-  isSanjeevani = false;
-  eSanjivaniEditFlag = false;
+  teleConsultationFlag = false;
+  teleConsultation: any;
+  teleConsultationEditFlag = false;
   esanjFlag = false;
-  eSanjeevaniEdit = false;
+  teleConsultationEdit: any;
   foundDuplicate = false;
 
   displayedColumns: string[] = [
@@ -121,20 +121,14 @@ export class WorkLocationMappingComponent implements OnInit {
     'Role',
     'Inbound',
     'Outbound',
-    'ESanjeevani',
+    'TeleConsultation',
     'delete',
   ];
-  paginator!: MatPaginator;
-  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
-    this.paginator = mp;
-    this.setDataSourceAttributes();
-  }
   filteredmappedWorkLocationsList = new MatTableDataSource<any>();
   bufferArray = new MatTableDataSource<any>();
 
-  setDataSourceAttributes() {
-    this.filteredmappedWorkLocationsList.paginator = this.paginator;
-  }
+  @ViewChild('paginatorFirst') paginatorFirst!: MatPaginator;
+  @ViewChild('paginatorSecond') paginatorSecond!: MatPaginator;
   @ViewChild('workplaceform')
   eForm!: NgForm;
   @ViewChild('workplaceeform')
@@ -154,6 +148,8 @@ export class WorkLocationMappingComponent implements OnInit {
   villageIdValue: any;
   item: any;
   workplaceform: any;
+  isVillageRequired = true;
+  isBlockRequired = true;
 
   constructor(
     private alertService: ConfirmationDialogsService,
@@ -230,6 +226,8 @@ export class WorkLocationMappingComponent implements OnInit {
             );
             this.mappedWorkLocationsList = response.data;
             this.filteredmappedWorkLocationsList.data = response.data;
+            this.filteredmappedWorkLocationsList.paginator =
+              this.paginatorFirst;
           }
         },
         (err: any) => {
@@ -319,7 +317,7 @@ export class WorkLocationMappingComponent implements OnInit {
           this.State = null;
         }
       });
-      this.bufferArray.paginator = this.paginator;
+      this.bufferArray.paginator = this.paginatorSecond;
     }
   }
 
@@ -361,6 +359,8 @@ export class WorkLocationMappingComponent implements OnInit {
         },
       );
     } else {
+      this.teleConsultationFlag = false;
+      this.teleConsultation = null;
       const psmID = providerServiceMapID
         ? providerServiceMapID
         : this.states_array[0].providerServiceMapID;
@@ -406,7 +406,29 @@ export class WorkLocationMappingComponent implements OnInit {
         mappedWorkLocations.providerServiceMapID === providerServiceMapID &&
         mappedWorkLocations.userID === userID
       ) {
-        if (!mappedWorkLocations.userServciceRoleDeleted) {
+        if (
+          (serviceID === 2 || serviceID === 4) &&
+          !this.editMode &&
+          parseInt(mappedWorkLocations.stateID) === this.State.stateID &&
+          parseInt(mappedWorkLocations.workingDistrictID) ===
+            this.District.districtID &&
+          !mappedWorkLocations.userServciceRoleDeleted
+        ) {
+          this.existingRoles.push(mappedWorkLocations.roleID);
+        } else if (
+          (serviceID === 2 || serviceID === 4) &&
+          this.editMode &&
+          parseInt(mappedWorkLocations.stateID) === this.stateID_duringEdit &&
+          parseInt(mappedWorkLocations.workingDistrictID) ===
+            this.district_duringEdit &&
+          !mappedWorkLocations.userServciceRoleDeleted
+        ) {
+          this.existingRoles.push(mappedWorkLocations.roleID);
+        } else if (
+          serviceID !== 2 &&
+          serviceID !== 4 &&
+          !mappedWorkLocations.userServciceRoleDeleted
+        ) {
           this.existingRoles.push(mappedWorkLocations.roleID); // existing roles has roles which are already mapped.
         }
       }
@@ -517,34 +539,39 @@ export class WorkLocationMappingComponent implements OnInit {
     }
   }
 
+  resetRole() {
+    this.Role = null;
+  }
+
   showTable() {
     if (this.editMode) {
       this.tableMode = true;
       this.formMode = false;
       this.editMode = false;
       this.bufferArray.data = [];
-      this.bufferArray.paginator = this.paginator;
+      this.bufferArray.paginator = this.paginatorSecond;
       this.editWorkplaceForm.resetForm();
       this.showInOutBoundEdit = false;
       this.isOutboundEdit = false;
       this.isInboundEdit = false;
       this.searchTerm = null;
       this.disableSelectRoles = false;
-      this.eSanjivaniEditFlag = false;
-      this.eSanjeevaniEdit = false;
+      this.teleConsultationEditFlag = false;
+      this.teleConsultationEdit = null;
     } else {
       if (this.bufferArray.data.length > 0) {
         this.tableMode = true;
         this.formMode = false;
         this.editMode = false;
         this.bufferArray.data = [];
-        this.bufferArray.paginator = this.paginator;
+        this.bufferArray.paginator = this.paginatorSecond;
         this.eForm.resetForm();
         this.isNational = false;
         this.isInbound = false;
         this.isOutbound = false;
         this.showInOutBound = false;
-        this.eSanjivaniFlag = false;
+        this.teleConsultation = null;
+        this.teleConsultationFlag = false;
         this.availableRoles = [];
         this.RolesList = [];
         this.searchTerm = null;
@@ -554,13 +581,14 @@ export class WorkLocationMappingComponent implements OnInit {
         this.formMode = false;
         this.editMode = false;
         this.bufferArray.data = [];
-        this.bufferArray.paginator = this.paginator;
+        this.bufferArray.paginator = this.paginatorSecond;
         this.eForm.resetForm();
         this.isNational = false;
         this.isInbound = false;
         this.isOutbound = false;
         this.showInOutBound = false;
-        this.eSanjivaniFlag = false;
+        this.teleConsultation = null;
+        this.teleConsultationFlag = false;
         this.availableRoles = [];
         this.RolesList = [];
         this.searchTerm = null;
@@ -904,7 +932,7 @@ export class WorkLocationMappingComponent implements OnInit {
         }
         if (this.bufferArray.data.length > 0) {
           this.eForm.resetForm();
-          this.bufferArray.paginator = this.paginator;
+          this.bufferArray.paginator = this.paginatorSecond;
         }
         console.log('Result Array', this.bufferArray);
       }
@@ -917,12 +945,12 @@ export class WorkLocationMappingComponent implements OnInit {
       this.setWorkLocationObject(objectToBeAdded, obj, false, false);
       if (this.bufferArray.data.length > 0) {
         this.eForm.resetForm();
-        this.bufferArray.paginator = this.paginator;
+        this.bufferArray.paginator = this.paginatorSecond;
       }
       console.log('Result Array', this.bufferArray);
       if (this.bufferArray.data.length > 0) {
         this.eForm.resetForm();
-        this.bufferArray.paginator = this.paginator;
+        this.bufferArray.paginator = this.paginatorSecond;
       }
     } else if (objectToBeAdded.serviceline.serviceName === 'HWC') {
       const result: boolean = this.checkHWCDuplicateBufferArray();
@@ -939,12 +967,14 @@ export class WorkLocationMappingComponent implements OnInit {
                 roleID1: objectToBeAdded.role[a].roleID,
                 roleName: objectToBeAdded.role[a].roleName,
                 screenName: objectToBeAdded.role[a].screenName,
-                isSanjeevani:
+                teleConsultation:
                   objectToBeAdded.serviceline.serviceName === 'HWC' &&
-                  objectToBeAdded.role[a].roleName.toLowerCase() === 'nurse' &&
-                  this.isSanjeevani
-                    ? true
-                    : false,
+                  (objectToBeAdded.role[a].roleName.toLowerCase() === 'nurse' ||
+                    objectToBeAdded.role[a].roleName.toLowerCase() ===
+                      'doctor') &&
+                  this.teleConsultation
+                    ? this.teleConsultation
+                    : null,
               };
               this.setWorkLocationObject(objectToBeAdded, obj, false, false);
             }
@@ -963,13 +993,15 @@ export class WorkLocationMappingComponent implements OnInit {
                     roleID1: objectToBeAdded.role[i].roleID,
                     roleName: objectToBeAdded.role[i].roleName,
                     screenName: objectToBeAdded.role[i].screenName,
-                    isSanjeevani:
+                    teleConsultation:
                       objectToBeAdded.serviceline.serviceName === 'HWC' &&
-                      objectToBeAdded.role[i].roleName.toLowerCase() ===
-                        'nurse' &&
-                      this.isSanjeevani
-                        ? true
-                        : false,
+                      (objectToBeAdded.role[i].roleName.toLowerCase() ===
+                        'nurse' ||
+                        objectToBeAdded.role[i].roleName.toLowerCase() ===
+                          'doctor') &&
+                      this.teleConsultation
+                        ? this.teleConsultation
+                        : null,
                   };
                   this.setWorkLocationObject(
                     objectToBeAdded,
@@ -985,7 +1017,7 @@ export class WorkLocationMappingComponent implements OnInit {
         }
         if (this.bufferArray.data.length > 0) {
           this.eForm.resetForm();
-          this.bufferArray.paginator = this.paginator;
+          this.bufferArray.paginator = this.paginatorSecond;
           this.disableSelectRoles = false;
         }
       }
@@ -997,12 +1029,14 @@ export class WorkLocationMappingComponent implements OnInit {
               roleID1: objectToBeAdded.role[a].roleID,
               roleName: objectToBeAdded.role[a].roleName,
               screenName: objectToBeAdded.role[a].screenName,
-              isSanjeevani:
-                objectToBeAdded.serviceline.serviceName !== 'HWC' &&
-                objectToBeAdded.role[a].roleName.toLowerCase() !== 'nurse' &&
-                !this.isSanjeevani
-                  ? false
-                  : true,
+              teleConsultation:
+                objectToBeAdded.serviceline.serviceName === 'HWC' &&
+                (objectToBeAdded.role[a].roleName.toLowerCase() === 'nurse' ||
+                  objectToBeAdded.role[a].roleName.toLowerCase() ===
+                    'doctor') &&
+                this.teleConsultation
+                  ? this.teleConsultation
+                  : null,
             };
             this.setWorkLocationObject(objectToBeAdded, obj, false, false);
           }
@@ -1021,13 +1055,15 @@ export class WorkLocationMappingComponent implements OnInit {
                   roleID1: objectToBeAdded.role[i].roleID,
                   roleName: objectToBeAdded.role[i].roleName,
                   screenName: objectToBeAdded.role[i].screenName,
-                  isSanjeevani:
-                    objectToBeAdded.serviceline.serviceName !== 'HWC' &&
-                    objectToBeAdded.role[i].roleName.toLowerCase() !==
-                      'nurse' &&
-                    !this.isSanjeevani
-                      ? false
-                      : true,
+                  teleConsultation:
+                    objectToBeAdded.serviceline.serviceName === 'HWC' &&
+                    (objectToBeAdded.role[i].roleName.toLowerCase() ===
+                      'nurse' ||
+                      objectToBeAdded.role[i].roleName.toLowerCase() ===
+                        'doctor') &&
+                    this.teleConsultation
+                      ? this.teleConsultation
+                      : null,
                 };
 
                 this.setWorkLocationObject(objectToBeAdded, obj, false, false);
@@ -1041,7 +1077,7 @@ export class WorkLocationMappingComponent implements OnInit {
 
       if (this.bufferArray.data.length > 0) {
         this.eForm.resetForm();
-        this.bufferArray.paginator = this.paginator;
+        this.bufferArray.paginator = this.paginatorSecond;
         this.disableSelectRoles = false;
       }
       console.log('Result Array', this.bufferArray);
@@ -1066,7 +1102,7 @@ export class WorkLocationMappingComponent implements OnInit {
     }
     const allRolesArr = [];
     for (let i = 0; i < roleArr.length; i++) {
-      allRolesArr.push(roleArr[i].isSanjeevani);
+      allRolesArr.push(roleArr[i].teleConsultation);
     }
     const workLocationObj: any = {
       previleges: [],
@@ -1112,7 +1148,7 @@ export class WorkLocationMappingComponent implements OnInit {
           : this.states_array[0].providerServiceMapID,
       createdBy: this.createdBy,
       workingLocationID: objectToBeAdded.worklocation.pSAddMapID,
-      isSanjeevani: allRolesArr,
+      teleConsultation: allRolesArr,
     };
     if (objectToBeAdded.state) {
       workLocationObj['stateName'] = objectToBeAdded.state.stateName;
@@ -1125,7 +1161,7 @@ export class WorkLocationMappingComponent implements OnInit {
       workLocationObj['district'] = null;
     }
     this.bufferArray.data.push(workLocationObj);
-    this.bufferArray.paginator = this.paginator;
+    this.bufferArray.paginator = this.paginatorSecond;
   }
 
   resetAllArrays() {
@@ -1141,12 +1177,13 @@ export class WorkLocationMappingComponent implements OnInit {
 
     this.showInOutBound = false;
 
-    this.eSanjivaniFlag = false;
+    this.teleConsultationFlag = false;
+    this.teleConsultation = null;
   }
 
   deleteRow(i: any, serviceID: any, providerServiceMapID: any, userID: any) {
     this.bufferArray.data.splice(i, 1);
-    this.bufferArray.paginator = this.paginator;
+    this.bufferArray.paginator = this.paginatorSecond;
     this.getAllRoles(serviceID, providerServiceMapID, userID);
     this.availableRoles = [];
     this.RolesList = [];
@@ -1154,7 +1191,7 @@ export class WorkLocationMappingComponent implements OnInit {
 
   removeRole(rowIndex: any, roleIndex: any) {
     this.bufferArray.data[rowIndex].roleID1.splice(roleIndex, 1);
-    this.bufferArray.paginator = this.paginator;
+    this.bufferArray.paginator = this.paginatorSecond;
     this.getAllRoles(
       this.bufferArray.data[rowIndex].serviceID,
       this.bufferArray.data[rowIndex].providerServiceMapID,
@@ -1162,7 +1199,7 @@ export class WorkLocationMappingComponent implements OnInit {
     );
     if (this.bufferArray.data[rowIndex].roleID1.length === 0) {
       this.bufferArray.data.splice(rowIndex, 1);
-      this.bufferArray.paginator = this.paginator;
+      this.bufferArray.paginator = this.paginatorSecond;
     }
   }
 
@@ -1175,7 +1212,7 @@ export class WorkLocationMappingComponent implements OnInit {
           ID: [
             {
               roleID: '',
-              isSanjeevani: '',
+              teleConsultation: '',
               inbound: '',
               outbound: '',
             },
@@ -1205,7 +1242,7 @@ export class WorkLocationMappingComponent implements OnInit {
               {
                 roleID: this.bufferArray.data[i].roleID1[0].roleID1,
 
-                isSanjeevani: this.bufferArray.data[i].isSanjeevani[0],
+                teleConsultation: this.bufferArray.data[i].teleConsultation[0],
 
                 inbound:
                   this.bufferArray.data[i].serviceName === '1097'
@@ -1246,7 +1283,7 @@ export class WorkLocationMappingComponent implements OnInit {
     console.log(requestArray, 'after modification array');
 
     this.bufferArray.data = [];
-    this.bufferArray.paginator = this.paginator;
+    this.bufferArray.paginator = this.paginatorSecond;
 
     this.worklocationmapping
       .SaveWorkLocationMapping(requestArray)
@@ -1270,7 +1307,7 @@ export class WorkLocationMappingComponent implements OnInit {
           this.filteredStates = [];
 
           this.bufferArray.data = [];
-          this.bufferArray.paginator = this.paginator;
+          this.bufferArray.paginator = this.paginatorSecond;
         },
         (err: any) => {
           console.log(err, 'ERROR');
@@ -1344,8 +1381,6 @@ export class WorkLocationMappingComponent implements OnInit {
 
     this.isInboundEdit = this.edit_Details.inbound;
 
-    this.isSanjeevani = this.edit_Details.isSanjeevani;
-
     this.isOutboundEdit = this.edit_Details.outbound;
 
     if (
@@ -1355,27 +1390,16 @@ export class WorkLocationMappingComponent implements OnInit {
       this.showInOutBoundEdit = true;
     } else if (
       this.edit_Details.serviceName === 'HWC' &&
-      this.edit_Details.roleName.toLowerCase() === 'nurse'
+      (this.edit_Details.roleName.toLowerCase() === 'nurse' ||
+        this.edit_Details.roleName.toLowerCase() === 'doctor') &&
+      this.edit_Details.teleConsultation
     ) {
-      if (
-        this.edit_Details.isSanjeevani !== undefined &&
-        this.edit_Details.isSanjeevani !== null &&
-        this.edit_Details.isSanjeevani === true
-      ) {
-        this.eSanjivaniEditFlag = true;
-
-        this.eSanjeevaniEdit = true;
-      } else {
-        this.eSanjivaniEditFlag = true;
-
-        this.eSanjeevaniEdit = false;
-      }
+      this.teleConsultationEditFlag = true;
+      this.teleConsultationEdit = this.edit_Details.teleConsultation;
     } else {
       this.showInOutBoundEdit = false;
-
-      this.eSanjivaniEditFlag = false;
-
-      this.eSanjeevaniEdit = false;
+      this.teleConsultationEdit = null;
+      this.teleConsultationEditFlag = false;
     }
 
     this.getProviderServices(this.userID);
@@ -1583,7 +1607,7 @@ export class WorkLocationMappingComponent implements OnInit {
         (response: any) =>
           this.getStatesSuccessHandeler_duringEdit(
             serviceID,
-            response,
+            response.data,
             isNational,
             false,
           ),
@@ -1602,7 +1626,7 @@ export class WorkLocationMappingComponent implements OnInit {
     if (response) {
       console.log(response, 'Provider States');
 
-      this.states_array = response.data;
+      this.states_array = response;
 
       this.districts_array = [];
 
@@ -1660,6 +1684,8 @@ export class WorkLocationMappingComponent implements OnInit {
     this.workLocationID_duringEdit = undefined;
 
     this.roleID_duringEdit = undefined;
+
+    this.teleConsultationEditFlag = false;
   }
 
   refresh5() {
@@ -1839,7 +1865,7 @@ export class WorkLocationMappingComponent implements OnInit {
 
         roleID: workLocations.role,
 
-        isSanjeevani: this.isSanjeevani,
+        teleConsultation: this.teleConsultationEdit,
 
         providerServiceMapID: this.providerServiceMapID_duringEdit,
 
@@ -1875,7 +1901,7 @@ export class WorkLocationMappingComponent implements OnInit {
             this.getAllMappedWorkLocations();
 
             this.bufferArray.data = [];
-            this.bufferArray.paginator = this.paginator;
+            this.bufferArray.paginator = this.paginatorSecond;
           },
           (err: any) => {
             console.log(err, 'ERROR');
@@ -1892,7 +1918,7 @@ export class WorkLocationMappingComponent implements OnInit {
 
       roleID: workLocations.role,
 
-      isSanjeevani: this.isSanjeevani,
+      teleConsultation: this.teleConsultationEdit,
 
       inbound:
         roleValue.toLowerCase() === 'supervisor' ? false : this.isInboundEdit,
@@ -1926,7 +1952,7 @@ export class WorkLocationMappingComponent implements OnInit {
           this.getAllMappedWorkLocations();
 
           this.bufferArray.data = [];
-          this.bufferArray.paginator = this.paginator;
+          this.bufferArray.paginator = this.paginatorSecond;
         },
         (err: any) => {
           console.log(err, 'ERROR');
@@ -1957,10 +1983,9 @@ export class WorkLocationMappingComponent implements OnInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.filteredmappedWorkLocationsList.data = this.mappedWorkLocationsList;
-      this.filteredmappedWorkLocationsList.paginator = this.paginator;
+      this.filteredmappedWorkLocationsList.paginator = this.paginatorFirst;
     } else {
       this.filteredmappedWorkLocationsList.data = [];
-      this.filteredmappedWorkLocationsList.paginator = this.paginator;
       this.mappedWorkLocationsList.forEach((item: any) => {
         for (const key in item) {
           if (
@@ -1981,6 +2006,7 @@ export class WorkLocationMappingComponent implements OnInit {
           }
         }
       });
+      this.filteredmappedWorkLocationsList.paginator = this.paginatorFirst;
     }
   }
 
@@ -1996,8 +2022,8 @@ export class WorkLocationMappingComponent implements OnInit {
     this.villageFlag = false;
     this.Serviceblock = undefined;
     this.Servicevillage = undefined;
-    this.eSanjivaniFlag = false;
-    this.isSanjeevani = false;
+    this.teleConsultation = null;
+    this.teleConsultationFlag = false;
   }
 
   resetBlockVillageFields() {
@@ -2052,6 +2078,13 @@ export class WorkLocationMappingComponent implements OnInit {
     ) {
       this.blockFlag = true;
       this.villageFlag = true;
+      if (serviceline === 'TM' || serviceline === 'MMU') {
+        this.isBlockRequired = false;
+        this.isVillageRequired = false;
+      } else {
+        this.isBlockRequired = true;
+        this.isVillageRequired = true;
+      }
     } else {
       this.blockFlag = false;
       this.villageFlag = false;
@@ -2185,22 +2218,15 @@ export class WorkLocationMappingComponent implements OnInit {
   setUpdatedBlockName(blockname: any) {
     this.blockname = blockname;
   }
-  eSanjeevaniSaveFunction(source: string, selectedItem: any): void {
-    this.eSanjivaniFlag = false;
-    if (source === 'Serviceline') {
-      this.eSanjivaniFlag = false;
-      // Handle Serviceline selection change
-      this.handleSelectionChanges();
-    } else if (source === 'Role') {
-      this.eSanjivaniFlag = false;
-      // Handle Role selection change
+  teleConsultationSaveFunction(source: string, selectedItem: any): void {
+    if (source === 'Serviceline' || source === 'Role') {
       this.handleSelectionChanges();
     }
   }
 
   handleSelectionChanges() {
     const roleSanjArry: any = [];
-    if (this.Role !== undefined) {
+    if (this.Role) {
       this.Role.filter((item: any) => {
         roleSanjArry.push(item.roleName.toLowerCase());
       });
@@ -2208,35 +2234,44 @@ export class WorkLocationMappingComponent implements OnInit {
 
     if (
       this.Serviceline.serviceName === 'HWC' &&
-      roleSanjArry.includes('nurse')
+      (roleSanjArry.includes('nurse') || roleSanjArry.includes('doctor'))
     ) {
-      this.eSanjivaniFlag = true;
-    }
-  }
+      this.teleConsultationFlag = true;
 
-  onESanjeevaniChange(event: any) {
-    if (event.checked) {
-      this.isSanjeevani = true;
-    } else {
-      this.isSanjeevani = false;
-    }
-  }
-
-  eSanjeevaniEditSaveFunction(value: any, role: any) {
-    const editRoleName = this.RolesList.filter((response: any) => {
-      if (role === response.roleID) {
-        return response;
+      if (
+        this.teleConsultation !== 'ESanjeevani' &&
+        this.teleConsultation !== 'Swymed'
+      ) {
+        this.teleConsultation = 'Not Required';
       }
-    })[0];
+    } else {
+      this.teleConsultationFlag = false;
+      this.teleConsultation = null;
+    }
+  }
 
-    this.eSanjeevaniEdit = false;
+  teleConsultationEditSaveFunction(value: any, role: any) {
+    let editRoleName = null;
+    if (this.RolesList) {
+      editRoleName = this.RolesList.filter((response: any) => {
+        if (role === response.roleID) {
+          return response;
+        }
+      })[0];
+    }
+
     if (
-      (this.edit_Details.serviceName === 'TM' ||
-        this.edit_Details.serviceName === 'HWC') &&
-      editRoleName.roleName.toLowerCase() === 'Nurse'
-    )
-      this.eSanjivaniEditFlag = true;
-    else this.eSanjivaniEditFlag = false;
+      editRoleName &&
+      this.edit_Details.serviceName === 'HWC' &&
+      (editRoleName.roleName.toLowerCase() === 'nurse' ||
+        editRoleName.roleName.toLowerCase() === 'doctor')
+    ) {
+      this.teleConsultationEdit = 'Not Required';
+      this.teleConsultationEditFlag = true;
+    } else {
+      this.teleConsultationEdit = null;
+      this.teleConsultationEditFlag = false;
+    }
   }
 
   checkHWCDuplicateBufferArray() {

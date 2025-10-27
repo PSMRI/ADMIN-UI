@@ -51,6 +51,7 @@ import {
   MatChipInput,
   MatChipsModule,
 } from '@angular/material/chips';
+import { CaptchaComponent } from './user-login/captcha/captcha.component';
 
 @NgModule({
   declarations: [
@@ -60,6 +61,7 @@ import {
     SetPasswordComponent,
     SetSecurityQuestionsComponent,
     MultiRoleScreenComponent,
+    CaptchaComponent,
   ],
   imports: [
     BrowserModule,

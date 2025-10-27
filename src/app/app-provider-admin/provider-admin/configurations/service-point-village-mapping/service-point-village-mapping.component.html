@@ -222,14 +222,11 @@
           </button>
         </div>
         <div
-          *ngIf="
-            filteredavailableServicePointVillageMaps &&
-            filteredavailableServicePointVillageMaps.data.length === 0 &&
-            showTableFlag
-          "
-          style="text-align: center; font-size: 16px"
+          class="pull-center"
+          style="margin-top: 35px; text-align: center"
+          *ngIf="filteredavailableServicePointVillageMaps.data.length === 0"
         >
-          <strong>No records found</strong>
+          <strong>No Records Found</strong>
         </div>
         <mat-paginator
           [hidden]="filteredavailableServicePointVillageMaps.data.length === 0"
