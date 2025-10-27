@@ -9,6 +9,8 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatTableModule } from '@angular/material/table';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ProviderAdminRoleService } from './services/state-serviceline-role.service';
 import { MaterialModule } from 'src/app/core/material.module';
@@ -173,6 +175,9 @@ import { CoreModule } from 'src/app/core/core.module';
     MatNativeDateModule,
     MatTooltipModule,
     MatTableModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatButtonModule,
     MaterialModule,
     FormsModule,
     ReactiveFormsModule,
