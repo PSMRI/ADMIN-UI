@@ -83,8 +83,6 @@ export const environment = {
   getQuestionType_url: `${commonBaseURL}questionTypeController/get/questionTypeList`,
   editQuestionnaire_url: `${adminBaseUrl}editQuestionnaire`,
   getBlockSubcentreDataUploadUrl: `${adminBaseUrl}uptsu/saveFacility`,
-  getXMLDataUploadUrl: `${adminBaseUrl}bulkRegistration`,
-  getDataUploadErrorExcel: `${adminBaseUrl}download-error-sheet`,
 
   getServiceLines_newrole_url: `${adminBaseUrl}m/role/serviceNew`,
   getStates_newparking_url: `${adminBaseUrl}m/role/stateNew`,
