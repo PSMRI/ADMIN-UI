@@ -1,5 +1,5 @@
 <div class="container-fluid">
-  <div class="row" *ngIf="tableMode">
+  <div class="row" *ngIf="tableMode && !employeeMasterUpload">
     <div class="col-xs-12 col-sm-12">
       <h4>Employee Master</h4>
     </div>
@@ -141,7 +141,7 @@
     </div>
   </div>
   <div
-    [hidden]="!formMode"
+    [hidden]="!formMode || employeeMasterUpload"
     class="create-user-form"
     style="margin: 35px 10px 0px 10px"
   >
@@ -1158,5 +1158,8 @@
         </button>
       </div>
     </div>
+  </div>
+  <div *ngIf="employeeMasterUpload">
+    <app-employee-master-bulk-upload (closeUpload)="closeBulkUpload()"></app-employee-master-bulk-upload>
   </div>
 </div>

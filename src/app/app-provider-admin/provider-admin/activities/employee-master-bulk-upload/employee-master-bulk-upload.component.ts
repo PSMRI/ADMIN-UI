@@ -1,4 +1,10 @@
-import { Component, ViewChild, OnInit } from '@angular/core';
+import {
+  Component,
+  ViewChild,
+  OnInit,
+  Output,
+  EventEmitter,
+} from '@angular/core';
 import { BlockSubcenterMappingService } from '../services/block-subcenter-mapping-service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
@@ -15,6 +21,7 @@ import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
   styleUrls: ['./employee-master-bulk-upload.component.css'],
 })
 export class EmployeeMasterBulkUploadComponent {
+  @Output() closeUpload = new EventEmitter<void>();
   objs = new MatTableDataSource<any>();
 
   paginator!: MatPaginator;
@@ -231,7 +238,7 @@ export class EmployeeMasterBulkUploadComponent {
       )
       .subscribe((res) => {
         if (res) {
-          this.location.back();
+          this.closeUpload.emit();
         }
       });
   }

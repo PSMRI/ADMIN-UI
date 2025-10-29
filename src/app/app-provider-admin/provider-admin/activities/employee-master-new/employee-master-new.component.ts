@@ -1586,5 +1586,13 @@ export class EmployeeMasterNewComponent implements OnInit {
 
   uploadMaster() {
     this.employeeMasterUpload = true;
+    this.tableMode = false;
+    this.formMode = false;
+  }
+
+  closeBulkUpload() {
+    this.employeeMasterUpload = false;
+    this.tableMode = true;
+    this.formMode = false;
   }
 }
