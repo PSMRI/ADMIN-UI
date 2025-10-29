@@ -1,16 +1,5 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatSelectModule } from '@angular/material/select';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTableModule } from '@angular/material/table';
-import { MatPaginatorModule } from '@angular/material/paginator';
-import { MatSortModule } from '@angular/material/sort';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ProviderAdminRoleService } from './services/state-serviceline-role.service';
 import { MaterialModule } from 'src/app/core/material.module';
@@ -111,7 +100,7 @@ import { ProjectConfigutationScreenComponent } from './project-configutation-scr
 import { ProjectConfigurationService } from './services/project-configuration-service';
 import { AddFieldsToProjectComponent } from './add-fields-to-project/add-fields-to-project.component';
 import { AddFieldsService } from './services/add-fields-service';
-import { MatChipGrid, MatChipsModule } from '@angular/material/chips';
+import { MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
 
 @NgModule({
@@ -168,22 +157,9 @@ import { CoreModule } from 'src/app/core/core.module';
   ],
   imports: [
     CommonModule,
-    MatSelectModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatDialogModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatTooltipModule,
-    MatTableModule,
-    MatPaginatorModule,
-    MatSortModule,
-    MatButtonModule,
     MaterialModule,
     FormsModule,
     ReactiveFormsModule,
-    MatNativeDateModule,
     MatChipsModule,
     CoreModule,
   ],
