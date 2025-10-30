@@ -500,7 +500,7 @@ export const environment = {
   getAbdmFacilities: `${fhirBaseUrl}facility/getAbdmRegisteredFacilities`,
 
   // Missing properties that services are trying to use
-  getXMLDataUploadUrl: `${adminBaseUrl}uptsu/upload/xml`,
-  getDataUploadErrorExcel: `${adminBaseUrl}uptsu/download/errorExcel`,
+  getXMLDataUploadUrl: `${adminBaseUrl}bulkRegistration`,
+    getDataUploadErrorExcel: `${adminBaseUrl}download-error-sheet`,
   signatureStatus: `${adminBaseUrl}signature1/status`,
 };
