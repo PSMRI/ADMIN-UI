@@ -501,6 +501,6 @@ export const environment = {
 
   // Missing properties that services are trying to use
   getXMLDataUploadUrl: `${adminBaseUrl}bulkRegistration`,
-    getDataUploadErrorExcel: `${adminBaseUrl}download-error-sheet`,
+  getDataUploadErrorExcel: `${adminBaseUrl}download-error-sheet`,
   signatureStatus: `${adminBaseUrl}signature1/status`,
 };
