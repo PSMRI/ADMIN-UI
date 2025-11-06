@@ -31,6 +31,7 @@ import { MappedVansComponent } from '../mapped-vans/mapped-vans.component';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+import { MatSort } from '@angular/material/sort';
 
 @Component({
   selector: 'app-employee-parking-place-mapping',
@@ -42,6 +43,7 @@ export class EmployeeParkingPlaceMappingComponent
   paginator!: MatPaginator;
   @ViewChild('paginatorFirst') paginatorFirst!: MatPaginator;
   @ViewChild('paginatorSecond') paginatorSecond!: MatPaginator;
+  @ViewChild(MatSort) sort!: MatSort;
 
   [x: string]: any;
   filteredavailableEmployeeParkingPlaceMappings = new MatTableDataSource<any>();
@@ -326,6 +328,7 @@ export class EmployeeParkingPlaceMappingComponent
     this.filteredavailableEmployeeParkingPlaceMappings.data = response.data;
     this.filteredavailableEmployeeParkingPlaceMappings.paginator =
       this.paginatorSecond;
+    this.filteredavailableEmployeeParkingPlaceMappings.sort = this.sort;
   }
   parkingPlaceID: any;
   selectedParkingPlace(
