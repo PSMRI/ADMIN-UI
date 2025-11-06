@@ -127,6 +127,9 @@ export class EmployeeParkingPlaceMappingComponent
     this.filteredavailableEmployeeParkingPlaceMappings.paginator =
       this.paginatorSecond;
     this.employeeParkingPlaceMappingList.paginator = this.paginatorFirst;
+    if (this.sort) {
+      this.filteredavailableEmployeeParkingPlaceMappings.sort = this.sort;
+    }
   }
 
   ngOnInit() {
@@ -328,7 +331,9 @@ export class EmployeeParkingPlaceMappingComponent
     this.filteredavailableEmployeeParkingPlaceMappings.data = response.data;
     this.filteredavailableEmployeeParkingPlaceMappings.paginator =
       this.paginatorSecond;
-    this.filteredavailableEmployeeParkingPlaceMappings.sort = this.sort;
+    if (this.sort) {
+      this.filteredavailableEmployeeParkingPlaceMappings.sort = this.sort;
+    }
   }
   parkingPlaceID: any;
   selectedParkingPlace(
