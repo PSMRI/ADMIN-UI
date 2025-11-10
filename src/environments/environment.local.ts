@@ -83,6 +83,7 @@ export const environment = {
   getQuestionType_url: `${commonBaseURL}questionTypeController/get/questionTypeList`,
   editQuestionnaire_url: `${adminBaseUrl}editQuestionnaire`,
   getBlockSubcentreDataUploadUrl: `${adminBaseUrl}uptsu/saveFacility`,
+
   getServiceLines_newrole_url: `${adminBaseUrl}m/role/serviceNew`,
   getStates_newparking_url: `${adminBaseUrl}m/role/stateNew`,
   _getZonesParkURL: `${adminBaseUrl}zonemaster/get/zones`,
@@ -505,4 +506,9 @@ export const environment = {
   siteKey: siteKey,
   captchaChallengeURL: captchaChallengeURL,
   enableCaptcha: enableCaptcha,
+
+  // Missing properties that services are trying to use
+  getXMLDataUploadUrl: `${adminBaseUrl}bulkRegistration`,
+  getDataUploadErrorExcel: `${adminBaseUrl}download-error-sheet`,
+  signatureStatus: `${adminBaseUrl}signature1/status`,
 };

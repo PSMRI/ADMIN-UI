@@ -121,6 +121,17 @@
             mat-raised-button
             color="primary"
             class="pull-right mat_blue"
+            (click)="uploadMaster()"
+            style="margin-left: 10px"
+          >
+            Bulk User Upload
+          </button>
+        </div>
+        <div>
+          <button
+            mat-raised-button
+            color="primary"
+            class="pull-right mat_blue ms-3"
             (click)="showForm()"
           >
             Create New User
@@ -130,7 +141,7 @@
     </div>
   </div>
   <div
-    [hidden]="!formMode"
+    [hidden]="!formMode || employeeMasterUpload"
     class="create-user-form"
     style="margin: 35px 10px 0px 10px"
   >
@@ -1147,5 +1158,8 @@
         </button>
       </div>
     </div>
+  </div>
+  <div *ngIf="employeeMasterUpload">
+    <app-employee-master-bulk-upload (closeUpload)="closeBulkUpload()"></app-employee-master-bulk-upload>
   </div>
 </div>

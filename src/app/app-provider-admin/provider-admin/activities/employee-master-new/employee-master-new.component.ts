@@ -151,6 +151,9 @@ export class EmployeeMasterNewComponent implements OnInit {
   permanentDistricts: any = [];
   communities: any = [];
   religions: any = [];
+
+  downloadMemberExcelFile: any;
+
   // objs: any = [];
   searchTerm: any;
   selfHealthProfessionalID: any;
@@ -177,6 +180,7 @@ export class EmployeeMasterNewComponent implements OnInit {
   @ViewChild('communicationDetailsForm')
   communicationDetailsForm!: NgForm;
   disableGenerateOTP: any;
+  employeeMasterUpload = false;
 
   // md2.data: Observable<Array<item>>;
 
@@ -207,15 +211,72 @@ export class EmployeeMasterNewComponent implements OnInit {
 
     this.employeeMasterNewService.getAllUsers(this.serviceProviderID).subscribe(
       (response: any) => {
-        if (response) {
-          console.log('All details of the user', response);
-          this.searchResult = response.data;
-          this.filteredsearchResult.data = response.data;
-          this.filteredsearchResult.paginator = this.paginator;
-        }
+        const employeeList = this.extractEmployeeList(response);
+        console.log('All details of the user', employeeList);
+        this.searchResult = employeeList;
+        this.filteredsearchResult.data = employeeList;
+        this.filteredsearchResult.paginator = this.paginator;
       },
       (err) => console.log('error', err),
     );
+  }
+
+  private extractEmployeeList(response: any): any[] {
+    let rawData = response;
+
+    if (rawData && typeof rawData === 'object' && 'data' in rawData) {
+      rawData = rawData.data;
+    }
+
+    rawData = this.deepParseIfString(rawData);
+
+    if (Array.isArray(rawData)) {
+      return rawData;
+    }
+
+    if (rawData && typeof rawData === 'object') {
+      if (Array.isArray(rawData.data)) {
+        return rawData.data;
+      }
+      if (Array.isArray(rawData.response)) {
+        return rawData.response;
+      }
+      if (Array.isArray(rawData.result)) {
+        return rawData.result;
+      }
+      const firstArray = Object.values(rawData).find((value) =>
+        Array.isArray(value),
+      );
+      if (Array.isArray(firstArray)) {
+        return firstArray;
+      }
+    }
+
+    return [];
+  }
+
+  private deepParseIfString(candidate: any): any {
+    let parsedValue = candidate;
+    const seen = new Set<any>();
+
+    while (typeof parsedValue === 'string') {
+      const trimmed = parsedValue.trim();
+      if (!trimmed) {
+        return [];
+      }
+      if (seen.has(trimmed)) {
+        break;
+      }
+      seen.add(trimmed);
+      try {
+        parsedValue = JSON.parse(trimmed);
+      } catch (error) {
+        console.error('Failed to parse employee master response string', error);
+        return [];
+      }
+    }
+
+    return parsedValue;
   }
   showForm() {
     this.tableMode = false;
@@ -1578,5 +1639,17 @@ export class EmployeeMasterNewComponent implements OnInit {
     } else {
       this.enablehealthProfessionalID = false;
     }
+  }
+
+  uploadMaster() {
+    this.employeeMasterUpload = true;
+    this.tableMode = false;
+    this.formMode = false;
+  }
+
+  closeBulkUpload() {
+    this.employeeMasterUpload = false;
+    this.tableMode = true;
+    this.formMode = false;
   }
 }

@@ -12,10 +12,13 @@ import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatDialogModule } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
+import { MatOptionModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatRadioModule } from '@angular/material/radio';
 import { MatStepperModule } from '@angular/material/stepper';
 import { MatExpansionModule } from '@angular/material/expansion';
@@ -25,6 +28,7 @@ import { MatListModule } from '@angular/material/list';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatSortModule } from '@angular/material/sort';
 
 @NgModule({
   imports: [
@@ -40,9 +44,12 @@ import { MatTableModule } from '@angular/material/table';
     MatDialogModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatOptionModule,
     MatButtonToggleModule,
+    MatButtonModule,
     MatSlideToggleModule,
     MatInputModule,
+    MatFormFieldModule,
     MatRadioModule,
     MatStepperModule,
     MatExpansionModule,
@@ -54,6 +61,7 @@ import { MatTableModule } from '@angular/material/table';
     MatListModule,
     MatSnackBarModule,
     MatTableModule,
+    MatSortModule,
   ],
   providers: [],
   exports: [
@@ -70,9 +78,12 @@ import { MatTableModule } from '@angular/material/table';
     MatDialogModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatOptionModule,
     MatButtonToggleModule,
+    MatButtonModule,
     MatSlideToggleModule,
     MatInputModule,
+    MatFormFieldModule,
     MatRadioModule,
     MatStepperModule,
     MatExpansionModule,
@@ -83,6 +94,8 @@ import { MatTableModule } from '@angular/material/table';
     MatProgressBarModule,
     MatListModule,
     MatSnackBarModule,
+    MatTableModule,
+    MatSortModule,
   ],
 })
 export class MaterialModule {}

@@ -506,4 +506,9 @@ export const environment = {
   siteKey: siteKey,
   captchaChallengeURL: captchaChallengeURL,
   enableCaptcha: enableCaptcha,
+
+  // Missing properties that services are trying to use
+  getXMLDataUploadUrl: `${adminBaseUrl}bulkRegistration`,
+  getDataUploadErrorExcel: `${adminBaseUrl}download-error-sheet`,
+  signatureStatus: `${adminBaseUrl}signature1/status`,
 };

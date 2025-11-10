@@ -1,14 +1,5 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatSelectModule } from '@angular/material/select';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatDialogModule } from '@angular/material/dialog';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTableModule } from '@angular/material/table';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ProviderAdminRoleService } from './services/state-serviceline-role.service';
 import { MaterialModule } from 'src/app/core/material.module';
@@ -19,6 +10,7 @@ import {
 import { CategorySubcategoryProvisioningComponent } from './category-subcategory-provisioning/category-subcategory-provisioning.component';
 import { EditCategorySubcategoryComponent } from './category-subcategory-provisioning/edit-category-subcategory/edit-category-subcategory.component';
 import { EmployeeMasterNewComponent } from './employee-master-new/employee-master-new.component';
+import { EmployeeMasterBulkUploadComponent } from './employee-master-bulk-upload/employee-master-bulk-upload.component';
 import {
   FeedbackTypeMasterComponent,
   EditFeedbackModalComponent,
@@ -108,7 +100,7 @@ import { ProjectConfigutationScreenComponent } from './project-configutation-scr
 import { ProjectConfigurationService } from './services/project-configuration-service';
 import { AddFieldsToProjectComponent } from './add-fields-to-project/add-fields-to-project.component';
 import { AddFieldsService } from './services/add-fields-service';
-import { MatChipGrid, MatChipsModule } from '@angular/material/chips';
+import { MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
 
 @NgModule({
@@ -161,22 +153,13 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectServicelineMappingComponent,
     ProjectConfigutationScreenComponent,
     AddFieldsToProjectComponent,
+    EmployeeMasterBulkUploadComponent,
   ],
   imports: [
     CommonModule,
-    MatSelectModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatDialogModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
-    MatTooltipModule,
-    MatTableModule,
     MaterialModule,
     FormsModule,
     ReactiveFormsModule,
-    MatNativeDateModule,
     MatChipsModule,
     CoreModule,
   ],
