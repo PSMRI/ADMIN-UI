@@ -19,11 +19,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Component, OnInit, ViewChild, Inject } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  ViewChild,
+  Inject,
+  ChangeDetectorRef,
+  ViewRef,
+} from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { finalize } from 'rxjs/operators';
 import { EmployeeMasterNewServices } from 'src/app/app-provider-admin/provider-admin/activities/services/employee-master-new-services.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
@@ -66,9 +74,12 @@ export class EmployeeMasterNewComponent implements OnInit {
     this.setDataSourceAttributes();
   }
   filteredsearchResult = new MatTableDataSource<any>();
+  isLoading = false;
 
   setDataSourceAttributes() {
-    this.filteredsearchResult.paginator = this.paginator;
+    if (this.filteredsearchResult && this.paginator) {
+      this.filteredsearchResult.paginator = this.paginator;
+    }
     // this.objs.paginator = this.paginator;
   }
   //ngModel
@@ -190,6 +201,7 @@ export class EmployeeMasterNewComponent implements OnInit {
     public dialogService: ConfirmationDialogsService,
     public dialog: MatDialog,
     readonly sessionstorage: SessionStorageService,
+    private cdr: ChangeDetectorRef,
   ) {
     this.filteredsearchResult.data = [];
   }
@@ -209,16 +221,29 @@ export class EmployeeMasterNewComponent implements OnInit {
   getAllUserDetails() {
     console.log('serviceProvider', this.serviceProviderID);
 
-    this.employeeMasterNewService.getAllUsers(this.serviceProviderID).subscribe(
-      (response: any) => {
-        const employeeList = this.extractEmployeeList(response);
-        console.log('All details of the user', employeeList);
-        this.searchResult = employeeList;
-        this.filteredsearchResult.data = employeeList;
-        this.filteredsearchResult.paginator = this.paginator;
-      },
-      (err) => console.log('error', err),
-    );
+    this.isLoading = true;
+    this.employeeMasterNewService
+      .getAllUsers(this.serviceProviderID)
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+          if (!(this.cdr as ViewRef).destroyed) {
+            this.cdr.detectChanges();
+          }
+        }),
+      )
+      .subscribe(
+        (response: any) => {
+          const employeeList = this.extractEmployeeList(response);
+          console.log('All details of the user', employeeList);
+          this.searchResult = employeeList;
+          this.refreshFilteredData(employeeList);
+        },
+        (err) => {
+          console.log('error', err);
+          this.refreshFilteredData([]);
+        },
+      );
   }
 
   private extractEmployeeList(response: any): any[] {
@@ -361,8 +386,7 @@ export class EmployeeMasterNewComponent implements OnInit {
         if (res) {
           this.objs.data = [];
           this.searchTerm = null;
-          this.filteredsearchResult.data = this.searchResult;
-          this.filteredsearchResult.paginator = this.paginator;
+          this.refreshFilteredData(this.searchResult);
           this.showTable();
           this.resetAllFlags();
         }
@@ -1597,28 +1621,25 @@ export class EmployeeMasterNewComponent implements OnInit {
   }
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredsearchResult.data = this.searchResult;
-      this.filteredsearchResult.paginator = this.paginator;
-    } else {
-      this.filteredsearchResult.data = [];
-      this.searchResult.forEach((item: any) => {
-        for (const key in item) {
-          if (
-            key === 'userName' ||
-            key === 'emergencyContactNo' ||
-            key === 'emailID' ||
-            key === 'designationName'
-          ) {
-            const value: string = '' + item[key];
-            if (value.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
-              this.filteredsearchResult.data.push(item);
-              break;
-            }
-          }
-        }
-      });
-      this.filteredsearchResult.paginator = this.paginator;
+      this.refreshFilteredData(this.searchResult);
+      return;
     }
+
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+    const filtered = this.searchResult.filter((item: any) =>
+      ['userName', 'emergencyContactNo', 'emailID', 'designationName'].some(
+        (key) => {
+          const value = item[key];
+          return (
+            value !== undefined &&
+            value !== null &&
+            value.toString().toLowerCase().includes(normalizedTerm)
+          );
+        },
+      ),
+    );
+
+    this.refreshFilteredData(filtered);
   }
   // to enable health professional ID feild upon selecting designation
   enableHPID() {
@@ -1651,5 +1672,13 @@ export class EmployeeMasterNewComponent implements OnInit {
     this.employeeMasterUpload = false;
     this.tableMode = true;
     this.formMode = false;
+  }
+
+  private refreshFilteredData(rows: any[]) {
+    this.filteredsearchResult = new MatTableDataSource(rows);
+    this.setDataSourceAttributes();
+    if (this.filteredsearchResult.paginator) {
+      this.filteredsearchResult.paginator.firstPage();
+    }
   }
 }

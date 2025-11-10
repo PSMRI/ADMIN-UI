@@ -21,7 +21,10 @@
     <div class="col-xs-12 col-sm-12">
       <div
         class="table-responsive"
-        *ngIf="filteredsearchResult?.data?.length; else noEmployeeRecords"
+        *ngIf="
+          !isLoading && filteredsearchResult?.data?.length;
+          else tablePlaceholder
+        "
       >
         <table
           mat-table
@@ -135,9 +138,10 @@
       </div>
     </div>
   </div>
-  <ng-template #noEmployeeRecords>
+  <ng-template #tablePlaceholder>
     <div class="pull-center" style="margin-top: 35px; text-align: center">
-      <strong>No Records Found</strong>
+      <strong *ngIf="isLoading">Loading...</strong>
+      <strong *ngIf="!isLoading">No Records Found</strong>
     </div>
   </ng-template>
   <div
