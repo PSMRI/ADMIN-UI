@@ -1675,10 +1675,12 @@ export class EmployeeMasterNewComponent implements OnInit {
   }
 
   private refreshFilteredData(rows: any[]) {
-    this.filteredsearchResult = new MatTableDataSource(rows);
+    const safeRows = Array.isArray(rows) ? rows : [];
+    this.filteredsearchResult.data = safeRows;
     this.setDataSourceAttributes();
     if (this.filteredsearchResult.paginator) {
       this.filteredsearchResult.paginator.firstPage();
     }
+    this.filteredsearchResult._updateChangeSubscription();
   }
 }
