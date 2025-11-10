@@ -19,7 +19,10 @@
   </div>
   <div class="row" *ngIf="tableMode">
     <div class="col-xs-12 col-sm-12">
-      <div class="table-responsive">
+      <div
+        class="table-responsive"
+        *ngIf="filteredsearchResult?.data?.length; else noEmployeeRecords"
+      >
         <table
           mat-table
           [dataSource]="filteredsearchResult"
@@ -103,15 +106,7 @@
             </td>
           </ng-container>
         </table>
-        <div
-          class="pull-center"
-          style="margin-top: 35px; text-align: center"
-          *ngIf="filteredsearchResult.data.length === 0"
-        >
-          <strong>No Records Found</strong>
-        </div>
         <mat-paginator
-          [hidden]="filteredsearchResult.data.length === 0"
           [pageSizeOptions]="[5, 10, 25]"
           [pageSize]="5"
           showFirstLastButtons
@@ -140,6 +135,11 @@
       </div>
     </div>
   </div>
+  <ng-template #noEmployeeRecords>
+    <div class="pull-center" style="margin-top: 35px; text-align: center">
+      <strong>No Records Found</strong>
+    </div>
+  </ng-template>
   <div
     [hidden]="!formMode"
     class="create-user-form"
