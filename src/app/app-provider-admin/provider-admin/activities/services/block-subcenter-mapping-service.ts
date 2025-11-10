@@ -20,12 +20,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 // import { InterceptedHttp } from "app/http.interceptor";
 // import { SecurityInterceptedHttp } from "app/http.securityinterceptor";
 import { Observable, map, throwError } from 'rxjs';
 import { ConfigService } from 'src/app/core/services/config/config.service';
 import { environment } from 'src/environments/environment';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 @Injectable()
 export class BlockSubcenterMappingService {
@@ -36,6 +37,7 @@ export class BlockSubcenterMappingService {
   constructor(
     private http: HttpClient,
     public basepaths: ConfigService,
+    private sessionStorage: SessionStorageService,
   ) {
     this.admin_Base_Url = this.basepaths.getAdminBaseUrl();
     this.common_Base_Url = this.basepaths.getCommonBaseURL();
@@ -49,7 +51,14 @@ export class BlockSubcenterMappingService {
   }
 
   memberBulkUploadXML(formData: any) {
-    return this.http.post(environment.getXMLDataUploadUrl, formData);
+    const userName =
+      this.sessionStorage.getItem('uname') ||
+      this.sessionStorage.getItem('userName') ||
+      '';
+    const params = new HttpParams().set('userName', userName);
+    return this.http.post(environment.getXMLDataUploadUrl, formData, {
+      params,
+    });
   }
 
   downloadErrorExcel(): Observable<Blob> {
