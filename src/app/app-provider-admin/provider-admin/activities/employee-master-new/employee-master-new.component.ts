@@ -31,6 +31,7 @@ import { NgForm } from '@angular/forms';
 import { MatDialog } from '@angular/material/dialog';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
+import { MatSort } from '@angular/material/sort';
 import { finalize } from 'rxjs/operators';
 import { EmployeeMasterNewServices } from 'src/app/app-provider-admin/provider-admin/activities/services/employee-master-new-services.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
@@ -69,8 +70,13 @@ export class EmployeeMasterNewComponent implements OnInit {
     'action',
   ];
   paginator!: MatPaginator;
+  sort!: MatSort;
   @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
     this.paginator = mp;
+    this.setDataSourceAttributes();
+  }
+  @ViewChild(MatSort) set matSort(ms: MatSort) {
+    this.sort = ms;
     this.setDataSourceAttributes();
   }
   filteredsearchResult = new MatTableDataSource<any>();
@@ -79,6 +85,9 @@ export class EmployeeMasterNewComponent implements OnInit {
   setDataSourceAttributes() {
     if (this.filteredsearchResult && this.paginator) {
       this.filteredsearchResult.paginator = this.paginator;
+    }
+    if (this.filteredsearchResult && this.sort) {
+      this.filteredsearchResult.sort = this.sort;
     }
     // this.objs.paginator = this.paginator;
   }
