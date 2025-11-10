@@ -214,7 +214,7 @@ export class EmployeeMasterNewComponent implements OnInit {
         const employeeList = this.extractEmployeeList(response);
         console.log('All details of the user', employeeList);
         this.searchResult = employeeList;
-        this.filteredsearchResult = new MatTableDataSource(employeeList);
+        this.filteredsearchResult.data = employeeList;
         this.filteredsearchResult.paginator = this.paginator;
       },
       (err) => console.log('error', err),
@@ -222,37 +222,61 @@ export class EmployeeMasterNewComponent implements OnInit {
   }
 
   private extractEmployeeList(response: any): any[] {
-    const rawData = response?.data ?? response;
+    let rawData = response;
+
+    if (rawData && typeof rawData === 'object' && 'data' in rawData) {
+      rawData = rawData.data;
+    }
+
+    rawData = this.deepParseIfString(rawData);
+
     if (Array.isArray(rawData)) {
       return rawData;
     }
-    if (rawData === null || rawData === undefined) {
-      return [];
+
+    if (rawData && typeof rawData === 'object') {
+      if (Array.isArray(rawData.data)) {
+        return rawData.data;
+      }
+      if (Array.isArray(rawData.response)) {
+        return rawData.response;
+      }
+      if (Array.isArray(rawData.result)) {
+        return rawData.result;
+      }
+      const firstArray = Object.values(rawData).find((value) =>
+        Array.isArray(value),
+      );
+      if (Array.isArray(firstArray)) {
+        return firstArray;
+      }
     }
-    if (typeof rawData === 'string') {
+
+    return [];
+  }
+
+  private deepParseIfString(candidate: any): any {
+    let parsedValue = candidate;
+    const seen = new Set<any>();
+
+    while (typeof parsedValue === 'string') {
+      const trimmed = parsedValue.trim();
+      if (!trimmed) {
+        return [];
+      }
+      if (seen.has(trimmed)) {
+        break;
+      }
+      seen.add(trimmed);
       try {
-        const parsed = JSON.parse(rawData);
-        if (Array.isArray(parsed)) {
-          return parsed;
-        }
-        if (Array.isArray(parsed?.data)) {
-          return parsed.data;
-        }
-        if (Array.isArray(parsed?.response)) {
-          return parsed.response;
-        }
+        parsedValue = JSON.parse(trimmed);
       } catch (error) {
-        console.error('Failed to parse employee master response', error);
+        console.error('Failed to parse employee master response string', error);
         return [];
       }
     }
-    if (Array.isArray(rawData?.data)) {
-      return rawData.data;
-    }
-    if (Array.isArray(rawData?.response)) {
-      return rawData.response;
-    }
-    return [];
+
+    return parsedValue;
   }
   showForm() {
     this.tableMode = false;
