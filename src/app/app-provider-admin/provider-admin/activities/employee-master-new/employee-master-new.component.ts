@@ -236,6 +236,7 @@ export class EmployeeMasterNewComponent implements OnInit {
         (response: any) => {
           const employeeList = this.extractEmployeeList(response);
           console.log('All details of the user', employeeList);
+          console.log('list length', employeeList?.length);
           this.searchResult = employeeList;
           this.refreshFilteredData(employeeList);
         },
@@ -1676,11 +1677,14 @@ export class EmployeeMasterNewComponent implements OnInit {
 
   private refreshFilteredData(rows: any[]) {
     const safeRows = Array.isArray(rows) ? rows : [];
-    this.filteredsearchResult.data = safeRows;
+    console.log('refreshFilteredData rows', safeRows.length);
+    this.filteredsearchResult.data = [...safeRows];
     this.setDataSourceAttributes();
     if (this.filteredsearchResult.paginator) {
       this.filteredsearchResult.paginator.firstPage();
     }
-    this.filteredsearchResult._updateChangeSubscription();
+    if (!(this.cdr as ViewRef).destroyed) {
+      this.cdr.detectChanges();
+    }
   }
 }

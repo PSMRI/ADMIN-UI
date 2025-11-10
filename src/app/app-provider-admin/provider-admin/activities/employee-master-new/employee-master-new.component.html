@@ -19,13 +19,12 @@
   </div>
   <div class="row" *ngIf="tableMode">
     <div class="col-xs-12 col-sm-12">
-      <div
-        class="table-responsive"
-        *ngIf="
-          !isLoading && filteredsearchResult?.data?.length;
-          else tablePlaceholder
-        "
-      >
+      <div class="table-responsive">
+        <mat-progress-bar
+          *ngIf="isLoading"
+          mode="indeterminate"
+          color="primary"
+        ></mat-progress-bar>
         <table
           mat-table
           [dataSource]="filteredsearchResult"
@@ -110,10 +109,18 @@
           </ng-container>
         </table>
         <mat-paginator
+          [hidden]="isLoading || !filteredsearchResult?.data?.length"
           [pageSizeOptions]="[5, 10, 25]"
           [pageSize]="5"
           showFirstLastButtons
         ></mat-paginator>
+        <div
+          class="pull-center"
+          style="margin-top: 35px; text-align: center"
+          *ngIf="!isLoading && !filteredsearchResult?.data?.length"
+        >
+          <strong>No Records Found</strong>
+        </div>
         <div>
           <button
             mat-raised-button
@@ -138,12 +145,6 @@
       </div>
     </div>
   </div>
-  <ng-template #tablePlaceholder>
-    <div class="pull-center" style="margin-top: 35px; text-align: center">
-      <strong *ngIf="isLoading">Loading...</strong>
-      <strong *ngIf="!isLoading">No Records Found</strong>
-    </div>
-  </ng-template>
   <div
     [hidden]="!formMode"
     class="create-user-form"
