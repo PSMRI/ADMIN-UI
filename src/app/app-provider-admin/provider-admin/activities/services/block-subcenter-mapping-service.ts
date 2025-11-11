@@ -55,7 +55,20 @@ export class BlockSubcenterMappingService {
       this.sessionStorage.getItem('uname') ||
       this.sessionStorage.getItem('userName') ||
       '';
-    const params = new HttpParams().set('userName', userName);
+
+      const serviceProviderID =
+            this.sessionStorage.getItem('providerServiceID') ||
+            this.sessionStorage.getItem('providerServiceID') ||
+            '';
+
+            const serviceProviderMapID =
+                        this.sessionStorage.getItem('providerServiceID') ||
+                        this.sessionStorage.getItem('providerServiceID') ||
+                        '';
+    const params = new HttpParams()
+        .set('userName', userName)
+        .set('serviceProviderID', serviceProviderID)
+        .set('serviceProviderMapID', serviceProviderMapID);
     return this.http.post(environment.getXMLDataUploadUrl, formData, {
       params,
     });
