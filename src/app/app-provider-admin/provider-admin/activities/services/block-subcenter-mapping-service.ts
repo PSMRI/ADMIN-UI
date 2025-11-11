@@ -57,8 +57,8 @@ export class BlockSubcenterMappingService {
       '';
 
       const serviceProviderID =
-            this.sessionStorage.getItem('providerServiceID') ||
-            this.sessionStorage.getItem('providerServiceID') ||
+            this.sessionStorage.getItem('service_providerID') ||
+            this.sessionStorage.getItem('service_providerID') ||
             '';
 
             const serviceProviderMapID =
