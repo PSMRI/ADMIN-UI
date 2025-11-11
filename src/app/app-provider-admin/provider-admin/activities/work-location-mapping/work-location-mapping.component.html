@@ -28,7 +28,9 @@
       <div class="table-responsive">
         <table
           mat-table
-          [dataSource]="this.filteredmappedWorkLocationsList"
+          matSort
+          #sortFirst="matSort"
+          [dataSource]="filteredmappedWorkLocationsList"
           class="table table-striped table-hover"
         >
           <ng-container matColumnDef="SNo">
@@ -460,6 +462,8 @@
       <div class="table-responsive">
         <table
           mat-table
+          matSort
+          #sortSecond="matSort"
           [dataSource]="bufferArray"
           class="table table-striped table-hover"
         >
