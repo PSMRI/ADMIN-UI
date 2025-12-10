@@ -26,6 +26,8 @@ import { dataService } from 'src/app/core/services/dataService/data.service';
 import { SuperAdmin_ServiceProvider_Service } from 'src/app/core/services/adminServices/AdminServiceProvider/superadmin_serviceprovider.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
+
 
 @Component({
   selector: 'app-service-provider-master',
@@ -108,6 +110,11 @@ export class ServiceProviderMasterComponent implements OnInit {
     this.getAllProviders();
   }
 
+  @ViewChild(MatSort) sort!: MatSort;
+  ngAfterViewInit() {
+  this.filteredsearchResult.sort = this.sort;
+  }
+  
   showTable() {
     if (this.editMode) {
       this.tableMode = true;
