@@ -82,26 +82,29 @@ export class HttpInterceptorService implements HttpInterceptor {
       }),
       catchError((error: HttpErrorResponse) => {
         console.error(error);
-        if (error.status === 401) {
-          this.confirmationService.alert(
-            this.currentLanguageSet.sessionExpiredPleaseLogin || 'Your session has expired. Please login again.',
-          );
+        if(error.status === 401){
+          this.sessionstorage.clear();
+          this.confirmationService.alert('Session expired. Please login again.', 'error');
+          
         } else if (error.status === 403) {
           this.confirmationService.alert(
-            this.currentLanguageSet.accessDenied || 'You do not have permission to access this resource.',
+           'Access Denied',
             'error',
           );
         } else if (error.status === 500) {
           this.confirmationService.alert(
-            this.currentLanguageSet.internaleServerError ||  'Internal server error occurred. Please try again later.',
+           'Internal Server Error',
             'error',
           );
         } else {
           this.confirmationService.alert(
-            error.message || this.currentLanguageSet.somethingWentWrong || 'Something went wrong. Please try again later.',
+            error.message || 'Something went wrong',
             'error',
           );
         }
+        this.router.navigate(['/login']);
+        sessionStorage.clear();
+        this.sessionstorage.clear();
         this.spinnerService.setLoading(false);
         return throwError(error.error);
       }),
