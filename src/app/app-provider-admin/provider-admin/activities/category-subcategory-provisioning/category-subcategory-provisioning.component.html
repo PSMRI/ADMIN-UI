@@ -120,6 +120,7 @@
         <table
           *ngIf="showCategoryTable"
           mat-table
+          matSort
           [dataSource]="filtereddata"
           class="table table-striped table-hover"
         >
@@ -216,6 +217,7 @@
         <table
           *ngIf="!showCategoryTable"
           mat-table
+          matSort
           [dataSource]="filteredsubCat"
           class="table table-striped table-hover"
         >
@@ -562,6 +564,7 @@
       <div class="table-responsive">
         <table
           mat-table
+          matSort
           [dataSource]="this.serviceList"
           class="table table-striped table-hover"
         >
@@ -621,6 +624,7 @@
       <div class="table-responsive">
         <table
           mat-table
+          matSort
           [dataSource]="this.serviceSubCatList"
           class="table table-striped table-hover"
         >
