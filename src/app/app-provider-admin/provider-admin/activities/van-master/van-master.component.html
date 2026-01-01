@@ -112,6 +112,7 @@
       <div class="table-responsive">
         <table
           mat-table
+          matSort
           class="table table-striped table-hover"
           [dataSource]="filteredavailableVans"
         >
@@ -446,6 +447,7 @@
       <div *ngIf="vanList.data.length > 0" class="m-t-10 table-responsive">
         <table
           mat-table
+          matSort
           [dataSource]="vanList"
           class="table table-striped table-hover"
         >

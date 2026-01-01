@@ -141,6 +141,15 @@ export class RoleMasterComponent implements OnInit, AfterViewInit {
     this.dataSource.sort = this.sort;
   }
 
+  private setDataSourceAttributes() {
+    if (this.paginatorFirst) {
+      this.dataSource.paginator = this.paginatorFirst;
+    }
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
+  }
+
   getServiceLines() {
     this.ProviderAdminRoleService.getServiceLinesNew(this.userID).subscribe(
       (response: any) => {
@@ -172,8 +181,7 @@ export class RoleMasterComponent implements OnInit, AfterViewInit {
     this.states = response.data;
     this.searchresultarray = [];
     this.dataSource.data = [];
-    this.dataSource.paginator = this.paginatorFirst;
-    this.dataSource.sort = this.sort;
+    this.setDataSourceAttributes();
 
     if (value.isNational) {
       this.nationalFlag = value.isNational;
@@ -207,8 +215,7 @@ export class RoleMasterComponent implements OnInit, AfterViewInit {
         this.dataSource.data.forEach((item: any, index: number) => {
           item.sno = index + 1;
         });
-        this.dataSource.paginator = this.paginatorFirst;
-        this.dataSource.sort = this.sort;
+        this.setDataSourceAttributes();
         if (this.service.serviceID !== 7) {
           for (let i = 0; i < this.searchresultarray.length; i++) {
             this.filterScreens.push(this.searchresultarray[i].screenName);
@@ -638,10 +645,9 @@ export class RoleMasterComponent implements OnInit, AfterViewInit {
     this.services = [];
     this.searchresultarray = [];
     this.dataSource.data = [];
-    this.dataSource.paginator = this.paginatorFirst;
-    this.dataSource.sort = this.sort;
     this.filterScreens = [];
     this.showAddButtonFlag = false;
+    this.setDataSourceAttributes()
   }
 
   // UPDATE MORE FEATURES TO ROLE
@@ -697,12 +703,10 @@ export class RoleMasterComponent implements OnInit, AfterViewInit {
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.dataSource.data = this.searchresultarray;
-      this.dataSource.paginator = this.paginatorFirst;
-      this.dataSource.sort = this.sort;
+      this.setDataSourceAttributes();
     } else {
       this.dataSource.data = [];
-      this.dataSource.paginator = this.paginatorFirst;
-      this.dataSource.sort = this.sort;
+      this.setDataSourceAttributes();
       this.searchresultarray.forEach((item: any) => {
         for (const key in item) {
           if (key === 'roleName' || key === 'screenName') {
