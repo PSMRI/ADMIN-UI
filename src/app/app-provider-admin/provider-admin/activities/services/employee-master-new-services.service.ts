@@ -188,4 +188,16 @@ export class EmployeeMasterNewServices {
     // .map(this.extractData)
     // .catch(this.handleError)
   }
+
+  getUserLockStatus(userId: number): Observable<any> {
+    return this.http.post(environment.getUserLockStatusUrl, {
+      userId: userId,
+    });
+  }
+
+  unlockUserAccount(userId: number): Observable<any> {
+    return this.http.post(environment.unlockUserAccountUrl, {
+      userId: userId,
+    });
+  }
 }
