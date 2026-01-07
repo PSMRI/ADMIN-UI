@@ -82,7 +82,29 @@ export class HttpInterceptorService implements HttpInterceptor {
       }),
       catchError((error: HttpErrorResponse) => {
         console.error(error);
-
+        if(error.status === 401){
+          this.sessionstorage.clear();
+          this.confirmationService.alert('Session expired. Please login again.', 'error');
+          
+        } else if (error.status === 403) {
+          this.confirmationService.alert(
+           'Access Denied',
+            'error',
+          );
+        } else if (error.status === 500) {
+          this.confirmationService.alert(
+           'Internal Server Error',
+            'error',
+          );
+        } else {
+          this.confirmationService.alert(
+            error.message || 'Something went wrong',
+            'error',
+          );
+        }
+        this.router.navigate(['/login']);
+        sessionStorage.clear();
+        this.sessionstorage.clear();
         this.spinnerService.setLoading(false);
         return throwError(error.error);
       }),
@@ -110,7 +132,6 @@ export class HttpInterceptorService implements HttpInterceptor {
         console.log('there', Date());
 
         if (
-          this.sessionstorage.getItem('authenticationToken') &&
           sessionStorage.getItem('isAuthenticated')
         ) {
           this.confirmationService
@@ -130,7 +151,7 @@ export class HttpInterceptorService implements HttpInterceptor {
                 this.sessionstorage.clear();
                 localStorage.clear();
                 this.confirmationService.alert(
-                  this.currentLanguageSet.sessionExpired,
+                  this.currentLanguageSet.sessionExpired || 'Your session has expired. Please login again.',
                   'error',
                 );
                 this.router.navigate(['/login']);
@@ -140,7 +161,7 @@ export class HttpInterceptorService implements HttpInterceptor {
                   this.sessionstorage.clear();
                   localStorage.clear();
                   this.confirmationService.alert(
-                    this.currentLanguageSet.sessionExpired,
+                    this.currentLanguageSet.sessionExpired || 'Your session has expired. Please login again.',
                     'error',
                   );
                   this.router.navigate(['/login']);

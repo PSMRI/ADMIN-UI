@@ -28,7 +28,9 @@
       <div class="table-responsive">
         <table
           mat-table
-          [dataSource]="this.filteredmappedWorkLocationsList"
+          matSort
+          #sortFirst="matSort"
+          [dataSource]="filteredmappedWorkLocationsList"
           class="table table-striped table-hover"
         >
           <ng-container matColumnDef="SNo">
@@ -51,9 +53,9 @@
             <th mat-header-cell *matHeaderCellDef>State</th>
             <td mat-cell *matCellDef="let element">
               {{
-                element.serviceName === "1097"
-                  ? "All states"
-                  : element.stateName
+              element.serviceName === "1097"
+              ? "All states"
+              : element.stateName
               }}
             </td>
           </ng-container>
@@ -109,7 +111,7 @@
                   !element.providerServiceMappingDeleted
                 "
                 (click)="editRow(element)"
-                >edit</mat-icon
+              >edit</mat-icon
               >
             </td>
           </ng-container>
@@ -362,7 +364,7 @@
             </mat-form-field>
 
             <mat-hint *ngIf="disableSelectRoles"
-              >One user can be mapped with one role only for ECD
+            >One user can be mapped with one role only for ECD
               serviceLine</mat-hint
             >
           </div>
@@ -396,16 +398,16 @@
             name="teleConsultation"
           >
             <mat-radio-button color="primary" class="p-l-10" value="ESanjeevani"
-              >ESanjeevani</mat-radio-button
+            >ESanjeevani</mat-radio-button
             >
             <mat-radio-button color="primary" class="p-l-10" value="Swymed"
-              >Swymed</mat-radio-button
+            >Swymed</mat-radio-button
             >
             <mat-radio-button
               color="primary"
               class="p-l-10"
               value="Not Required"
-              >Not Required</mat-radio-button
+            >Not Required</mat-radio-button
             >
           </mat-radio-group>
         </div>
@@ -421,7 +423,7 @@
             [checked]="isInbound"
             [(ngModel)]="isInbound"
             (selectionChange)="setInbound($event)"
-            >Inbound</mat-checkbox
+          >Inbound</mat-checkbox
           >
           <mat-checkbox
             color="primary"
@@ -429,7 +431,7 @@
             [checked]="isOutbound"
             [(ngModel)]="isOutbound"
             (selectionChange)="setOutbound($event)"
-            >Outbound</mat-checkbox
+          >Outbound</mat-checkbox
           >
         </div>
 
@@ -450,7 +452,7 @@
               role="img"
               aria-hidden="true"
               style="cursor: pointer"
-              >add</mat-icon
+            >add</mat-icon
             >
           </button>
         </div>
@@ -460,6 +462,8 @@
       <div class="table-responsive">
         <table
           mat-table
+          matSort
+          #sortSecond="matSort"
           [dataSource]="bufferArray"
           class="table table-striped table-hover"
         >
@@ -483,9 +487,9 @@
             <th mat-header-cell *matHeaderCellDef>State</th>
             <td mat-cell *matCellDef="let element">
               {{
-                element.serviceName === "1097"
-                  ? "All states"
-                  : element.stateName
+              element.serviceName === "1097"
+              ? "All states"
+              : element.stateName
               }}
             </td>
           </ng-container>
@@ -549,7 +553,7 @@
                     element.userID
                   )
                 "
-                >delete</mat-icon
+              >delete</mat-icon
               >
             </td>
           </ng-container>
@@ -824,16 +828,16 @@
             name="teleConsultationEdit"
           >
             <mat-radio-button color="primary" class="p-l-10" value="ESanjeevani"
-              >ESanjeevani</mat-radio-button
+            >ESanjeevani</mat-radio-button
             >
             <mat-radio-button color="primary" class="p-l-10" value="Swymed"
-              >Swymed</mat-radio-button
+            >Swymed</mat-radio-button
             >
             <mat-radio-button
               color="primary"
               class="p-l-10"
               value="Not Required"
-              >Not Required</mat-radio-button
+            >Not Required</mat-radio-button
             >
           </mat-radio-group>
         </div>
@@ -848,7 +852,7 @@
             [checked]="isInboundEdit"
             [(ngModel)]="isInboundEdit"
             (selectionChange)="setInbound($event)"
-            >Inbound</mat-checkbox
+          >Inbound</mat-checkbox
           >
           <mat-checkbox
             color="primary"
@@ -856,7 +860,7 @@
             [checked]="isOutboundEdit"
             [(ngModel)]="isOutboundEdit"
             (selectionChange)="setOutbound($event)"
-            >Outbound</mat-checkbox
+          >Outbound</mat-checkbox
           >
         </div>
       </form>

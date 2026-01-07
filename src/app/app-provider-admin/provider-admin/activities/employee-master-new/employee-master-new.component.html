@@ -20,9 +20,15 @@
   <div class="row" *ngIf="tableMode">
     <div class="col-xs-12 col-sm-12">
       <div class="table-responsive">
+        <mat-progress-bar
+          *ngIf="isLoading"
+          mode="indeterminate"
+          color="primary"
+        ></mat-progress-bar>
         <table
           mat-table
           [dataSource]="filteredsearchResult"
+          matSort
           class="table table-striped table-hover"
         >
           <ng-container matColumnDef="activePage">
@@ -103,24 +109,35 @@
             </td>
           </ng-container>
         </table>
-        <div
-          class="pull-center"
-          style="margin-top: 35px; text-align: center"
-          *ngIf="filteredsearchResult.data.length === 0"
-        >
-          <strong>No Records Found</strong>
-        </div>
         <mat-paginator
-          [hidden]="filteredsearchResult.data.length === 0"
+          [hidden]="isLoading || !filteredsearchResult?.data?.length"
           [pageSizeOptions]="[5, 10, 25]"
           [pageSize]="5"
           showFirstLastButtons
         ></mat-paginator>
+        <div
+          class="pull-center"
+          style="margin-top: 35px; text-align: center"
+          *ngIf="!isLoading && !filteredsearchResult?.data?.length"
+        >
+          <strong>No Records Found</strong>
+        </div>
         <div>
           <button
             mat-raised-button
             color="primary"
             class="pull-right mat_blue"
+            (click)="uploadMaster()"
+            style="margin-left: 10px"
+          >
+            Bulk User Upload
+          </button>
+        </div>
+        <div>
+          <button
+            mat-raised-button
+            color="primary"
+            class="pull-right mat_blue ms-3"
             (click)="showForm()"
           >
             Create New User
@@ -1147,5 +1164,8 @@
         </button>
       </div>
     </div>
+  </div>
+  <div *ngIf="employeeMasterUpload">
+    <app-employee-master-bulk-upload (closeUpload)="closeBulkUpload()"></app-employee-master-bulk-upload>
   </div>
 </div>

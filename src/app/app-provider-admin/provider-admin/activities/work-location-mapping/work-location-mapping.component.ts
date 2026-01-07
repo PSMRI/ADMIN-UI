@@ -24,6 +24,7 @@ import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { MatSort } from '@angular/material/sort';
 import { VillageMasterService } from 'src/app/core/services/adminServices/AdminVillage/village-master-service.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { WorkLocationMapping } from '../services/work-location-mapping.service';
@@ -34,7 +35,7 @@ import { SessionStorageService } from 'Common-UI/src/registrar/services/session-
   templateUrl: './work-location-mapping.component.html',
   styleUrls: ['./work-location-mapping.component.css'],
 })
-export class WorkLocationMappingComponent implements OnInit {
+export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   userID: any;
   serviceProviderID: any;
   createdBy: any;
@@ -129,6 +130,8 @@ export class WorkLocationMappingComponent implements OnInit {
 
   @ViewChild('paginatorFirst') paginatorFirst!: MatPaginator;
   @ViewChild('paginatorSecond') paginatorSecond!: MatPaginator;
+  @ViewChild('sortFirst') sortFirst!: MatSort;
+  @ViewChild('sortSecond') sortSecond!: MatSort;
   @ViewChild('workplaceform')
   eForm!: NgForm;
   @ViewChild('workplaceeform')
@@ -165,6 +168,13 @@ export class WorkLocationMappingComponent implements OnInit {
     this.getProviderServices(this.userID);
     this.getAllMappedWorkLocations();
     this.getUserName(this.serviceProviderID);
+  }
+
+  ngAfterViewInit(): void {
+    this.filteredmappedWorkLocationsList.paginator = this.paginatorFirst;
+    this.filteredmappedWorkLocationsList.sort = this.sortFirst;
+    this.bufferArray.paginator = this.paginatorSecond;
+    this.bufferArray.sort = this.sortSecond;
   }
 
   setIsNational(value: any) {
@@ -226,8 +236,13 @@ export class WorkLocationMappingComponent implements OnInit {
             );
             this.mappedWorkLocationsList = response.data;
             this.filteredmappedWorkLocationsList.data = response.data;
-            this.filteredmappedWorkLocationsList.paginator =
-              this.paginatorFirst;
+            if (this.paginatorFirst) {
+              this.filteredmappedWorkLocationsList.paginator =
+                this.paginatorFirst;
+            }
+            if (this.sortFirst) {
+              this.filteredmappedWorkLocationsList.sort = this.sortFirst;
+            }
           }
         },
         (err: any) => {
@@ -1161,7 +1176,12 @@ export class WorkLocationMappingComponent implements OnInit {
       workLocationObj['district'] = null;
     }
     this.bufferArray.data.push(workLocationObj);
-    this.bufferArray.paginator = this.paginatorSecond;
+    if (this.paginatorSecond) {
+      this.bufferArray.paginator = this.paginatorSecond;
+    }
+    if (this.sortSecond) {
+      this.bufferArray.sort = this.sortSecond;
+    }
   }
 
   resetAllArrays() {
@@ -1183,7 +1203,12 @@ export class WorkLocationMappingComponent implements OnInit {
 
   deleteRow(i: any, serviceID: any, providerServiceMapID: any, userID: any) {
     this.bufferArray.data.splice(i, 1);
-    this.bufferArray.paginator = this.paginatorSecond;
+    if (this.paginatorSecond) {
+      this.bufferArray.paginator = this.paginatorSecond;
+    }
+    if (this.sortSecond) {
+      this.bufferArray.sort = this.sortSecond;
+    }
     this.getAllRoles(serviceID, providerServiceMapID, userID);
     this.availableRoles = [];
     this.RolesList = [];
@@ -1191,7 +1216,12 @@ export class WorkLocationMappingComponent implements OnInit {
 
   removeRole(rowIndex: any, roleIndex: any) {
     this.bufferArray.data[rowIndex].roleID1.splice(roleIndex, 1);
-    this.bufferArray.paginator = this.paginatorSecond;
+    if (this.paginatorSecond) {
+      this.bufferArray.paginator = this.paginatorSecond;
+    }
+    if (this.sortSecond) {
+      this.bufferArray.sort = this.sortSecond;
+    }
     this.getAllRoles(
       this.bufferArray.data[rowIndex].serviceID,
       this.bufferArray.data[rowIndex].providerServiceMapID,

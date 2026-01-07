@@ -47,6 +47,9 @@ import { WrapupTimeConfigurationService } from 'src/app/core/services/ProviderAd
 import { CoreModule } from 'src/app/core/core.module';
 import { EmailConfigurationComponent } from './email-configuration/email-configuration.component';
 import { EmailConfigurationService } from 'src/app/core/services/ProviderAdminServices/email-configuration-services.service';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import { MatSortModule } from '@angular/material/sort';
+import { MatInputModule } from '@angular/material/input';
 
 @NgModule({
   declarations: [
@@ -83,6 +86,9 @@ import { EmailConfigurationService } from 'src/app/core/services/ProviderAdminSe
     MatIconModule,
     MatNativeDateModule,
     CoreModule,
+    MatPaginatorModule,
+    MatSortModule,
+    MatInputModule,
   ],
   providers: [
     SnomedMasterService,

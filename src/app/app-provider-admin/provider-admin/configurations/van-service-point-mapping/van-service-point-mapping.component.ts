@@ -37,14 +37,10 @@ import { SessionStorageService } from 'Common-UI/src/registrar/services/session-
 export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
   // [x: string]: any;
   filteredsearchResultArray = new MatTableDataSource<any>();
-  // bufferArray = new MatTableDataSource<any>();
-  // @ViewChild(MatPaginator) paginator: MatPaginator | null = null;
-  paginator!: MatPaginator;
-  @ViewChild(MatPaginator) set matPaginator(mp: MatPaginator) {
-    this.paginator = mp;
-    this.setDataSourceAttributes();
-  }
 
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
+
+    // @ViewChild(MatSort) sort!: MatSort;
   setDataSourceAttributes() {
     this.filteredsearchResultArray.paginator = this.paginator;
   }
@@ -136,6 +132,11 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
     this.filteredsearchResultArray.paginator = this.paginator;
   }
 
+  ngAfterViewChecked() {
+    if (this.paginator && this.filteredsearchResultArray.paginator !== this.paginator) {
+      this.filteredsearchResultArray.paginator = this.paginator;
+    }
+  }
   getServiceLines() {
     this.vanServicePointMappingService
       .getServiceLinesNew(this.userID)
@@ -350,7 +351,8 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
     console.log('response', response);
     console.log('response.data', response.data);
     const temp: any = this.MappingForm.controls['mappings'] as FormArray;
-    this.filteredsearchResultArray.data = response.data;
+    // this.filteredsearchResultArray.data = response.data;
+    this.filteredsearchResultArray = new MatTableDataSource(response.data);
     this.filteredsearchResultArray.paginator = this.paginator;
     console.log(
       'this.filteredsearchResultArray.data',
@@ -398,19 +400,26 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
     }
   }
 
-  getCheckedData(VSession: any, index: any) {
-    const formData = this.MappingForm.controls['mappings'].value;
-    console.log('formData', formData);
-    if (VSession === 'vanSession1' && formData[index].vanSession1) {
-      return true;
-    } else if (VSession === 'vanSession2' && formData[index].vanSession2) {
-      return true;
-    } else if (VSession === 'vanSession3' && formData[index].vanSession3) {
-      return true;
-    }
-    return false;
+  getCheckedData(VSession: string, row: any) {
+  const mappingsArray = this.MappingForm.controls['mappings'].value;
+
+  // find the mapping by unique servicePointID
+  const mapping = mappingsArray.find(
+    (m: any) => m.servicePointID === row.servicePointID
+  );
+
+  if (!mapping) return false;
+
+  if (VSession === 'vanSession1') {
+    return mapping.vanSession1;
+  } else if (VSession === 'vanSession2') {
+    return mapping.vanSession2;
+  } else if (VSession === 'vanSession3') {
+    return mapping.vanSession3;
   }
 
+  return false;
+}
   servicePointIDList: any = [];
   createItem(obj: any): FormGroup {
     console.log('objCreateItem', obj);
@@ -438,31 +447,7 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
       vanSession3: vanSession === 3,
     });
   }
-  checkboxChange(event: any, checkboxName: any, i: any) {
-    const mappingsArray = <FormArray>this.MappingForm.get('mappings');
-    const mappingGroup = <FormGroup>mappingsArray.controls[i];
-    const temp2: any = this.MappingForm.controls['mappings'] as FormArray;
-
-    if (checkboxName === 'vanSession1') {
-      mappingGroup.controls['vanSession1'].setValue(event.checked);
-      mappingGroup.controls['vanSession1'].markAsTouched();
-      // localStorage.setItem('vanSession1', event.checked);
-    } else if (checkboxName === 'vanSession2') {
-      mappingGroup.controls['vanSession2'].setValue(event.checked);
-      mappingGroup.controls['vanSession2'].markAsTouched();
-      // localStorage.setItem('vanSession2', event.checked);
-    }
-    console.log(
-      'vanSession1 value:',
-      mappingGroup.controls['vanSession1'].value,
-    );
-    console.log(
-      'vanSession2 value:',
-      mappingGroup.controls['vanSession2'].value,
-    );
-    console.log('CKFIRST', this.MappingForm.value);
-    console.log('temp2', temp2);
-  }
+  
   vanID: any;
   selectedVan(van: any) {
     (this.vanID = van.vanID),
@@ -470,24 +455,55 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
       (this.parkingPlaceID = van.parkingPlaceID);
   }
 
+  checkboxChange(event: any, checkboxName: string, row: any) {
+  const mappingsArray = <FormArray>this.MappingForm.get('mappings');
+
+  // find index by unique ID
+  const index = mappingsArray.controls.findIndex(
+    (ctrl: any) => ctrl.value.servicePointID === row.servicePointID
+  );
+
+  if (index === -1) return;
+
+  const mappingGroup = <FormGroup>mappingsArray.controls[index];
+
+  if (checkboxName === 'vanSession1') {
+    mappingGroup.controls['vanSession1'].setValue(event.checked);
+    mappingGroup.controls['vanSession1'].markAsTouched();
+  } else if (checkboxName === 'vanSession2') {
+    mappingGroup.controls['vanSession2'].setValue(event.checked);
+    mappingGroup.controls['vanSession2'].markAsTouched();
+  }
+
+  console.log('Updated FormArray:', this.MappingForm.value);
+}
+
+  
   storeVanServicePointMapping() {
-    console.log(this.MappingForm.value);
+    console.log("SERVrice ID:",this.MappingForm.value);
     const mappings = this.MappingForm.value.mappings;
     const mappingArray = <FormArray>this.MappingForm.controls['mappings'];
+    
+    
     for (let i = 0; i < mappings.length; i++) {
       const mappingGroup = <FormGroup>mappingArray.controls[i];
+      console.log("Mapping Group:", mappingGroup);
 
       console.log(mappingGroup.controls['vanSession1'].touched);
       if (
         mappingGroup.controls['vanSession1'].touched ||
         mappingGroup.controls['vanSession2'].touched
       ) {
+        console.log("vanServicePointMapID:",mappings[i].vanServicePointMapID);
+        console.log("Service Point Id", mappings[i].servicePointID);
+        
+        
         this.vanServicePointMappingObj = {};
         this.vanServicePointMappingObj.vanServicePointMapID =
           mappings[i].vanServicePointMapID;
         this.vanServicePointMappingObj.vanID = this.vanID;
-        this.vanServicePointMappingObj.servicePointID =
-          mappings[i].servicePointID;
+        this.vanServicePointMappingObj.servicePointID = mappings[i].servicePointID;
+          
         if (mappings[i].vanSession1) {
           this.vanServicePointMappingObj.vanSession = 1;
         }
@@ -505,6 +521,7 @@ export class VanServicePointMappingComponent implements OnInit, AfterViewInit {
         this.vanServicePointMappingList.push(this.vanServicePointMappingObj);
       }
     }
+    console.log('Req body:', this.vanServicePointMappingList);
     const obj = { vanServicePointMappings: this.vanServicePointMappingList };
     this.vanServicePointMappingService
       .saveVanServicePointMappings(obj)
