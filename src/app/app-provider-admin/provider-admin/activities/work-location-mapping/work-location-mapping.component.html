@@ -733,7 +733,9 @@
                 <mat-option
                   *ngFor="let item of editblocks"
                   [value]="item.blockID"
-                  (click)="setUpdatedBlockName(item.blockName)"
+                  (onSelectionChange)="
+                    $event.isUserInput && setUpdatedBlockName(item.blockName)
+                  "
                 >
                   {{ item.blockName }}
                 </mat-option>
