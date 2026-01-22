@@ -94,8 +94,18 @@
                 color="accent"
                 class="mat_green"
                 (click)="activateDeactivate(element.userID, false)"
+                style="margin-right: 5px;"
               >
                 Activate
+              </button>
+              <button
+                mat-raised-button
+                color="warn"
+                matTooltip="Unlock account locked due to failed login attempts"
+                (click)="unlockUserAccount(element.userID, element.userName)"
+                style="margin-right: 5px;"
+              >
+                Unlock
               </button>
               <button
                 *ngIf="element.deleted === false"
@@ -103,8 +113,16 @@
                 class="mat_blue"
                 color="primary"
                 (click)="activateDeactivate(element.userID, true)"
+                style="margin-right: 5px;"
               >
                 Deactivate
+              </button>
+              <button
+                mat-icon-button
+                matTooltip="Check lock status"
+                (click)="checkUserLockStatus(element.userID)"
+              >
+                <mat-icon>info</mat-icon>
               </button>
             </td>
           </ng-container>

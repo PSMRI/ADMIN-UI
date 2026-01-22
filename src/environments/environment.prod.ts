@@ -226,6 +226,11 @@ export const environment = {
   editUserDetailsUrl: `${adminBaseUrl}editUserDetails`,
   userActivationDeactivationUrl: `${adminBaseUrl}deletedUserDetails`,
   checkEmpIdAvailabilityUrl: `${adminBaseUrl}m/FindEmployeeDetails`,
+
+  // User Account Lock Management APIs (Common-API)
+  getUserLockStatusUrl: `${commonBaseURL}user/getUserLockStatus`,
+  unlockUserAccountUrl: `${commonBaseURL}user/unlockUserAccount`,
+
   getStates_url: `${adminBaseUrl}m/role/state`,
   getDistricts_url: `${adminBaseUrl}m/location/findDistrict`,
   getServiceLines_url: `${adminBaseUrl}m/role/service`,
