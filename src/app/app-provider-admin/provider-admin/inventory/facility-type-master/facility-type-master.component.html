@@ -97,6 +97,12 @@
             <td mat-cell *matCellDef="let item">{{ item.facilityTypeDesc }}</td>
           </ng-container>
 
+          <!-- Rural/Urban Column -->
+          <ng-container matColumnDef="ruralUrban">
+            <th mat-header-cell *matHeaderCellDef>Rural / Urban</th>
+            <td mat-cell *matCellDef="let item">{{ item.ruralUrban }}</td>
+          </ng-container>
+
           <!-- Edit Column -->
           <ng-container matColumnDef="edit">
             <th mat-header-cell *matHeaderCellDef>Edit</th>
@@ -141,7 +147,15 @@
           <!-- Header and Row Definitions -->
           <tr
             mat-header-row
-            *matHeaderRowDef="[
+            *matHeaderRowDef="showRuralUrban ? [
+              'sno',
+              'facilityTypeCode',
+              'facilityTypeName',
+              'facilityTypeDesc',
+              'ruralUrban',
+              'edit',
+              'action'
+            ] : [
               'sno',
               'facilityTypeCode',
               'facilityTypeName',
@@ -154,7 +168,15 @@
             mat-row
             *matRowDef="
               let row;
-              columns: [
+              columns: showRuralUrban ? [
+                'sno',
+                'facilityTypeCode',
+                'facilityTypeName',
+                'facilityTypeDesc',
+                'ruralUrban',
+                'edit',
+                'action'
+              ] : [
                 'sno',
                 'facilityTypeCode',
                 'facilityTypeName',
@@ -309,6 +331,30 @@
             />
           </mat-form-field>
         </div>
+        <div class="col-3" *ngIf="showRuralUrban">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Rural / Urban</mat-label>
+            <mat-select
+              required
+              name="ruralUrban"
+              [(ngModel)]="ruralUrban"
+              #ruralUrbanField="ngModel"
+            >
+              <mat-option value="Rural">Rural</mat-option>
+              <mat-option value="Urban">Urban</mat-option>
+            </mat-select>
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !ruralUrbanField.valid &&
+                  (ruralUrbanField.dirty || ruralUrbanField.touched)
+                "
+                >Rural / Urban is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
         <div class="col-3 m-t-10">
           <button
             mat-mini-fab
@@ -370,6 +416,12 @@
             <td mat-cell *matCellDef="let item">{{ item.facilityTypeDesc }}</td>
           </ng-container>
 
+          <!-- Rural/Urban Column -->
+          <ng-container matColumnDef="ruralUrban">
+            <th mat-header-cell *matHeaderCellDef>Rural / Urban</th>
+            <td mat-cell *matCellDef="let item">{{ item.ruralUrban }}</td>
+          </ng-container>
+
           <!-- Action Column -->
           <ng-container matColumnDef="action">
             <th mat-header-cell *matHeaderCellDef>Action</th>
@@ -388,7 +440,14 @@
           <!-- Header and Row Definitions -->
           <tr
             mat-header-row
-            *matHeaderRowDef="[
+            *matHeaderRowDef="showRuralUrban ? [
+              'sno',
+              'facilityTypeCode',
+              'facilityTypeName',
+              'facilityTypeDesc',
+              'ruralUrban',
+              'action'
+            ] : [
               'sno',
               'facilityTypeCode',
               'facilityTypeName',
@@ -400,7 +459,14 @@
             mat-row
             *matRowDef="
               let row;
-              columns: [
+              columns: showRuralUrban ? [
+                'sno',
+                'facilityTypeCode',
+                'facilityTypeName',
+                'facilityTypeDesc',
+                'ruralUrban',
+                'action'
+              ] : [
                 'sno',
                 'facilityTypeCode',
                 'facilityTypeName',
@@ -556,6 +622,19 @@
               [(ngModel)]="edit_facilityDiscription"
               name="facilityDescription"
             />
+          </mat-form-field>
+        </div>
+        <div class="col-3" *ngIf="showRuralUrban">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Rural / Urban</mat-label>
+            <mat-select
+              required
+              name="edit_ruralUrban"
+              [(ngModel)]="edit_ruralUrban"
+            >
+              <mat-option value="Rural">Rural</mat-option>
+              <mat-option value="Urban">Urban</mat-option>
+            </mat-select>
           </mat-form-field>
         </div>
       </form>

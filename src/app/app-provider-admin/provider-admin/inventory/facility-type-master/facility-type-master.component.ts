@@ -65,6 +65,15 @@ export class FacilityTypeMasterComponent implements OnInit {
   // bufferArray: any = [];
   // filteredfacilityMasterList: any = [];
   availableFacilityTypeCode: any = [];
+  ruralUrban: any;
+  edit_ruralUrban: any;
+
+  get showRuralUrban(): boolean {
+    return (
+      this.serviceline?.serviceName === 'HWC' ||
+      this.serviceline?.serviceName === 'FLW'
+    );
+  }
 
   tableMode = true;
   formMode = false;
@@ -246,6 +255,9 @@ export class FacilityTypeMasterComponent implements OnInit {
       providerServiceMapID: this.providerServiceMapID,
       createdBy: this.createdBy,
     };
+    if (this.showRuralUrban) {
+      obj.ruralUrban = this.ruralUrban;
+    }
     this.checkDuplictes(obj);
     this.resetDropdowns();
   }
@@ -297,18 +309,22 @@ export class FacilityTypeMasterComponent implements OnInit {
     this.edit_facilityName = editFormValues.facilityTypeName;
     this.edit_facilityCode = editFormValues.facilityTypeCode;
     this.edit_facilityDiscription = editFormValues.facilityTypeDesc; //facilityTypeID
+    this.edit_ruralUrban = editFormValues.ruralUrban;
 
     this.showEditForm();
     console.log('edit form values', editFormValues);
   }
   updateFacilityType(editedFormValues: any) {
-    const editObj = {
+    const editObj: any = {
       facilityTypeID: this.facilityTypeID,
       //  "facilityTypeName": editedFormValues.facilityName,
       modifiedBy: this.createdBy,
       facilityTypeDesc: editedFormValues.facilityDescription,
       // "facilityTypeCode": editedFormValues.facilityCode
     };
+    if (this.showRuralUrban) {
+      editObj.ruralUrban = this.edit_ruralUrban;
+    }
     this.facility.updateFacility(editObj).subscribe(
       (response) => {
         if (response) {
@@ -334,6 +350,8 @@ export class FacilityTypeMasterComponent implements OnInit {
     this.edit_facilityName = undefined;
     this.edit_facilityCode = undefined;
     this.edit_facilityDiscription = undefined;
+    this.ruralUrban = undefined;
+    this.edit_ruralUrban = undefined;
   }
   FacilityCodeExist: any = false;
   checkExistance(facilityCode: any) {
