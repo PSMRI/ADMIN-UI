@@ -46,6 +46,8 @@ import { Mainstroreandsubstore } from './core/services/inventory-services/mainst
 import { FacilityMasterService } from './core/services/inventory-services/facilitytypemaster.service';
 import { ItemFacilityMappingService } from './core/services/inventory-services/item-facility-mapping.service';
 import { StoreMappingService } from './core/services/inventory-services/store-mapping.service';
+import { FacilityHierarchyService } from './core/services/inventory-services/facility-hierarchy.service';
+import { LocationService } from './core/services/common/location.service';
 import {
   MatChipGrid,
   MatChipInput,
@@ -104,6 +106,8 @@ import { CaptchaComponent } from './user-login/captcha/captcha.component';
     FacilityMasterService,
     ItemFacilityMappingService,
     StoreMappingService,
+    FacilityHierarchyService,
+    LocationService,
     {
       provide: HTTP_INTERCEPTORS,
       useClass: HttpInterceptorService,

@@ -182,6 +182,7 @@
       <button mat-menu-item (click)="show('51')">
         Van/Parking Place to Store Mapping
       </button>
+      <button mat-menu-item (click)="show('78')">Facility Hierarchy</button>
     </mat-menu>
 
     <div
@@ -335,6 +336,7 @@
         <app-add-questionnaire *ngSwitchCase="64"></app-add-questionnaire>
         <app-map-snommed-ctcode *ngSwitchCase="65"></app-map-snommed-ctcode>
         <app-email-configuration *ngSwitchCase="53"></app-email-configuration>
+        <app-facility-hierarchy *ngSwitchCase="78"></app-facility-hierarchy>
       </div>
     </div>
     <footer class="footer" style="left: 0px">
