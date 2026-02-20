@@ -1629,6 +1629,100 @@ export class EmployeeMasterNewComponent implements OnInit {
         },
       );
   }
+
+  unlockUserAccount(userID: number, userName: string) {
+    this.dialogService
+      .confirm(
+        'Confirm Unlock',
+        `Are you sure you want to unlock the account for user "${userName}"? This will reset their failed login attempts and allow them to log in again.`,
+      )
+      .subscribe(
+        (res) => {
+          if (res) {
+            this.employeeMasterNewService.unlockUserAccount(userID).subscribe(
+              (response: any) => {
+                if (response && response.statusCode === 200) {
+                  this.dialogService.alert(
+                    'User account unlocked successfully. The user can now log in.',
+                    'success',
+                  );
+                  this.getAllUserDetails();
+                  this.searchTerm = null;
+                } else {
+                  this.dialogService.alert(
+                    response?.errorMessage || 'Failed to unlock user account',
+                    'error',
+                  );
+                }
+              },
+              (err) => {
+                console.log('error', err);
+                this.dialogService.alert(
+                  'Error unlocking user account. Please try again.',
+                  'error',
+                );
+              },
+            );
+          }
+        },
+        (err) => {
+          console.log(err);
+        },
+      );
+  }
+
+  checkUserLockStatus(userID: number) {
+    this.employeeMasterNewService.getUserLockStatus(userID).subscribe(
+      (response: any) => {
+        if (response && response.statusCode === 200) {
+          let data;
+          try {
+            data = JSON.parse(response.data);
+          } catch (e) {
+            console.error('Failed to parse lock status data:', e);
+            this.dialogService.alert(
+              'Invalid lock status data received. Please try again.',
+              'error',
+            );
+            return;
+          }
+          let message = '';
+          if (data.isLockedDueToFailedAttempts) {
+            message = `Account is LOCKED due to failed login attempts.\n\n` +
+              `Locked at: ${data.lockTimestamp}\n` +
+              `Failed attempts: ${data.failedAttempts}\n` +
+              `Time remaining: ${data.remainingTime}\n` +
+              (data.unlockTime ? `Auto-unlock at: ${data.unlockTime}\n` : '') +
+              `\nYou can unlock this account manually using the Unlock button.`;
+          } else if (data.lockExpired) {
+            message = `Account lock has EXPIRED.\n\n` +
+              `Original lock time: ${data.lockTimestamp}\n` +
+              `The account will automatically unlock when the user tries to log in.`;
+          } else if (data.isLocked) {
+            message = `Account is DEACTIVATED by administrator.\n\n` +
+              `Use the Activate button to reactivate this account.`;
+          } else {
+            message = `Account is ACTIVE.\n\n` +
+              `Failed login attempts: ${data.failedAttempts}`;
+          }
+          this.dialogService.alert(message, 'info');
+        } else {
+          this.dialogService.alert(
+            response?.errorMessage || 'Failed to get lock status',
+            'error',
+          );
+        }
+      },
+      (err) => {
+        console.log('error', err);
+        this.dialogService.alert(
+          'Error getting lock status. Please try again.',
+          'error',
+        );
+      },
+    );
+  }
+
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.refreshFilteredData(this.searchResult);
