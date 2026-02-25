@@ -1,0 +1,455 @@
+<div class="container-fluid">
+  <!-- TABLE MODE -->
+  <div class="row" *ngIf="tableMode">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Master Type Creation</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="form"
+        autocomplete="off"
+        #facilitySearchForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>State</mat-label>
+            <mat-select
+              required
+              name="state"
+              [(ngModel)]="state"
+              (selectionChange)="loadFacilityTypesByState(state.stateID)"
+            >
+              <mat-option *ngFor="let item of states_array" [value]="item">
+                {{ item.stateName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+    <div
+      class=""
+      style="text-align: end"
+      *ngIf="facilityMasterList?.length > 0 && tableMode"
+    >
+      <mat-form-field id="filterbox">
+        <mat-label>In-Table Search</mat-label>
+        <input
+          matInput
+          name="filterTerm"
+          [(ngModel)]="create_filterTerm"
+          #filterTerm
+          (keyup)="filterList(filterTerm.value)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    <div class="col-xs-12 col-sm-12">
+      <div class="table-responsive">
+        <table
+          mat-table
+          [dataSource]="facilityTypeList"
+          *ngIf="showTableFlag"
+          class="table table-striped table-hover"
+        >
+          <!-- S.No. Column -->
+          <ng-container matColumnDef="sno">
+            <th mat-header-cell *matHeaderCellDef>S.No.</th>
+            <td mat-cell *matCellDef="let item; let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <!-- Facility Type Name Column -->
+          <ng-container matColumnDef="facilityTypeName">
+            <th mat-header-cell *matHeaderCellDef>Facility Type Name</th>
+            <td mat-cell *matCellDef="let item">{{ item.facilityTypeName }}</td>
+          </ng-container>
+
+          <!-- Rural / Urban Column -->
+          <ng-container matColumnDef="ruralUrban">
+            <th mat-header-cell *matHeaderCellDef>Rural / Urban</th>
+            <td mat-cell *matCellDef="let item">{{ item.ruralUrban }}</td>
+          </ng-container>
+
+          <!-- Facility Level Column -->
+          <ng-container matColumnDef="facilityLevel">
+            <th mat-header-cell *matHeaderCellDef>Facility Level</th>
+            <td mat-cell *matCellDef="let item">
+              {{ getLevelName(item.facilityLevelID) }}
+            </td>
+          </ng-container>
+
+          <!-- Edit Column -->
+          <ng-container matColumnDef="edit">
+            <th mat-header-cell *matHeaderCellDef>Edit</th>
+            <td mat-cell *matCellDef="let item">
+              <button
+                mat-icon-button
+                matTooltip="Edit"
+                *ngIf="!item.deleted"
+                (click)="editFacilityType(item)"
+                style="border: unset; background-color: unset"
+              >
+                <mat-icon>edit</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <!-- Action Column -->
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef>Action</th>
+            <td mat-cell *matCellDef="let item">
+              <button
+                md-raised-button
+                color="accent"
+                *ngIf="item.deleted"
+                class="m-r-10 mat_green"
+                (click)="activate(item.facilityTypeID)"
+              >
+                Activate
+              </button>
+              <button
+                md-raised-button
+                color="primary"
+                *ngIf="!item.deleted"
+                class="m-r-10 mat_blue"
+                (click)="deactivate(item.facilityTypeID)"
+              >
+                Deactivate
+              </button>
+            </td>
+          </ng-container>
+
+          <!-- Header and Row Definitions -->
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <div>
+          <button
+            md-raised-button
+            color="primary"
+            *ngIf="createButton"
+            class="pull-right mat_blue"
+            (click)="showForm()"
+          >
+            Create New Facility Type
+          </button>
+        </div>
+        <div
+          *ngIf="
+            facilityTypeList &&
+            facilityTypeList.data.length === 0 &&
+            showTableFlag
+          "
+          style="text-align: center; font-size: 16px"
+        >
+          <strong>No records found</strong>
+        </div>
+        <mat-paginator
+          #tablePaginator
+          [hidden]="facilityTypeList.data.length === 0"
+          [pageSizeOptions]="[5, 10, 25]"
+          [pageSize]="5"
+          showFirstLastButtons
+        ></mat-paginator>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM MODE (Add) -->
+  <div class="row" *ngIf="formMode">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Create New Facility Type</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="addform"
+        #facilityAddForm1="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>State</mat-label>
+            <mat-select
+              name="formState"
+              [(ngModel)]="state"
+              [disabled]="true"
+            >
+              <mat-option *ngFor="let item of states_array" [value]="item">
+                {{ item.stateName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Rural / Urban</mat-label>
+            <mat-select
+              required
+              name="ruralUrban"
+              [(ngModel)]="ruralUrban"
+              #ruralUrbanField="ngModel"
+            >
+              <mat-option value="Rural">Rural</mat-option>
+              <mat-option value="Urban">Urban</mat-option>
+            </mat-select>
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !ruralUrbanField.valid &&
+                  (ruralUrbanField.dirty || ruralUrbanField.touched)
+                "
+                >Rural / Urban is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Facility Level</mat-label>
+            <mat-select
+              required
+              name="facilityLevelID"
+              [(ngModel)]="facilityLevelID"
+              #facilityLevelField="ngModel"
+            >
+              <mat-option
+                *ngFor="let level of facilityLevels_array"
+                [value]="level.facilityLevelID"
+              >
+                {{ level.levelName }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !facilityLevelField.valid &&
+                  (facilityLevelField.dirty || facilityLevelField.touched)
+                "
+                >Facility Level is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Facility Type Name</mat-label>
+            <input
+              matInput
+              required
+              [(ngModel)]="facilityTypeName"
+              maxlength="100"
+              name="facilityTypeName"
+              #facilityTypeNameField="ngModel"
+            />
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !facilityTypeNameField.valid &&
+                  (facilityTypeNameField.dirty || facilityTypeNameField.touched)
+                "
+                >Facility Type Name is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3 m-t-10">
+          <button
+            mat-mini-fab
+            class="xs-pull-right sm-pull-right md-pull-left lg-pull-left mat_icon_white"
+            *ngIf="!editMode && facilityAddForm1.valid"
+            color="primary"
+            (click)="add2bufferArray(); facilityAddForm1.reset()"
+          >
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
+      </form>
+
+      <form
+        id="inputform"
+        #facilityAddForm="ngForm"
+        autocomplete="off"
+        class="col-12 row"
+        style="width: 100%; margin-left: 0px"
+      ></form>
+    </div>
+    <div
+      class="col-xs-12 col-sm-12 m-t-15"
+      *ngIf="bufferArray.data.length > 0"
+    >
+      <div class="table-responsive">
+        <table
+          mat-table
+          [dataSource]="bufferArray"
+          class="table table-striped table-hover"
+        >
+          <!-- S.No. Column -->
+          <ng-container matColumnDef="sno">
+            <th mat-header-cell *matHeaderCellDef>S.No.</th>
+            <td mat-cell *matCellDef="let item; let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <!-- Facility Type Name Column -->
+          <ng-container matColumnDef="facilityTypeName">
+            <th mat-header-cell *matHeaderCellDef>Facility Type Name</th>
+            <td mat-cell *matCellDef="let item">{{ item.facilityTypeName }}</td>
+          </ng-container>
+
+          <!-- Rural / Urban Column -->
+          <ng-container matColumnDef="ruralUrban">
+            <th mat-header-cell *matHeaderCellDef>Rural / Urban</th>
+            <td mat-cell *matCellDef="let item">{{ item.ruralUrban }}</td>
+          </ng-container>
+
+          <!-- Facility Level Column -->
+          <ng-container matColumnDef="facilityLevel">
+            <th mat-header-cell *matHeaderCellDef>Facility Level</th>
+            <td mat-cell *matCellDef="let item">{{ item.levelName }}</td>
+          </ng-container>
+
+          <!-- Delete Column -->
+          <ng-container matColumnDef="delete">
+            <th mat-header-cell *matHeaderCellDef>Action</th>
+            <td mat-cell *matCellDef="let item; let i = index">
+              <button
+                mat-icon-button
+                style="border: unset; background-color: unset"
+                matTooltip="Delete"
+                (click)="removeRow(i)"
+              >
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <!-- Header and Row Definitions -->
+          <tr mat-header-row *matHeaderRowDef="bufferColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: bufferColumns"></tr>
+        </table>
+
+        <mat-paginator
+          #bufferPaginator
+          [length]="bufferArray.data.length"
+          [pageSize]="5"
+          [pageSizeOptions]="[5, 10, 20]"
+        ></mat-paginator>
+      </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 m-t-15" style="padding-bottom: 40px">
+      <button
+        mat-raised-button
+        color="primary"
+        class="pull-left mat_blue"
+        (click)="showTable(); facilityAddForm.reset()"
+      >
+        Back
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        [disabled]="!(bufferArray.data.length > 0)"
+        class="pull-right mat_green"
+        (click)="saveFacilityTypes(); facilityAddForm.reset()"
+      >
+        Save
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        class="pull-right m-r-5 mat_blue"
+        (click)="facilityAddForm.reset()"
+      >
+        Clear
+      </button>
+    </div>
+  </div>
+
+  <!-- EDIT MODE -->
+  <div class="row" *ngIf="editMode">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Edit Facility Type</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        autocomplete="off"
+        id="editform"
+        #facilityEditForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Facility Type Name</mat-label>
+            <input
+              matInput
+              required
+              maxlength="100"
+              [(ngModel)]="edit_facilityTypeName"
+              name="facilityTypeName"
+              [disabled]="true"
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Description</mat-label>
+            <input
+              matInput
+              maxlength="100"
+              [(ngModel)]="edit_facilityTypeDesc"
+              name="facilityTypeDesc"
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Rural / Urban</mat-label>
+            <mat-select
+              required
+              name="edit_ruralUrban"
+              [(ngModel)]="edit_ruralUrban"
+            >
+              <mat-option value="Rural">Rural</mat-option>
+              <mat-option value="Urban">Urban</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </form>
+      <div
+        class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-t-10"
+        style="margin-bottom: 47px; padding: 10px"
+      >
+        <button
+          mat-raised-button
+          color="primary"
+          class="pull-left mat_blue"
+          (click)="showTable()"
+        >
+          Back
+        </button>
+        <button
+          *ngIf="editMode"
+          mat-raised-button
+          color="accent"
+          class="pull-right mat_green"
+          [disabled]="facilityEditForm.invalid"
+          (click)="updateFacilityType()"
+        >
+          Update
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

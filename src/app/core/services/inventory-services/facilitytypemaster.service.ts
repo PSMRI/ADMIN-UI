@@ -98,4 +98,88 @@ export class FacilityMasterService {
     // .map(this.handleSuccess)
     // .catch(this.handleError);
   }
+
+  getAllStates(countryId: number) {
+    return this.http.get(environment.getAll_State_Url + countryId);
+  }
+
+  getDistricts(stateId: number) {
+    return this.http.get(environment.get_District_Url + stateId);
+  }
+
+  getTaluks(districtId: number) {
+    return this.http.get(environment.get_Taluk_Url + districtId);
+  }
+
+  getVillages(blockId: number) {
+    return this.http.get(environment.get_Village_Url + blockId);
+  }
+
+  getFacilityLevels() {
+    return this.http.get(environment.get_FacilityLevels_Url);
+  }
+
+  getFacilitiesByBlock(blockID: number) {
+    return this.http.post(environment.get_FacilitiesByBlock_Url, {
+      blockID: blockID,
+    });
+  }
+
+  createFacilities(obj: any) {
+    return this.http.post(environment.save_stores_Url, obj);
+  }
+
+  editFacilityStore(editObj: any) {
+    return this.http.post(environment.update_stores_Url, editObj);
+  }
+
+  deleteFacilityStore(deleteObj: any) {
+    return this.http.post(environment.delete_stores_Url, deleteObj);
+  }
+
+  getFacilitiesByBlockAndLevel(blockID: number, facilityLevelID: number) {
+    return this.http.post(environment.get_FacilitiesByBlockAndLevel_Url, {
+      blockID: blockID,
+      facilityLevelID: facilityLevelID,
+    });
+  }
+
+  createFacilityWithHierarchy(requestObj: any) {
+    return this.http.post(
+      environment.create_FacilityWithHierarchy_Url,
+      requestObj,
+    );
+  }
+
+  getMappedVillageIDs(blockID: number) {
+    return this.http.post(environment.get_MappedVillageIDs_Url, {
+      blockID: blockID,
+    });
+  }
+
+  getFacilityTypesByState(stateID: number) {
+    return this.http.post(environment.get_FacilityTypesByState_Url, {
+      stateID: stateID,
+    });
+  }
+
+  getVillageMappingsByFacility(facilityID: number) {
+    return this.http.post(environment.get_VillageMappingsByFacility_Url, {
+      facilityID: facilityID,
+    });
+  }
+
+  getChildFacilitiesByParent(facilityID: number) {
+    return this.http.post(environment.get_ChildFacilitiesByParent_Url, {
+      facilityID: facilityID,
+    });
+  }
+
+  updateFacilityWithHierarchy(requestObj: any) {
+    return this.http.post(
+      environment.update_FacilityWithHierarchy_Url,
+      requestObj,
+    );
+  }
+
 }
