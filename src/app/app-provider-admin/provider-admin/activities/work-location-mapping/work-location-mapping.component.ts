@@ -2183,6 +2183,15 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
         });
       }
 
+      console.log('Edit state:', {
+        editIsAshaSupervisor: this.editIsAshaSupervisor,
+        editAshaMappingPairs: this.editAshaMappingPairs,
+        editFacilityMappingData: this.editFacilityMappingData,
+        isFacilityServicelineEdit: this.isFacilityServicelineEdit,
+        editVillageIdArray,
+        editVillageNameArray,
+      });
+
       // ASHA Supervisor: update ALL rows (one per facility) with same villages
       if (this.editIsAshaSupervisor && this.editAshaMappingPairs.length > 0) {
         const updateRequests = this.editAshaMappingPairs.map((pair) => {
@@ -2203,6 +2212,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             modifiedBy: this.createdBy,
             facilityID: pair.facilityID,
           };
+          console.log('ASHA multi-row update payload:', langObj);
           return this.worklocationmapping.UpdateWorkLocationMapping(langObj);
         });
 
@@ -2224,6 +2234,94 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           },
           (err: any) => {
             console.log(err, 'Error updating ASHA Supervisor rows');
+          },
+        );
+      } else if (
+        this.editIsAshaSupervisor &&
+        this.editFacilityMappingData?.facilityIDs?.length > 0
+      ) {
+        // ASHA Supervisor without existing facilities (old user):
+        // Update existing row with first facility, create new rows for remaining facilities
+        const facilityIDs = this.editFacilityMappingData.facilityIDs;
+        const firstFacilityID = facilityIDs[0];
+
+        // Update the existing row with first facilityID
+        const langObj: any = {
+          uSRMappingID: this.uSRMappingID,
+          userID: this.userID_duringEdit,
+          roleID: workLocations.role,
+          teleConsultation: this.teleConsultationEdit,
+          providerServiceMapID: this.providerServiceMapID_duringEdit,
+          blockID: this.ServiceEditblock,
+          blockName: this.blockname,
+          villageID: editVillageIdArray,
+          villageName:
+            editVillageNameArray.length > 0
+              ? editVillageNameArray
+              : this.serviceEditvillage,
+          workingLocationID: workLocations.worklocation,
+          modifiedBy: this.createdBy,
+          facilityID: firstFacilityID,
+        };
+
+        console.log('ASHA Supervisor (old user) update existing row:', langObj);
+
+        // Update existing row first
+        this.worklocationmapping.UpdateWorkLocationMapping(langObj).subscribe(
+          (response: any) => {
+            console.log(response, 'ASHA first row updated');
+
+            // If multiple facilities, create new rows for the additional facilities
+            if (facilityIDs.length > 1) {
+              const additionalRequests = facilityIDs
+                .slice(1)
+                .map((fID: any) => {
+                  const newObj: any = {
+                    userID: this.userID_duringEdit,
+                    roleID: workLocations.role,
+                    teleConsultation: this.teleConsultationEdit,
+                    providerServiceMapID: this.providerServiceMapID_duringEdit,
+                    blockID: this.ServiceEditblock,
+                    blockName: this.blockname,
+                    villageID: editVillageIdArray,
+                    villageName:
+                      editVillageNameArray.length > 0
+                        ? editVillageNameArray
+                        : this.serviceEditvillage,
+                    workingLocationID: workLocations.worklocation,
+                    createdBy: this.createdBy,
+                    facilityID: fID,
+                  };
+                  console.log(
+                    'ASHA Supervisor creating new row for facilityID:',
+                    fID,
+                    newObj,
+                  );
+                  return this.worklocationmapping.SaveWorkLocationMapping(
+                    newObj,
+                  );
+                });
+
+              forkJoin(additionalRequests).subscribe(
+                () => {
+                  this.updateAshaSupervisorMappings(facilityIDs);
+                },
+                (err: any) => {
+                  console.log(err, 'Error creating additional ASHA rows');
+                  this.alertService.alert(
+                    'Mapping updated but some facility rows failed',
+                    'error',
+                  );
+                  this.showTable();
+                  this.getAllMappedWorkLocations();
+                },
+              );
+            } else {
+              this.updateAshaSupervisorMappings(facilityIDs);
+            }
+          },
+          (err: any) => {
+            console.log(err, 'Error updating ASHA Supervisor row');
           },
         );
       } else {
@@ -2249,7 +2347,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           langObj.facilityID = this.editFacilityMappingData.facilityID;
         }
 
-        console.log('edited request object to be sent to API', langObj);
+        console.log('Single row update payload:', langObj);
 
         this.worklocationmapping.UpdateWorkLocationMapping(langObj).subscribe(
           (response: any) => {
