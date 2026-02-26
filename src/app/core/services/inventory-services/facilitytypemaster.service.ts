@@ -137,10 +137,15 @@ export class FacilityMasterService {
     return this.http.post(environment.delete_stores_Url, deleteObj);
   }
 
-  getFacilitiesByBlockAndLevel(blockID: number, facilityLevelID: number) {
+  getFacilitiesByBlockAndLevel(
+    blockID: number,
+    facilityLevelID: number,
+    ruralUrban: string,
+  ) {
     return this.http.post(environment.get_FacilitiesByBlockAndLevel_Url, {
       blockID: blockID,
       facilityLevelID: facilityLevelID,
+      ruralUrban: ruralUrban,
     });
   }
 
@@ -182,4 +187,32 @@ export class FacilityMasterService {
     );
   }
 
+  getAshasByFacility(facilityIDs: number[]) {
+    return this.http.post(environment.getAshasByFacility_Url, {
+      facilityIDs: facilityIDs,
+    });
+  }
+
+  saveAshaSupervisorMapping(data: any) {
+    return this.http.post(environment.saveAshaSupervisorMapping_Url, data);
+  }
+
+  getSupervisorMappingByFacility(facilityID: number) {
+    return this.http.post(environment.getSupervisorMappingByFacility_Url, {
+      facilityID: facilityID,
+    });
+  }
+
+  getFacilityByMappingID(uSRMappingID: number) {
+    return this.http.post(environment.getFacilityByMappingID_Url, {
+      uSRMappingID: uSRMappingID,
+    });
+  }
+
+  deleteAshaSupervisorMapping(supervisorUserID: number, facilityIDs: number[]) {
+    return this.http.post(environment.deleteAshaSupervisorMapping_Url, {
+      supervisorUserID: supervisorUserID,
+      facilityIDs: facilityIDs,
+    });
+  }
 }

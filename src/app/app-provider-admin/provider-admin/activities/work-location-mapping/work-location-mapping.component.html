@@ -288,7 +288,7 @@
           </div>
         </div>
         <div class="col-12 row">
-          <div class="col-3" *ngIf="blockFlag">
+          <div class="col-3">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Block</mat-label>
               <mat-select
@@ -305,7 +305,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="villageFlag">
+          <div class="col-3" *ngIf="villageFlag && !isFacilityServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
@@ -386,6 +386,19 @@
             </mat-form-field>
           </div>
         </div>
+
+        <!-- Facility Mapping Sub-component (FLW/HWC only) -->
+        <app-user-facility-mapping
+          *ngIf="isFacilityServiceline && Serviceblock"
+          [blockID]="Serviceblock?.blockID"
+          [stateID]="State?.stateID"
+          [providerServiceMapID]="State?.providerServiceMapID"
+          [roleName]="getSelectedRoleName()"
+          [serviceName]="Serviceline?.serviceName"
+          [existingVillageIDs]="[]"
+          [supervisorUserID]="User?.userID"
+          (facilityMappingData)="onFacilityMappingDataReceived($event)"
+        ></app-user-facility-mapping>
 
         <div
           *ngIf="teleConsultationFlag"
@@ -743,7 +756,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag">
+          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
@@ -818,6 +831,26 @@
             </mat-form-field>
           </div>
         </div>
+
+        <!-- Facility Mapping Sub-component for EDIT mode (FLW/HWC only) — after Role -->
+        <app-user-facility-mapping
+          *ngIf="isFacilityServicelineEdit && ServiceEditblock"
+          [blockID]="ServiceEditblock"
+          [stateID]="stateID_duringEdit"
+          [providerServiceMapID]="providerServiceMapID_duringEdit"
+          [roleName]="editRoleName"
+          [serviceName]="editServiceName"
+          [existingVillageIDs]="editExistingVillageIDs"
+          [existingVillageNames]="editExistingVillageNames"
+          [existingFacilityID]="editExistingFacilityID"
+          [existingFacilityIDs]="editExistingFacilityIDs"
+          [existingFacilityNames]="editExistingFacilityNames"
+          [existingFacilityName]="editExistingFacilityName"
+          [existingFacilityTypeID]="editExistingFacilityTypeID"
+          [existingRuralUrban]="editExistingRuralUrban"
+          [supervisorUserID]="editSupervisorUserID"
+          (facilityMappingData)="onEditFacilityMappingDataReceived($event)"
+        ></app-user-facility-mapping>
 
         <div
           *ngIf="teleConsultationEditFlag"

@@ -220,16 +220,18 @@ export class FacilityCreationComponent implements OnInit {
       this.facility.getVillages(blockID).subscribe((response: any) => {
         if (response && response.data) {
           const allVillages = response.data;
-          this.facility.getMappedVillageIDs(blockID).subscribe((mappedRes: any) => {
-            if (mappedRes && mappedRes.data) {
-              const mappedIDs: number[] = mappedRes.data;
-              this.villages_array = allVillages.filter(
-                (v: any) => !mappedIDs.includes(v.districtBranchID),
-              );
-            } else {
-              this.villages_array = allVillages;
-            }
-          });
+          this.facility
+            .getMappedVillageIDs(blockID)
+            .subscribe((mappedRes: any) => {
+              if (mappedRes && mappedRes.data) {
+                const mappedIDs: number[] = mappedRes.data;
+                this.villages_array = allVillages.filter(
+                  (v: any) => !mappedIDs.includes(v.districtBranchID),
+                );
+              } else {
+                this.villages_array = allVillages;
+              }
+            });
         }
       });
     } else {
@@ -239,7 +241,11 @@ export class FacilityCreationComponent implements OnInit {
       );
       if (lowerLevel) {
         this.facility
-          .getFacilitiesByBlockAndLevel(blockID, lowerLevel.facilityLevelID)
+          .getFacilitiesByBlockAndLevel(
+            blockID,
+            lowerLevel.facilityLevelID,
+            this.formRuralUrban,
+          )
           .subscribe((response: any) => {
             if (response && response.data) {
               this.childFacilities_array = response.data;
@@ -332,11 +338,17 @@ export class FacilityCreationComponent implements OnInit {
     const villageIDs: number[] = [];
     const childFacilityIDs: number[] = [];
 
-    if (this.selectedLevel?.levelValue === 1 && this.selectedVillages.length > 0) {
+    if (
+      this.selectedLevel?.levelValue === 1 &&
+      this.selectedVillages.length > 0
+    ) {
       for (const v of this.selectedVillages) {
         villageIDs.push(v.districtBranchID);
       }
-    } else if (this.selectedLevel?.levelValue > 1 && this.selectedChildFacilities.length > 0) {
+    } else if (
+      this.selectedLevel?.levelValue > 1 &&
+      this.selectedChildFacilities.length > 0
+    ) {
       for (const c of this.selectedChildFacilities) {
         childFacilityIDs.push(c.facilityID);
       }
@@ -369,8 +381,14 @@ export class FacilityCreationComponent implements OnInit {
     this.edit_facilityTypeID = item.facilityTypeID;
 
     console.log('[editFacility] item:', item);
-    console.log('[editFacility] facilityTypes_array length:', this.facilityTypes_array.length);
-    console.log('[editFacility] facilityLevels_array:', this.facilityLevels_array);
+    console.log(
+      '[editFacility] facilityTypes_array length:',
+      this.facilityTypes_array.length,
+    );
+    console.log(
+      '[editFacility] facilityLevels_array:',
+      this.facilityLevels_array,
+    );
 
     const selectedType = this.facilityTypes_array.find(
       (ft: any) => ft.facilityTypeID === item.facilityTypeID,
@@ -395,52 +413,94 @@ export class FacilityCreationComponent implements OnInit {
         this.loadEditChildFacilities(blockID, item.facilityID);
       }
     } else {
-      console.warn('[editFacility] Skipping village/child load: edit_selectedLevel or blockID is missing');
+      console.warn(
+        '[editFacility] Skipping village/child load: edit_selectedLevel or blockID is missing',
+      );
     }
 
     this.showEditForm();
   }
 
   loadEditVillages(blockID: number, facilityID: number) {
-    console.log('[loadEditVillages] blockID:', blockID, 'facilityID:', facilityID);
-    this.facility.getVillages(blockID).subscribe((allVillagesRes: any) => {
-      console.log('[loadEditVillages] allVillagesRes:', allVillagesRes);
-      if (allVillagesRes && allVillagesRes.data) {
-        const allVillages = allVillagesRes.data;
-        console.log('[loadEditVillages] allVillages count:', allVillages.length);
-        this.facility.getMappedVillageIDs(blockID).subscribe((mappedRes: any) => {
-          console.log('[loadEditVillages] mappedRes:', mappedRes);
-          const allMappedIDs: number[] = (mappedRes && mappedRes.data) ? mappedRes.data : [];
-          console.log('[loadEditVillages] allMappedIDs:', allMappedIDs);
-          this.facility.getVillageMappingsByFacility(facilityID).subscribe((myMappingsRes: any) => {
-            console.log('[loadEditVillages] myMappingsRes:', myMappingsRes);
-            const myMappings = (myMappingsRes && myMappingsRes.data) ? myMappingsRes.data : [];
-            const myMappedIDs: number[] = myMappings.map((m: any) => m.districtBranchID);
-            console.log('[loadEditVillages] myMappedIDs:', myMappedIDs);
+    console.log(
+      '[loadEditVillages] blockID:',
+      blockID,
+      'facilityID:',
+      facilityID,
+    );
+    this.facility.getVillages(blockID).subscribe(
+      (allVillagesRes: any) => {
+        console.log('[loadEditVillages] allVillagesRes:', allVillagesRes);
+        if (allVillagesRes && allVillagesRes.data) {
+          const allVillages = allVillagesRes.data;
+          console.log(
+            '[loadEditVillages] allVillages count:',
+            allVillages.length,
+          );
+          this.facility.getMappedVillageIDs(blockID).subscribe(
+            (mappedRes: any) => {
+              console.log('[loadEditVillages] mappedRes:', mappedRes);
+              const allMappedIDs: number[] =
+                mappedRes && mappedRes.data ? mappedRes.data : [];
+              console.log('[loadEditVillages] allMappedIDs:', allMappedIDs);
+              this.facility.getVillageMappingsByFacility(facilityID).subscribe(
+                (myMappingsRes: any) => {
+                  console.log(
+                    '[loadEditVillages] myMappingsRes:',
+                    myMappingsRes,
+                  );
+                  const myMappings =
+                    myMappingsRes && myMappingsRes.data
+                      ? myMappingsRes.data
+                      : [];
+                  const myMappedIDs: number[] = myMappings.map(
+                    (m: any) => m.districtBranchID,
+                  );
+                  console.log('[loadEditVillages] myMappedIDs:', myMappedIDs);
 
-            this.edit_villages_array = allVillages.filter(
-              (v: any) => !allMappedIDs.includes(v.districtBranchID) || myMappedIDs.includes(v.districtBranchID),
-            );
-            console.log('[loadEditVillages] edit_villages_array count:', this.edit_villages_array.length);
+                  this.edit_villages_array = allVillages.filter(
+                    (v: any) =>
+                      !allMappedIDs.includes(v.districtBranchID) ||
+                      myMappedIDs.includes(v.districtBranchID),
+                  );
+                  console.log(
+                    '[loadEditVillages] edit_villages_array count:',
+                    this.edit_villages_array.length,
+                  );
 
-            this.edit_selectedVillages = this.edit_villages_array.filter(
-              (v: any) => myMappedIDs.includes(v.districtBranchID),
-            );
-            console.log('[loadEditVillages] edit_selectedVillages count:', this.edit_selectedVillages.length);
-            console.log('[loadEditVillages] edit_selectedVillages:', this.edit_selectedVillages);
-          },
-          (err: any) => {
-            console.error('[loadEditVillages] getVillageMappingsByFacility error:', err);
-          });
-        },
-        (err: any) => {
-          console.error('[loadEditVillages] getMappedVillageIDs error:', err);
-        });
-      }
-    },
-    (err: any) => {
-      console.error('[loadEditVillages] getVillages error:', err);
-    });
+                  this.edit_selectedVillages = this.edit_villages_array.filter(
+                    (v: any) => myMappedIDs.includes(v.districtBranchID),
+                  );
+                  console.log(
+                    '[loadEditVillages] edit_selectedVillages count:',
+                    this.edit_selectedVillages.length,
+                  );
+                  console.log(
+                    '[loadEditVillages] edit_selectedVillages:',
+                    this.edit_selectedVillages,
+                  );
+                },
+                (err: any) => {
+                  console.error(
+                    '[loadEditVillages] getVillageMappingsByFacility error:',
+                    err,
+                  );
+                },
+              );
+            },
+            (err: any) => {
+              console.error(
+                '[loadEditVillages] getMappedVillageIDs error:',
+                err,
+              );
+            },
+          );
+        }
+      },
+      (err: any) => {
+        console.error('[loadEditVillages] getVillages error:', err);
+      },
+    );
   }
 
   loadEditChildFacilities(blockID: number, facilityID: number) {
@@ -451,33 +511,66 @@ export class FacilityCreationComponent implements OnInit {
     console.log('[loadEditChildFacilities] lowerLevel:', lowerLevel);
     if (!lowerLevel) return;
 
-    this.facility.getFacilitiesByBlockAndLevel(blockID, lowerLevel.facilityLevelID)
-      .subscribe((availableRes: any) => {
-        const availableFacilities = (availableRes && availableRes.data) ? availableRes.data : [];
-        console.log('[loadEditChildFacilities] availableFacilities:', availableFacilities);
-        this.facility.getChildFacilitiesByParent(facilityID).subscribe((childrenRes: any) => {
-          const currentChildren = (childrenRes && childrenRes.data) ? childrenRes.data : [];
-          const currentChildIDs: number[] = currentChildren.map((c: any) => c.facilityID);
-          console.log('[loadEditChildFacilities] currentChildren:', currentChildren);
-
-          this.edit_childFacilities_array = [...availableFacilities, ...currentChildren];
-
-          this.edit_selectedChildFacilities = this.edit_childFacilities_array.filter(
-            (c: any) => currentChildIDs.includes(c.facilityID),
+    this.facility
+      .getFacilitiesByBlockAndLevel(
+        blockID,
+        lowerLevel.facilityLevelID,
+        this.edit_ruralUrban,
+      )
+      .subscribe(
+        (availableRes: any) => {
+          const availableFacilities =
+            availableRes && availableRes.data ? availableRes.data : [];
+          console.log(
+            '[loadEditChildFacilities] availableFacilities:',
+            availableFacilities,
           );
-          console.log('[loadEditChildFacilities] edit_selectedChildFacilities:', this.edit_selectedChildFacilities);
+          this.facility.getChildFacilitiesByParent(facilityID).subscribe(
+            (childrenRes: any) => {
+              const currentChildren =
+                childrenRes && childrenRes.data ? childrenRes.data : [];
+              const currentChildIDs: number[] = currentChildren.map(
+                (c: any) => c.facilityID,
+              );
+              console.log(
+                '[loadEditChildFacilities] currentChildren:',
+                currentChildren,
+              );
+
+              this.edit_childFacilities_array = [
+                ...availableFacilities,
+                ...currentChildren,
+              ];
+
+              this.edit_selectedChildFacilities =
+                this.edit_childFacilities_array.filter((c: any) =>
+                  currentChildIDs.includes(c.facilityID),
+                );
+              console.log(
+                '[loadEditChildFacilities] edit_selectedChildFacilities:',
+                this.edit_selectedChildFacilities,
+              );
+            },
+            (err: any) => {
+              console.error(
+                '[loadEditChildFacilities] getChildFacilitiesByParent error:',
+                err,
+              );
+            },
+          );
         },
         (err: any) => {
-          console.error('[loadEditChildFacilities] getChildFacilitiesByParent error:', err);
-        });
-      },
-      (err: any) => {
-        console.error('[loadEditChildFacilities] getFacilitiesByBlockAndLevel error:', err);
-      });
+          console.error(
+            '[loadEditChildFacilities] getFacilitiesByBlockAndLevel error:',
+            err,
+          );
+        },
+      );
   }
 
   getEditLowerLevelName(): string {
-    if (!this.edit_selectedLevel || this.edit_selectedLevel.levelValue <= 1) return '';
+    if (!this.edit_selectedLevel || this.edit_selectedLevel.levelValue <= 1)
+      return '';
     const lowerLevelValue = this.edit_selectedLevel.levelValue - 1;
     const lowerLevel = this.facilityLevels_array.find(
       (level: any) => level.levelValue === lowerLevelValue,
@@ -505,9 +598,13 @@ export class FacilityCreationComponent implements OnInit {
     let childFacilityIDs: number[] | null = null;
 
     if (this.edit_selectedLevel?.levelValue === 1) {
-      villageIDs = this.edit_selectedVillages.map((v: any) => v.districtBranchID);
+      villageIDs = this.edit_selectedVillages.map(
+        (v: any) => v.districtBranchID,
+      );
     } else if (this.edit_selectedLevel?.levelValue > 1) {
-      childFacilityIDs = this.edit_selectedChildFacilities.map((c: any) => c.facilityID);
+      childFacilityIDs = this.edit_selectedChildFacilities.map(
+        (c: any) => c.facilityID,
+      );
     }
 
     const requestObj = {
@@ -563,10 +660,7 @@ export class FacilityCreationComponent implements OnInit {
           this.facility.deleteFacilityStore(object).subscribe(
             (res: any) => {
               if (res) {
-                this.dialogService.alert(
-                  'Deactivated successfully',
-                  'success',
-                );
+                this.dialogService.alert('Deactivated successfully', 'success');
                 if (this.taluk?.blockID) {
                   this.loadFacilitiesByBlock(this.taluk.blockID);
                 }
