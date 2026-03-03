@@ -224,7 +224,7 @@
                 *ngFor="let level of facilityLevels_array"
                 [value]="level.facilityLevelID"
               >
-                {{ level.levelName }}
+                {{ level.levelName }} [{{ level.levelValue }}]
               </mat-option>
             </mat-select>
             <mat-hint>
@@ -314,7 +314,7 @@
           <!-- Facility Level Column -->
           <ng-container matColumnDef="facilityLevel">
             <th mat-header-cell *matHeaderCellDef>Facility Level</th>
-            <td mat-cell *matCellDef="let item">{{ item.levelName }}</td>
+            <td mat-cell *matCellDef="let item">{{ getLevelName(item.facilityLevelID) }}</td>
           </ng-container>
 
           <!-- Delete Column -->
@@ -398,18 +398,6 @@
               maxlength="100"
               [(ngModel)]="edit_facilityTypeName"
               name="facilityTypeName"
-              [disabled]="true"
-            />
-          </mat-form-field>
-        </div>
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'">
-            <mat-label>Description</mat-label>
-            <input
-              matInput
-              maxlength="100"
-              [(ngModel)]="edit_facilityTypeDesc"
-              name="facilityTypeDesc"
             />
           </mat-form-field>
         </div>
@@ -423,6 +411,23 @@
             >
               <mat-option value="Rural">Rural</mat-option>
               <mat-option value="Urban">Urban</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Facility Level</mat-label>
+            <mat-select
+              required
+              name="edit_facilityLevelID"
+              [(ngModel)]="edit_facilityLevelID"
+            >
+              <mat-option
+                *ngFor="let level of facilityLevels_array"
+                [value]="level.facilityLevelID"
+              >
+                {{ level.levelName }} [{{ level.levelValue }}]
+              </mat-option>
             </mat-select>
           </mat-form-field>
         </div>

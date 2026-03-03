@@ -1,13 +1,12 @@
 <div class="col-12 row" style="margin-top: 10px">
 
-  <!-- Rural/Urban (disabled when facility already defined, editable otherwise) -->
-  <div class="col-3">
+  <!-- Rural/Urban (hidden for ASHA Supervisor direct edit) -->
+  <div class="col-3" *ngIf="!ashaDirectEditMode">
     <mat-form-field [style.width]="'100%'">
       <mat-label>Select Rural/Urban</mat-label>
       <mat-select
         [(ngModel)]="selectedRuralUrban"
         (selectionChange)="onRuralUrbanChange()"
-        [disabled]="hasExistingFacility"
         name="ruralUrban"
       >
         <mat-option value="Rural">Rural</mat-option>
@@ -16,19 +15,28 @@
     </mat-form-field>
   </div>
 
-  <!-- Facility Type (disabled when facility already defined) -->
-  <div class="col-3" *ngIf="selectedRuralUrban">
+  <!-- Facility Type (hidden for ASHA Supervisor direct edit) -->
+  <div class="col-3" *ngIf="selectedRuralUrban && !ashaDirectEditMode">
     <mat-form-field [style.width]="'100%'">
       <mat-label>Select Facility Type</mat-label>
       <mat-select
         [(ngModel)]="selectedFacilityType"
         [compareWith]="compareFacilityTypes"
         (selectionChange)="onFacilityTypeSelected()"
-        [disabled]="hasExistingFacility"
         name="facilityType"
       >
+        <div class="select-search-box">
+          <input
+            matInput
+            placeholder="Search..."
+            [(ngModel)]="facilityTypeSearch"
+            (keydown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+            autocomplete="off"
+          />
+        </div>
         <mat-option
-          *ngFor="let ft of filteredFacilityTypes"
+          *ngFor="let ft of getFilteredFacilityTypes()"
           [value]="ft"
         >
           {{ ft.facilityTypeName }}
@@ -37,8 +45,8 @@
     </mat-form-field>
   </div>
 
-  <!-- Facility (multi-select for ASHA Supervisor, disabled when facility already defined) -->
-  <div class="col-3" *ngIf="selectedFacilityType && isAshaSupervisor">
+  <!-- Facility (multi-select for ASHA Supervisor — shown directly in direct edit mode) -->
+  <div class="col-3" *ngIf="(selectedFacilityType && isAshaSupervisor) || ashaDirectEditMode">
     <mat-form-field [style.width]="'100%'">
       <mat-label>Select Facilities</mat-label>
       <mat-select
@@ -46,10 +54,28 @@
         [multiple]="true"
         [compareWith]="compareFacilities"
         (selectionChange)="onFacilitiesSelected()"
-        [disabled]="hasExistingFacility"
         name="facilitiesMulti"
       >
-        <mat-option *ngFor="let f of facilities" [value]="f">
+        <div class="select-search-box">
+          <input
+            matInput
+            placeholder="Search..."
+            (input)="filterFacilityOptions($any($event.target).value)"
+            (keydown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+            [value]="facilitySearch"
+            autocomplete="off"
+          />
+        </div>
+        <div class="select-all-option" (click)="toggleSelectAllFacilities(); $event.stopPropagation()">
+          <mat-checkbox
+            [checked]="allFacilitiesSelected"
+            (click)="$event.stopPropagation()"
+          >
+            Select All
+          </mat-checkbox>
+        </div>
+        <mat-option *ngFor="let f of filteredFacilities" [value]="f">
           {{ f.facilityName }}
         </mat-option>
       </mat-select>
@@ -64,36 +90,79 @@
         [(ngModel)]="selectedFacility"
         [compareWith]="compareFacilities"
         (selectionChange)="onFacilitySelected()"
-        [disabled]="hasExistingFacility"
         name="facilitySingle"
       >
-        <mat-option *ngFor="let f of facilities" [value]="f">
+        <div class="select-search-box">
+          <input
+            matInput
+            placeholder="Search..."
+            (input)="filterFacilityOptions($any($event.target).value)"
+            (keydown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+            [value]="facilitySearch"
+            autocomplete="off"
+          />
+        </div>
+        <mat-option *ngFor="let f of filteredFacilities" [value]="f">
           {{ f.facilityName }}
         </mat-option>
       </mat-select>
     </mat-form-field>
   </div>
 
-  <!-- Villages (multi-select dropdown with orphan village support) -->
-  <div class="col-3" *ngIf="displayVillages.length > 0">
+  <!-- Villages multi-select dropdown (ASHA role, both FLW and HWC) -->
+  <div class="col-3" *ngIf="displayVillages.length > 0 && isAshaRole && !isAshaSupervisor">
     <mat-form-field [style.width]="'100%'">
       <mat-label>Select Villages</mat-label>
       <mat-select
         [(ngModel)]="selectedVillageIDs"
         [multiple]="true"
         (selectionChange)="onVillageSelectionChange()"
-        name="villages"
+        name="villagesMulti"
       >
-        <mat-option
-          *ngFor="let v of displayVillages"
-          [value]="v.districtBranchID"
-          [ngClass]="{ 'orphan-village': v.isOrphan }"
-        >
+        <div class="select-search-box">
+          <input
+            matInput
+            placeholder="Search..."
+            (input)="applyVillageFilter($any($event.target).value)"
+            (keydown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+            [value]="villageSearch"
+            autocomplete="off"
+          />
+        </div>
+        <div class="select-all-option" (click)="toggleSelectAllVillages(); $event.stopPropagation()">
+          <mat-checkbox
+            [checked]="allVillagesSelected"
+            (click)="$event.stopPropagation()"
+          >
+            Select All
+          </mat-checkbox>
+        </div>
+        <mat-option *ngFor="let v of filteredDisplayVillages" [value]="v.districtBranchID"
+          [ngClass]="{ 'village-orphan-option': v.isOrphan }">
           {{ v.villageName }}
-          <span *ngIf="v.isOrphan" class="orphan-label"> (not in facility)</span>
+          <span *ngIf="v.isOrphan" class="orphan-tag"> (not in sub-center)</span>
         </mat-option>
       </mat-select>
     </mat-form-field>
+  </div>
+
+  <!-- Villages display box (read-only chips — all roles except ASHA) -->
+  <div class="col-12" *ngIf="displayVillages.length > 0 && (!isAshaRole || isAshaSupervisor)" style="margin-top: 10px">
+    <div class="village-display-box">
+      <div class="village-display-label">Mapped Villages</div>
+      <div class="village-chips">
+        <span
+          *ngFor="let v of displayVillages"
+          class="village-chip"
+          [ngClass]="{ 'village-orphan': v.isOrphan }"
+        >
+          {{ v.villageName }}
+          <span *ngIf="v.isOrphan" class="orphan-tag">(not in sub-center)</span>
+        </span>
+      </div>
+    </div>
   </div>
 
   <!-- ASHA Workers (multi-select dropdown, ASHA Supervisor only) -->
@@ -106,9 +175,30 @@
         (selectionChange)="onAshaSelectionChange()"
         name="ashaWorkers"
       >
-        <mat-option *ngFor="let u of ashaUsers" [value]="u.userID">
+        <div class="select-search-box">
+          <input
+            matInput
+            placeholder="Search..."
+            (input)="filterAshaOptions($any($event.target).value)"
+            (keydown)="$event.stopPropagation()"
+            (click)="$event.stopPropagation()"
+            [value]="ashaSearch"
+            autocomplete="off"
+          />
+        </div>
+        <div class="select-all-option" (click)="toggleSelectAllAsha(); $event.stopPropagation()">
+          <mat-checkbox
+            [checked]="allAshaSelected"
+            (click)="$event.stopPropagation()"
+          >
+            Select All
+          </mat-checkbox>
+        </div>
+        <mat-option *ngFor="let u of filteredAshaUsers" [value]="u.userID"
+          [ngClass]="{'asha-moved-away': u.movedAway}">
           {{ u.EmployeeName || (u.employeeMaster?.firstName + ' ' + u.employeeMaster?.lastName) }}
           <span *ngIf="u.facilityName"> [{{ u.facilityName }}]</span>
+          <span *ngIf="u.movedAway" class="moved-label"> (Moved)</span>
         </mat-option>
       </mat-select>
     </mat-form-field>

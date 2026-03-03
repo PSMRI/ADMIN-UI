@@ -40,6 +40,7 @@ export class FacilityCreationComponent implements OnInit {
   displayedColumns: string[] = [
     'sno',
     'facilityName',
+    'facilityCode',
     'facilityTypeName',
     'ruralUrban',
     'edit',
@@ -49,13 +50,16 @@ export class FacilityCreationComponent implements OnInit {
   createButton = false;
   facilityName: any;
   facilityDesc: any;
+  facilityCode: any;
   facilityTypeID: any;
   formRuralUrban: any;
   facilityID: any;
   edit_facilityName: any;
   edit_facilityDesc: any;
+  edit_facilityCode: any;
   edit_ruralUrban: any;
   edit_facilityTypeID: any;
+  edit_filteredFacilityTypes: any[] = [];
   edit_selectedLevel: any = null;
   edit_villages_array: any = [];
   edit_selectedVillages: any = [];
@@ -217,23 +221,34 @@ export class FacilityCreationComponent implements OnInit {
     if (!blockID) return;
 
     if (this.selectedLevel.levelValue === 1) {
-      this.facility.getVillages(blockID).subscribe((response: any) => {
-        if (response && response.data) {
-          const allVillages = response.data;
-          this.facility
-            .getMappedVillageIDs(blockID)
-            .subscribe((mappedRes: any) => {
-              if (mappedRes && mappedRes.data) {
-                const mappedIDs: number[] = mappedRes.data;
-                this.villages_array = allVillages.filter(
-                  (v: any) => !mappedIDs.includes(v.districtBranchID),
+      this.facility.getVillages(blockID).subscribe(
+        (response: any) => {
+          if (response && response.data) {
+            const allVillages = response.data;
+            this.facility.getMappedVillageIDs(blockID).subscribe(
+              (mappedRes: any) => {
+                if (mappedRes && mappedRes.data) {
+                  const mappedIDs: number[] = mappedRes.data;
+                  this.villages_array = allVillages.filter(
+                    (v: any) => !mappedIDs.includes(v.districtBranchID),
+                  );
+                } else {
+                  this.villages_array = allVillages;
+                }
+              },
+              (err: any) => {
+                this.dialogService.alert(
+                  'Failed to load mapped villages',
+                  'error',
                 );
-              } else {
-                this.villages_array = allVillages;
-              }
-            });
-        }
-      });
+              },
+            );
+          }
+        },
+        (err: any) => {
+          this.dialogService.alert('Failed to load villages', 'error');
+        },
+      );
     } else {
       const lowerLevelValue = this.selectedLevel.levelValue - 1;
       const lowerLevel = this.facilityLevels_array.find(
@@ -246,11 +261,19 @@ export class FacilityCreationComponent implements OnInit {
             lowerLevel.facilityLevelID,
             this.formRuralUrban,
           )
-          .subscribe((response: any) => {
-            if (response && response.data) {
-              this.childFacilities_array = response.data;
-            }
-          });
+          .subscribe(
+            (response: any) => {
+              if (response && response.data) {
+                this.childFacilities_array = response.data;
+              }
+            },
+            (err: any) => {
+              this.dialogService.alert(
+                'Failed to load child facilities',
+                'error',
+              );
+            },
+          );
       }
     }
   }
@@ -292,18 +315,19 @@ export class FacilityCreationComponent implements OnInit {
       this.facilityList.data = this.facilityMasterList;
       this.facilityList.paginator = this.tablePaginator;
     } else {
-      this.facilityList.data = [];
+      const filtered: any[] = [];
       this.facilityMasterList.forEach((item: any) => {
         for (const key in item) {
           if (key === 'facilityName') {
             const value: string = '' + item[key];
             if (value.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
-              this.facilityList.data.push(item);
+              filtered.push(item);
               break;
             }
           }
         }
       });
+      this.facilityList.data = filtered;
       this.facilityList.paginator = this.tablePaginator;
     }
   }
@@ -326,6 +350,7 @@ export class FacilityCreationComponent implements OnInit {
     const facilityObj: any = {
       facilityName: this.facilityName,
       facilityDesc: this.facilityDesc,
+      facilityCode: this.facilityCode || null,
       facilityTypeID: this.facilityTypeID,
       ruralUrban: this.formRuralUrban,
       stateID: this.state?.stateID,
@@ -378,6 +403,7 @@ export class FacilityCreationComponent implements OnInit {
     this.facilityID = item.facilityID;
     this.edit_facilityName = item.facilityName;
     this.edit_facilityDesc = item.facilityDesc;
+    this.edit_facilityCode = item.facilityCode;
     this.edit_facilityTypeID = item.facilityTypeID;
 
     console.log('[editFacility] item:', item);
@@ -395,6 +421,10 @@ export class FacilityCreationComponent implements OnInit {
     );
     console.log('[editFacility] selectedType:', selectedType);
     this.edit_ruralUrban = selectedType ? selectedType.ruralUrban : '';
+
+    this.edit_filteredFacilityTypes = this.facilityTypes_array.filter(
+      (ft: any) => ft.ruralUrban === this.edit_ruralUrban,
+    );
 
     this.edit_selectedLevel = null;
     if (selectedType && selectedType.facilityLevelID) {
@@ -537,8 +567,12 @@ export class FacilityCreationComponent implements OnInit {
                 currentChildren,
               );
 
+              // Deduplicate: exclude current children already in available list
+              const filteredAvailable = availableFacilities.filter(
+                (f: any) => !currentChildIDs.includes(f.facilityID),
+              );
               this.edit_childFacilities_array = [
-                ...availableFacilities,
+                ...filteredAvailable,
                 ...currentChildren,
               ];
 
@@ -578,6 +612,154 @@ export class FacilityCreationComponent implements OnInit {
     return lowerLevel ? lowerLevel.levelName : '';
   }
 
+  onEditRuralUrbanChange() {
+    this.edit_facilityTypeID = undefined;
+    this.edit_selectedLevel = null;
+    this.edit_villages_array = [];
+    this.edit_selectedVillages = [];
+    this.edit_childFacilities_array = [];
+    this.edit_selectedChildFacilities = [];
+    if (this.edit_ruralUrban) {
+      this.edit_filteredFacilityTypes = this.facilityTypes_array.filter(
+        (item: any) => item.ruralUrban === this.edit_ruralUrban,
+      );
+    } else {
+      this.edit_filteredFacilityTypes = [];
+    }
+  }
+
+  onEditFacilityTypeChange() {
+    this.edit_selectedLevel = null;
+    this.edit_villages_array = [];
+    this.edit_selectedVillages = [];
+    this.edit_childFacilities_array = [];
+    this.edit_selectedChildFacilities = [];
+
+    if (!this.edit_facilityTypeID) return;
+
+    const selectedType = this.facilityTypes_array.find(
+      (item: any) => item.facilityTypeID === this.edit_facilityTypeID,
+    );
+    if (!selectedType || !selectedType.facilityLevelID) return;
+
+    this.edit_selectedLevel = this.facilityLevels_array.find(
+      (level: any) => level.facilityLevelID === selectedType.facilityLevelID,
+    );
+    if (!this.edit_selectedLevel) return;
+
+    const blockID = this.taluk?.blockID;
+    if (!blockID) return;
+
+    if (this.edit_selectedLevel.levelValue === 1) {
+      this.facility.getVillages(blockID).subscribe(
+        (response: any) => {
+          if (response && response.data) {
+            const allVillages = response.data;
+            this.facility.getMappedVillageIDs(blockID).subscribe(
+              (mappedRes: any) => {
+                const allMappedIDs: number[] =
+                  mappedRes && mappedRes.data ? mappedRes.data : [];
+                // Also fetch this facility's own village mappings to keep them available
+                this.facility
+                  .getVillageMappingsByFacility(this.facilityID)
+                  .subscribe(
+                    (myMappingsRes: any) => {
+                      const myMappings =
+                        myMappingsRes && myMappingsRes.data
+                          ? myMappingsRes.data
+                          : [];
+                      const myMappedIDs: number[] = myMappings.map(
+                        (m: any) => m.districtBranchID,
+                      );
+                      this.edit_villages_array = allVillages.filter(
+                        (v: any) =>
+                          !allMappedIDs.includes(v.districtBranchID) ||
+                          myMappedIDs.includes(v.districtBranchID),
+                      );
+                      this.edit_selectedVillages =
+                        this.edit_villages_array.filter((v: any) =>
+                          myMappedIDs.includes(v.districtBranchID),
+                        );
+                    },
+                    (err: any) => {
+                      this.dialogService.alert(
+                        'Failed to load facility village mappings',
+                        'error',
+                      );
+                    },
+                  );
+              },
+              (err: any) => {
+                this.dialogService.alert(
+                  'Failed to load mapped village IDs',
+                  'error',
+                );
+              },
+            );
+          }
+        },
+        (err: any) => {
+          this.dialogService.alert('Failed to load villages', 'error');
+        },
+      );
+    } else {
+      const lowerLevelValue = this.edit_selectedLevel.levelValue - 1;
+      const lowerLevel = this.facilityLevels_array.find(
+        (level: any) => level.levelValue === lowerLevelValue,
+      );
+      if (lowerLevel) {
+        this.facility
+          .getFacilitiesByBlockAndLevel(
+            blockID,
+            lowerLevel.facilityLevelID,
+            this.edit_ruralUrban,
+          )
+          .subscribe(
+            (availableRes: any) => {
+              if (availableRes && availableRes.data) {
+                const availableFacilities = availableRes.data;
+                // Fetch current children from backend for proper dedup and pre-selection
+                this.facility
+                  .getChildFacilitiesByParent(this.facilityID)
+                  .subscribe(
+                    (childrenRes: any) => {
+                      const currentChildren =
+                        childrenRes && childrenRes.data ? childrenRes.data : [];
+                      const currentChildIDs: number[] = currentChildren.map(
+                        (c: any) => c.facilityID,
+                      );
+                      const filteredAvailable = availableFacilities.filter(
+                        (f: any) => !currentChildIDs.includes(f.facilityID),
+                      );
+                      this.edit_childFacilities_array = [
+                        ...filteredAvailable,
+                        ...currentChildren,
+                      ];
+                      this.edit_selectedChildFacilities =
+                        this.edit_childFacilities_array.filter((c: any) =>
+                          currentChildIDs.includes(c.facilityID),
+                        );
+                    },
+                    (err: any) => {
+                      this.dialogService.alert(
+                        'Failed to load current child facilities',
+                        'error',
+                      );
+                    },
+                  );
+              }
+            },
+            (err: any) => {
+              this.dialogService.alert(
+                'Failed to load child facilities',
+                'error',
+              );
+            },
+          );
+      }
+    }
+  }
+
   compareVillages(v1: any, v2: any): boolean {
     return v1 && v2 && v1.districtBranchID === v2.districtBranchID;
   }
@@ -591,6 +773,9 @@ export class FacilityCreationComponent implements OnInit {
       facilityID: this.facilityID,
       facilityName: this.edit_facilityName,
       facilityDesc: this.edit_facilityDesc,
+      facilityCode: this.edit_facilityCode || null,
+      facilityTypeID: this.edit_facilityTypeID,
+      ruralUrban: this.edit_ruralUrban,
       modifiedBy: this.createdBy,
     };
 
@@ -644,7 +829,7 @@ export class FacilityCreationComponent implements OnInit {
               }
             },
             (err: any) => {
-              console.log('error', err);
+              this.dialogService.alert('Failed to activate facility', 'error');
             },
           );
         }
@@ -668,7 +853,10 @@ export class FacilityCreationComponent implements OnInit {
               }
             },
             (err: any) => {
-              console.log('error', err);
+              this.dialogService.alert(
+                'Failed to deactivate facility',
+                'error',
+              );
             },
           );
         }
@@ -678,6 +866,7 @@ export class FacilityCreationComponent implements OnInit {
   resetForm() {
     this.facilityName = undefined;
     this.facilityDesc = undefined;
+    this.facilityCode = undefined;
     this.facilityTypeID = undefined;
     this.formRuralUrban = undefined;
     this.selectedLevel = null;
@@ -688,8 +877,10 @@ export class FacilityCreationComponent implements OnInit {
     this.selectedChildFacilities = [];
     this.edit_facilityName = undefined;
     this.edit_facilityDesc = undefined;
+    this.edit_facilityCode = undefined;
     this.edit_ruralUrban = undefined;
     this.edit_facilityTypeID = undefined;
+    this.edit_filteredFacilityTypes = [];
     this.edit_selectedLevel = null;
     this.edit_villages_array = [];
     this.edit_selectedVillages = [];

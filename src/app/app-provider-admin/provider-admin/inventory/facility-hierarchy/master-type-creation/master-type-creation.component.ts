@@ -65,6 +65,7 @@ export class MasterTypeCreationComponent implements OnInit {
   edit_facilityTypeName: any;
   edit_facilityTypeDesc: any;
   edit_ruralUrban: any;
+  edit_facilityLevelID: any;
   createdBy: any;
   uid: any;
 
@@ -109,7 +110,9 @@ export class MasterTypeCreationComponent implements OnInit {
   getFacilityLevels() {
     this.facility.getFacilityLevels().subscribe((response: any) => {
       if (response && response.data) {
-        this.facilityLevels_array = response.data;
+        this.facilityLevels_array = response.data
+          .filter((l: any) => !l.deleted)
+          .sort((a: any, b: any) => (a.levelValue || 0) - (b.levelValue || 0));
       }
     });
   }
@@ -135,7 +138,7 @@ export class MasterTypeCreationComponent implements OnInit {
     const level = this.facilityLevels_array.find(
       (l: any) => l.facilityLevelID === facilityLevelID,
     );
-    return level ? level.levelName : '';
+    return level ? `${level.levelName} [${level.levelValue}]` : '';
   }
 
   showTable() {
@@ -167,18 +170,19 @@ export class MasterTypeCreationComponent implements OnInit {
       this.facilityTypeList.data = this.facilityMasterList;
       this.facilityTypeList.paginator = this.tablePaginator;
     } else {
-      this.facilityTypeList.data = [];
+      const filtered: any[] = [];
       this.facilityMasterList.forEach((item: any) => {
         for (const key in item) {
           if (key === 'facilityTypeName') {
             const value: string = '' + item[key];
             if (value.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
-              this.facilityTypeList.data.push(item);
+              filtered.push(item);
               break;
             }
           }
         }
       });
+      this.facilityTypeList.data = filtered;
       this.facilityTypeList.paginator = this.tablePaginator;
     }
   }
@@ -199,28 +203,46 @@ export class MasterTypeCreationComponent implements OnInit {
   }
 
   checkDuplicates(object: any) {
-    let duplicateStatus = 0;
-    if (this.bufferArray.data.length === 0) {
-      this.bufferArray.data.push(object);
-      this.bufferArray.paginator = this.bufferPaginator;
-    } else {
-      for (let i = 0; i < this.bufferArray.data.length; i++) {
-        if (
-          this.bufferArray.data[i].facilityTypeName?.toLowerCase() ===
-          object.facilityTypeName?.toLowerCase()
-        ) {
-          duplicateStatus++;
-        }
-      }
-      if (duplicateStatus === 0) {
-        this.bufferArray.data.push(object);
-        this.bufferArray.paginator = this.bufferPaginator;
+    const nameLower = object.facilityTypeName?.toLowerCase();
+
+    // Check against buffer
+    for (let i = 0; i < this.bufferArray.data.length; i++) {
+      if (
+        this.bufferArray.data[i].facilityTypeName?.toLowerCase() === nameLower
+      ) {
+        this.dialogService.alert(
+          'Facility type already added to the list',
+          'warn',
+        );
+        return;
       }
     }
+
+    // Check against existing saved records
+    for (let i = 0; i < this.facilityMasterList.length; i++) {
+      if (
+        this.facilityMasterList[i].facilityTypeName?.toLowerCase() ===
+          nameLower &&
+        !this.facilityMasterList[i].deleted
+      ) {
+        this.dialogService.alert(
+          'Facility type with this name already exists',
+          'warn',
+        );
+        return;
+      }
+    }
+
+    const current = [...this.bufferArray.data];
+    current.push(object);
+    this.bufferArray.data = current;
+    this.bufferArray.paginator = this.bufferPaginator;
   }
 
   removeRow(index: number) {
-    this.bufferArray.data.splice(index, 1);
+    const current = [...this.bufferArray.data];
+    current.splice(index, 1);
+    this.bufferArray.data = current;
   }
 
   saveFacilityTypes() {
@@ -233,7 +255,7 @@ export class MasterTypeCreationComponent implements OnInit {
         }
       },
       (err: any) => {
-        console.log(err, 'ERROR');
+        this.dialogService.alert('Failed to save facility types', 'error');
       },
     );
   }
@@ -243,19 +265,19 @@ export class MasterTypeCreationComponent implements OnInit {
     this.facilityTypeID = item.facilityTypeID;
     this.edit_facilityTypeName = item.facilityTypeName;
     this.edit_facilityTypeDesc = item.facilityTypeDesc;
-    this.edit_ruralUrban = item.ruralUrban;
+    this.edit_ruralUrban = item.ruralUrban || '';
+    this.edit_facilityLevelID = item.facilityLevelID || null;
     this.showEditForm();
   }
 
   updateFacilityType() {
     const editObj: any = {
       facilityTypeID: this.facilityTypeID,
-      facilityTypeDesc: this.edit_facilityTypeDesc,
+      facilityTypeName: this.edit_facilityTypeName,
+      ruralUrban: this.edit_ruralUrban,
+      facilityLevelID: this.edit_facilityLevelID,
       modifiedBy: this.createdBy,
     };
-    if (this.edit_ruralUrban) {
-      editObj.ruralUrban = this.edit_ruralUrban;
-    }
     this.facility.updateFacility(editObj).subscribe(
       (response: any) => {
         if (response) {
@@ -265,7 +287,7 @@ export class MasterTypeCreationComponent implements OnInit {
         }
       },
       (err: any) => {
-        console.log(err, 'ERROR');
+        this.dialogService.alert('Failed to update facility type', 'error');
       },
     );
   }
@@ -287,7 +309,10 @@ export class MasterTypeCreationComponent implements OnInit {
               }
             },
             (err: any) => {
-              console.log('error', err);
+              this.dialogService.alert(
+                'Failed to activate facility type',
+                'error',
+              );
             },
           );
         }
@@ -303,10 +328,7 @@ export class MasterTypeCreationComponent implements OnInit {
           this.facility.deleteFacility(object).subscribe(
             (res: any) => {
               if (res) {
-                this.dialogService.alert(
-                  'Deactivated successfully',
-                  'success',
-                );
+                this.dialogService.alert('Deactivated successfully', 'success');
                 if (this.state?.stateID) {
                   this.loadFacilityTypesByState(this.state.stateID);
                 }
@@ -314,7 +336,10 @@ export class MasterTypeCreationComponent implements OnInit {
               }
             },
             (err: any) => {
-              console.log('error', err);
+              this.dialogService.alert(
+                'Failed to deactivate facility type',
+                'error',
+              );
             },
           );
         }
@@ -329,5 +354,6 @@ export class MasterTypeCreationComponent implements OnInit {
     this.edit_facilityTypeName = undefined;
     this.edit_facilityTypeDesc = undefined;
     this.edit_ruralUrban = undefined;
+    this.edit_facilityLevelID = undefined;
   }
 }

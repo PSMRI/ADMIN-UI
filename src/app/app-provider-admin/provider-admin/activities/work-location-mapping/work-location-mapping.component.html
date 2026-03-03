@@ -41,7 +41,7 @@
           </ng-container>
           <ng-container matColumnDef="UserName">
             <th mat-header-cell *matHeaderCellDef>User Name</th>
-            <td mat-cell *matCellDef="let element">{{ element.userName }}</td>
+            <td mat-cell *matCellDef="let element">{{ element.userName }}<span *ngIf="element.realName"> [{{ element.realName }}]</span></td>
           </ng-container>
           <ng-container matColumnDef="Serviceline">
             <th mat-header-cell *matHeaderCellDef>Serviceline</th>
@@ -75,26 +75,31 @@
               {{ element.villageName }}
             </td>
           </ng-container>
-          <ng-container matColumnDef="WorkLocation">
-            <th mat-header-cell *matHeaderCellDef>Work Location</th>
+          <ng-container matColumnDef="FacilityID">
+            <th mat-header-cell *matHeaderCellDef>Facility</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.locationName }}
+              {{ getGroupFacilityDisplay(element) }}
             </td>
           </ng-container>
           <ng-container matColumnDef="Role">
             <th mat-header-cell *matHeaderCellDef>Role</th>
-            <td mat-cell *matCellDef="let element">{{ element.roleName }}</td>
+            <td mat-cell *matCellDef="let element">
+              <span *ngFor="let role of getUniqueRoles(element.roles)" class="role-chip"
+                [class.role-chip-deleted]="role.userServciceRoleDeleted">
+                {{ role.roleName }}
+              </span>
+            </td>
           </ng-container>
           <ng-container matColumnDef="Inbound">
             <th mat-header-cell *matHeaderCellDef>Inbound</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.inbound === undefined ? "N/A" : element.inbound }}
+              {{ getGroupInbound(element) }}
             </td>
           </ng-container>
           <ng-container matColumnDef="Outbound">
             <th mat-header-cell *matHeaderCellDef>Outbound</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.outbound === undefined ? "N/A" : element.outbound }}
+              {{ getGroupOutbound(element) }}
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
@@ -105,12 +110,8 @@
                 class="mat-icon material-icons"
                 aria-hidden="true"
                 style="cursor: pointer"
-                *ngIf="
-                  !element.userServciceRoleDeleted &&
-                  !element.userDeleted &&
-                  !element.providerServiceMappingDeleted
-                "
-                (click)="editRow(element)"
+                *ngIf="element.anyActive"
+                (click)="editGroupedRow(element)"
               >edit</mat-icon
               >
             </td>
@@ -121,25 +122,9 @@
               <button
                 mat-raised-button
                 color="accent"
-                *ngIf="
-                  element.userServciceRoleDeleted ||
-                  element.userDeleted ||
-                  element.providerServiceMappingDeleted
-                "
+                *ngIf="element.allDeleted"
                 class="m-r-10 mat_green"
-                (click)="
-                  activate(
-                    element.userID,
-                    element.serviceID,
-                    element.uSRMappingID,
-                    element.userDeleted,
-                    element.providerServiceMappingDeleted,
-                    element.stateID,
-                    element.workingDistrictID,
-                    element.blockID,
-                    element.roleID
-                  )
-                "
+                (click)="activateGroup(element)"
               >
                 Activate
               </button>
@@ -147,13 +132,9 @@
               <button
                 mat-raised-button
                 color="primary"
-                *ngIf="
-                  !element.userServciceRoleDeleted &&
-                  !element.userDeleted &&
-                  !element.providerServiceMappingDeleted
-                "
+                *ngIf="element.anyActive"
                 class="m-r-10 mat_blue"
-                (click)="deactivate(element.serviceID, element.uSRMappingID)"
+                (click)="deactivateGroup(element)"
               >
                 Deactivate
               </button>
@@ -177,6 +158,90 @@
           showFirstLastButtons
         >
         </mat-paginator>
+
+        <!-- ASHA Supervisor Mapping Table (separate section) -->
+        <div *ngIf="filteredAshaSupervisorList.data.length > 0" style="margin-top: 20px">
+          <h5><strong>ASHA Supervisor Mapping</strong></h5>
+          <table
+            mat-table
+            matSort
+            #sortAsha="matSort"
+            [dataSource]="filteredAshaSupervisorList"
+            class="table table-striped table-hover"
+          >
+            <ng-container matColumnDef="SNo">
+              <th mat-header-cell *matHeaderCellDef>S.No.</th>
+              <td mat-cell *matCellDef="let element; let i = index">
+                {{ i + 1 }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="UserName">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>User Name</th>
+              <td mat-cell *matCellDef="let element">{{ element.userName }}<span *ngIf="element.realName"> [{{ element.realName }}]</span></td>
+            </ng-container>
+            <ng-container matColumnDef="State">
+              <th mat-header-cell *matHeaderCellDef>State</th>
+              <td mat-cell *matCellDef="let element">{{ element.stateName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="District">
+              <th mat-header-cell *matHeaderCellDef>District</th>
+              <td mat-cell *matCellDef="let element">{{ element.workingDistrictName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="Facilities">
+              <th mat-header-cell *matHeaderCellDef>Facilities</th>
+              <td mat-cell *matCellDef="let element">
+                {{ getGroupFacilityDisplay(element) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="edit">
+              <th mat-header-cell *matHeaderCellDef>Edit</th>
+              <td mat-cell *matCellDef="let element">
+                <mat-icon
+                  matTooltip="Edit"
+                  class="mat-icon material-icons"
+                  aria-hidden="true"
+                  style="cursor: pointer"
+                  *ngIf="element.anyActive"
+                  (click)="editGroupedRow(element)"
+                >edit</mat-icon>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="action">
+              <th mat-header-cell *matHeaderCellDef>Action</th>
+              <td mat-cell *matCellDef="let element">
+                <button
+                  mat-raised-button
+                  color="accent"
+                  *ngIf="element.allDeleted"
+                  class="m-r-10 mat_green"
+                  (click)="activateGroup(element)"
+                >
+                  Activate
+                </button>
+                <button
+                  mat-raised-button
+                  color="primary"
+                  *ngIf="element.anyActive"
+                  class="m-r-10 mat_blue"
+                  (click)="deactivateGroup(element)"
+                >
+                  Deactivate
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="ashaSupervisorColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: ashaSupervisorColumns"></tr>
+          </table>
+          <mat-paginator
+            #paginatorAsha
+            [hidden]="filteredAshaSupervisorList.data.length === 0"
+            [pageSizeOptions]="[5, 10, 20]"
+            [pageSize]="5"
+            showFirstLastButtons
+          >
+          </mat-paginator>
+        </div>
+
         <div>
           <button
             mat-raised-button
@@ -212,8 +277,8 @@
                 (selectionChange)="resetAllFields()"
                 required
               >
-                <mat-option *ngFor="let user of userNamesList" [value]="user">
-                  {{ user.userName }}
+                <mat-option *ngFor="let user of unmappedUserNamesList" [value]="user">
+                  {{ (user.firstName || '') + ' ' + (user.lastName || '') }} [{{ user.userName }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -254,10 +319,10 @@
                 [(ngModel)]="State"
                 name="state"
                 (selectionChange)="
-                  getAllDistricts(Serviceline.serviceID, User, State)
+                  getAllDistricts(Serviceline.serviceID, User, State);
+                  resetBlockVillageFields()
                 "
                 required
-                (selectionChange)="resetBlockVillageFields()"
               >
                 <mat-option *ngFor="let item of states_array" [value]="item">
                   {{ item.stateName }}
@@ -274,11 +339,16 @@
                 [style.width]="'100%'"
                 [(ngModel)]="District"
                 (selectionChange)="
-                  getAllWorkLocations(State, Serviceline, isNational)
+                  getAllWorkLocations(State, Serviceline, isNational);
+                  getBlockMaster(District);
+                  getAllRoles(
+                    Serviceline.serviceID,
+                    State.providerServiceMapID,
+                    User.userID
+                  )
                 "
                 name="district"
                 required
-                (selectionChange)="getBlockMaster(District)"
               >
                 <mat-option *ngFor="let item of districts_array" [value]="item">
                   {{ item.districtName }}
@@ -322,31 +392,6 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Work Location</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [(ngModel)]="WorkLocation"
-                (selectionChange)="
-                  getAllRoles(
-                    Serviceline.serviceID,
-                    State.providerServiceMapID,
-                    User.userID
-                  )
-                "
-                name="worklocation"
-                required
-              >
-                <mat-option
-                  *ngFor="let item of workLocationsList"
-                  [value]="item"
-                >
-                  {{ item.locationName }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
           <div *ngIf="singleSelectForEcd" class="col-3">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
@@ -488,7 +533,7 @@
           </ng-container>
           <ng-container matColumnDef="UserName">
             <th mat-header-cell *matHeaderCellDef>User Name</th>
-            <td mat-cell *matCellDef="let element">{{ element.userName }}</td>
+            <td mat-cell *matCellDef="let element">{{ element.userName }}<span *ngIf="element.realName"> [{{ element.realName }}]</span></td>
           </ng-container>
           <ng-container matColumnDef="Serviceline">
             <th mat-header-cell *matHeaderCellDef>Serviceline</th>
@@ -522,16 +567,18 @@
               {{ element.villageName }}
             </td>
           </ng-container>
-          <ng-container matColumnDef="WorkLocation">
-            <th mat-header-cell *matHeaderCellDef>Work Location</th>
+          <ng-container matColumnDef="FacilityID">
+            <th mat-header-cell *matHeaderCellDef>Facility</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.workingLocation }}
+              {{ element.facilityID || 'N/A' }}
             </td>
           </ng-container>
           <ng-container matColumnDef="Role">
             <th mat-header-cell *matHeaderCellDef>Role</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.roleID1[0].roleName }}
+              <span *ngFor="let role of (element.allRoles || element.roleID1)" class="role-chip">
+                {{ role.roleName }}
+              </span>
             </td>
           </ng-container>
           <ng-container matColumnDef="Inbound">
@@ -631,7 +678,7 @@
                   *ngFor="let user of userNamesList"
                   [value]="user.userID"
                 >
-                  {{ user.userName }}
+                  {{ (user.firstName || '') + ' ' + (user.lastName || '') }} [{{ user.userName }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -776,33 +823,27 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3">
+          <div class="col-3" *ngIf="editGroupedElement && editServiceName !== 'FLW'">
             <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Work Location</mat-label>
+              <mat-label>Select Role</mat-label>
               <mat-select
                 [style.width]="'100%'"
-                [(ngModel)]="workLocationID_duringEdit"
-                (selectionChange)="
-                  refresh4();
-                  getAllRoles_duringEdit(
-                    serviceID_duringEdit,
-                    providerServiceMapID_duringEdit,
-                    userID_duringEdit
-                  )
-                "
-                name="worklocation"
+                [multiple]="true"
+                [(ngModel)]="roleIDs_duringEdit"
+                name="role"
+                (selectionChange)="onEditRolesChanged(roleIDs_duringEdit)"
                 required
               >
                 <mat-option
-                  *ngFor="let item of workLocationsList"
-                  [value]="item.pSAddMapID"
+                  *ngFor="let item of availableRoles"
+                  [value]="item.roleID"
                 >
-                  {{ item.locationName }}
+                  {{ item.roleName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
           </div>
-          <div class="col-3">
+          <div class="col-3" *ngIf="!editGroupedElement || editServiceName === 'FLW'">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
               <mat-select
@@ -917,8 +958,8 @@
           mat-raised-button
           color="accent"
           class="pull-right mat_green"
-          [disabled]="workplaceeform.invalid"
-          (click)="updateWorkLocation(workplaceeform.value)"
+          [disabled]="workplaceeform.invalid || (isFacilityServicelineEdit && !editFacilityMappingData)"
+          (click)="(editGroupedElement && editServiceName !== 'FLW') ? updateGroupedWorkLocation(workplaceeform.value) : updateWorkLocation(workplaceeform.value)"
         >
           Update
         </button>

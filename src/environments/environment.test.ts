@@ -524,4 +524,5 @@ export const environment = {
   getSupervisorMappingByFacility_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/getByFacility`,
   getFacilityByMappingID_Url: `${adminBaseUrl}userFacilityMapping/getFacilityByMappingID`,
   deleteAshaSupervisorMapping_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/delete`,
+  restoreAshaSupervisorMapping_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/restore`,
 };

@@ -215,4 +215,10 @@ export class FacilityMasterService {
       facilityIDs: facilityIDs,
     });
   }
+
+  restoreAshaSupervisorMapping(ids: number[]) {
+    return this.http.post(environment.restoreAshaSupervisorMapping_Url, {
+      ids: ids,
+    });
+  }
 }

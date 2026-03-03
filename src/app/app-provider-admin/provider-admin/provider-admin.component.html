@@ -5,6 +5,7 @@
       <span class="caret"></span>
     </button>
     <mat-menu #Activities="matMenu">
+      <button mat-menu-item [matMenuTriggerFor]="facilityHierarchyMenu">Facility Hierarchy</button>
       <button mat-menu-item (click)="show('1')">
         Job Location-ServiceLine Mapping Master
       </button>
@@ -177,7 +178,6 @@
       </button>
       <button mat-menu-item (click)="show('38')">Item Master</button>
       <button mat-menu-item (click)="show('39')">Facility Type Master</button>
-      <button mat-menu-item [matMenuTriggerFor]="facilityHierarchyMenu">Facility Hierarchy</button>
       <button mat-menu-item (click)="show('40')">Main Store & Sub Store</button>
       <button mat-menu-item (click)="show('42')">Item To Store Mapping</button>
       <button mat-menu-item (click)="show('51')">
@@ -185,8 +185,8 @@
       </button>
     </mat-menu>
     <mat-menu #facilityHierarchyMenu="matMenu">
-      <button mat-menu-item (click)="show('78')">Master Type Creation</button>
-      <button mat-menu-item (click)="show('79')">Facility Creation</button>
+      <button mat-menu-item (click)="show('78')">Facility Type Master</button>
+      <button mat-menu-item (click)="show('79')">Facility Master</button>
     </mat-menu>
 
     <div

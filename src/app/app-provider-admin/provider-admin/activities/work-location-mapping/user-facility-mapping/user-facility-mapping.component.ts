@@ -23,19 +23,26 @@ import {
   Component,
   OnInit,
   OnChanges,
+  OnDestroy,
   SimpleChanges,
   Input,
   Output,
   EventEmitter,
 } from '@angular/core';
+import { forkJoin, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 
 @Component({
   selector: 'app-user-facility-mapping',
   templateUrl: './user-facility-mapping.component.html',
   styleUrls: ['./user-facility-mapping.component.css'],
 })
-export class UserFacilityMappingComponent implements OnInit, OnChanges {
+export class UserFacilityMappingComponent
+  implements OnInit, OnChanges, OnDestroy
+{
+  private destroy$ = new Subject<void>();
   @Input() blockID: any;
   @Input() stateID: any;
   @Input() providerServiceMapID: any;
@@ -71,7 +78,6 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
   // Village dropdown (multi-select for all roles)
   facilityVillages: any[] = [];
   selectedVillageIDs: number[] = [];
-
   // Display villages: merged facility + orphan villages
   displayVillages: any[] = [];
   orphanVillages: any[] = [];
@@ -82,19 +88,45 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
 
   // Role flags
   isAshaSupervisor = false;
+  isAshaRole = false;
 
   // Edit mode flags
   isEditMode = false;
-  // True when user already has a facilityID → dropdowns disabled
+  // True when user already has a facilityID
   hasExistingFacility = false;
+  // True after initial facility pre-population is complete (guards blockID reset)
+  initialFacilityLoadDone = false;
+  // True after ASHA workers are loaded in edit mode (guards emitData for ASHA Supervisor)
+  ashaWorkersLoaded = false;
+  // True when ASHA Supervisor edit uses direct facility load (bypasses cascade)
+  ashaDirectEditMode = false;
 
   // Facility levels
   facilityLevels: any[] = [];
 
-  constructor(private facilityService: FacilityMasterService) {}
+  // Search terms for dropdown filtering
+  facilityTypeSearch = '';
+  facilitySearch = '';
+  villageSearch = '';
+  ashaSearch = '';
+
+  // Filtered arrays for search
+  filteredFacilities: any[] = [];
+  filteredDisplayVillages: any[] = [];
+  filteredAshaUsers: any[] = [];
+
+  constructor(
+    private facilityService: FacilityMasterService,
+    private alertService: ConfirmationDialogsService,
+  ) {}
 
   ngOnInit() {
     this.loadFacilityLevels();
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   /**
@@ -132,15 +164,26 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
 
     // CASE 1: existingFacilityID just arrived → pre-populate & load villages
     if (this.hasExistingFacility && changes['existingFacilityID']) {
-      this.loadVillagesForEdit();
-      // Don't return — let loadFacilityTypes() run below as a backup
+      if (
+        this.isAshaSupervisor &&
+        this.existingFacilityIDs &&
+        this.existingFacilityIDs.length > 0
+      ) {
+        // ASHA Supervisor: bypass cascade, load facilities directly from block
+        this.loadAshaDirectEdit();
+      } else {
+        this.loadVillagesForEdit();
+      }
     }
 
     // Normal flow: load facility types when stateID changes
     if (changes['stateID'] && this.stateID) {
       this.loadFacilityTypes();
     }
-    if (changes['blockID'] && !this.hasExistingFacility) {
+    if (
+      changes['blockID'] &&
+      (this.initialFacilityLoadDone || !this.hasExistingFacility)
+    ) {
       this.resetFacilitySelection();
     }
   }
@@ -153,27 +196,169 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
    * For FLW/HWC: single facility → load villages from one facility
    */
   loadVillagesForEdit() {
+    // If we have facilityID but missing ruralUrban or facilityTypeID,
+    // look up the facility from block hierarchy + facility types to derive these values.
+    // ruralUrban is a property of the facility TYPE (not the facility itself),
+    // so we need both: getFacilitiesByBlock → facilityTypeID, getFacilityTypesByState → ruralUrban
+    if (
+      this.existingFacilityID &&
+      (!this.existingRuralUrban || !this.existingFacilityTypeID) &&
+      this.blockID
+    ) {
+      const requests: any[] = [
+        this.facilityService.getFacilitiesByBlock(this.blockID),
+      ];
+      // Also fetch facility types if not already loaded (needed to derive ruralUrban)
+      if (this.stateID && this.allFacilityTypes.length === 0) {
+        requests.push(
+          this.facilityService.getFacilityTypesByState(this.stateID),
+        );
+      }
+
+      forkJoin(requests)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe({
+          next: (responses: any[]) => {
+            const facilitiesRes = responses[0];
+            const facilityTypesRes = responses.length > 1 ? responses[1] : null;
+
+            // Load facility types if fetched
+            if (facilityTypesRes && facilityTypesRes.data) {
+              this.allFacilityTypes = facilityTypesRes.data.filter(
+                (ft: any) => !ft.deleted,
+              );
+            }
+
+            if (facilitiesRes && facilitiesRes.data) {
+              const match = facilitiesRes.data.find(
+                (f: any) =>
+                  Number(f.facilityID) === Number(this.existingFacilityID),
+              );
+              if (match) {
+                if (!this.existingFacilityTypeID && match.facilityTypeID) {
+                  this.existingFacilityTypeID = match.facilityTypeID;
+                }
+                if (!this.existingFacilityName && match.facilityName) {
+                  this.existingFacilityName = match.facilityName;
+                }
+                // Derive ruralUrban from the facility type (not from the facility itself)
+                if (!this.existingRuralUrban && this.existingFacilityTypeID) {
+                  const ftMatch = this.allFacilityTypes.find(
+                    (ft: any) =>
+                      Number(ft.facilityTypeID) ===
+                      Number(this.existingFacilityTypeID),
+                  );
+                  if (ftMatch && ftMatch.ruralUrban) {
+                    this.existingRuralUrban = ftMatch.ruralUrban;
+                  }
+                }
+              }
+            }
+            this.proceedWithEditPrePopulation();
+          },
+          error: () => {
+            this.proceedWithEditPrePopulation();
+          },
+        });
+      return;
+    }
+
+    this.proceedWithEditPrePopulation();
+  }
+
+  /**
+   * ASHA Supervisor edit: bypass the Rural/Urban → Facility Type → Facility cascade.
+   * Loads ALL facilities from the block in one API call, pre-selects existing ones,
+   * then loads villages + ASHA workers directly.
+   */
+  private loadAshaDirectEdit() {
+    this.ashaDirectEditMode = true;
+
+    if (!this.blockID) return;
+
+    this.facilityService
+      .getFacilitiesByBlock(this.blockID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.data) {
+            this.facilities = response.data.filter((f: any) => !f.deleted);
+          }
+
+          // Pre-select existing facilities by matching IDs
+          const existingIDs = new Set(
+            this.existingFacilityIDs.map((id: any) => Number(id)),
+          );
+          this.selectedFacilities = this.facilities.filter((f: any) =>
+            existingIDs.has(Number(f.facilityID)),
+          );
+
+          // If some facilityIDs not found in block (edge case), add placeholders
+          for (let i = 0; i < this.existingFacilityIDs.length; i++) {
+            const id = Number(this.existingFacilityIDs[i]);
+            if (
+              !this.facilities.some((f: any) => Number(f.facilityID) === id)
+            ) {
+              const placeholder = {
+                facilityID: id,
+                facilityName:
+                  (this.existingFacilityNames &&
+                    this.existingFacilityNames[i]) ||
+                  'Facility ID ' + id,
+              };
+              this.facilities.push(placeholder);
+              this.selectedFacilities.push(placeholder);
+            }
+          }
+
+          this.facilitySearch = '';
+          this.applyFacilityFilter();
+
+          // Load villages + ASHA workers from selected facilities
+          const selectedIDs = this.selectedFacilities.map(
+            (f: any) => f.facilityID,
+          );
+          if (selectedIDs.length > 0) {
+            this.loadVillagesFromFacilities(selectedIDs);
+            this.loadAshaWorkersAndMappings(selectedIDs);
+          }
+        },
+        error: () => {
+          this.alertService.alert('Failed to load facilities', 'error');
+        },
+      });
+  }
+
+  private proceedWithEditPrePopulation() {
     // Pre-populate Rural/Urban
     if (this.existingRuralUrban) {
       this.selectedRuralUrban = this.existingRuralUrban;
     }
 
-    // Pre-populate Facility Type
+    // Pre-populate Facility Type, then load full facility list so admin can change
     if (this.existingFacilityTypeID) {
       if (this.allFacilityTypes.length > 0) {
         // Facility types already loaded — find the match immediately
         this.setFacilityTypeFromExisting();
+        this.loadFullFacilityListForEdit();
       } else if (this.stateID) {
         // Facility types not loaded yet — fetch them, then set the match
         this.facilityService
           .getFacilityTypesByState(this.stateID)
-          .subscribe((response: any) => {
-            if (response && response.data) {
-              this.allFacilityTypes = response.data.filter(
-                (ft: any) => !ft.deleted,
-              );
-            }
-            this.setFacilityTypeFromExisting();
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (response: any) => {
+              if (response && response.data) {
+                this.allFacilityTypes = response.data.filter(
+                  (ft: any) => !ft.deleted,
+                );
+              }
+              this.setFacilityTypeFromExisting();
+              this.loadFullFacilityListForEdit();
+            },
+            error: () => {
+              this.alertService.alert('Failed to load facility types', 'error');
+            },
           });
       }
     }
@@ -194,79 +379,13 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
         }),
       );
       this.facilities = this.selectedFacilities.slice();
+      this.filteredFacilities = this.facilities.slice();
 
-      // Load villages from ALL facilities
-      const villageMap = new Map<number, any>();
-      let pending = this.existingFacilityIDs.length;
-      for (const fID of this.existingFacilityIDs) {
-        this.facilityService.getVillageMappingsByFacility(fID).subscribe(
-          (response: any) => {
-            if (response && response.data) {
-              for (const v of response.data) {
-                villageMap.set(Number(v.districtBranchID), v);
-              }
-            }
-            pending--;
-            if (pending === 0) {
-              this.facilityVillages = Array.from(villageMap.values());
-              this.buildDisplayVillages();
-            }
-          },
-          () => {
-            pending--;
-            if (pending === 0) {
-              this.facilityVillages = Array.from(villageMap.values());
-              this.buildDisplayVillages();
-            }
-          },
-        );
-      }
+      // Load villages from ALL facilities (parallel via forkJoin)
+      this.loadVillagesFromFacilities(this.existingFacilityIDs);
 
-      // Load ASHA workers + supervisor mappings to filter and pre-select
-      this.facilityService
-        .getAshasByFacility(this.existingFacilityIDs)
-        .subscribe(
-          (response: any) => {
-            const allAshas = response && response.data ? response.data : [];
-
-            // Fetch supervisor mappings for each facility to know assignments
-            let pendingMappings = this.existingFacilityIDs.length;
-            const allSupervisorMappings: any[] = [];
-            for (const fID of this.existingFacilityIDs) {
-              this.facilityService
-                .getSupervisorMappingByFacility(fID)
-                .subscribe(
-                  (mapRes: any) => {
-                    if (mapRes && mapRes.data) {
-                      const mappings = Array.isArray(mapRes.data)
-                        ? mapRes.data
-                        : [mapRes.data];
-                      allSupervisorMappings.push(...mappings);
-                    }
-                    pendingMappings--;
-                    if (pendingMappings === 0) {
-                      this.filterAshaWorkersForEdit(
-                        allAshas,
-                        allSupervisorMappings,
-                      );
-                    }
-                  },
-                  () => {
-                    pendingMappings--;
-                    if (pendingMappings === 0) {
-                      this.filterAshaWorkersForEdit(
-                        allAshas,
-                        allSupervisorMappings,
-                      );
-                    }
-                  },
-                );
-            }
-          },
-          (err: any) => {
-            console.log('Error loading ASHA users for edit', err);
-          },
-        );
+      // Load ASHA workers + supervisor mappings (parallel via forkJoin)
+      this.loadAshaWorkersAndMappings(this.existingFacilityIDs);
     } else {
       // Non-ASHA: single facility
       if (this.existingFacilityID) {
@@ -277,29 +396,67 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
             'Facility ID ' + this.existingFacilityID,
         };
         this.facilities = [this.selectedFacility];
-      }
+        this.filteredFacilities = this.facilities.slice();
 
-      // Load village list from single facility
-      this.facilityService
-        .getVillageMappingsByFacility(this.existingFacilityID)
-        .subscribe(
-          (response: any) => {
-            if (response && response.data) {
-              this.facilityVillages = response.data;
-            }
-            this.buildDisplayVillages();
-          },
-          (err: any) => {
-            console.log('Error loading facility villages for edit', err);
-            this.buildDisplayVillages();
-          },
-        );
+        // Load village list from single facility
+        this.facilityService
+          .getVillageMappingsByFacility(this.existingFacilityID)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe({
+            next: (response: any) => {
+              if (response && response.data) {
+                this.facilityVillages = response.data;
+              }
+              this.buildDisplayVillages();
+            },
+            error: () => {
+              this.alertService.alert(
+                'Failed to load facility villages',
+                'error',
+              );
+              this.buildDisplayVillages();
+            },
+          });
+      } else {
+        // No existing facility (old user) — just build display with existing villages
+        this.buildDisplayVillages();
+      }
     }
+  }
+
+  /**
+   * After pre-population, load the FULL facility list for the selected type/block
+   * so admin can change the facility if needed (not limited to only the existing one).
+   */
+  loadFullFacilityListForEdit() {
+    if (!this.selectedFacilityType || !this.blockID) return;
+    const levelID = this.selectedFacilityType.facilityLevelID;
+    this.facilityService
+      .getFacilitiesByBlockAndLevel(
+        this.blockID,
+        levelID,
+        this.selectedRuralUrban,
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.data) {
+            this.facilities = response.data.filter((f: any) => !f.deleted);
+          }
+          this.facilitySearch = '';
+          this.applyFacilityFilter();
+          this.initialFacilityLoadDone = true;
+        },
+        error: () => {
+          this.alertService.alert('Failed to load facility list', 'error');
+        },
+      });
   }
 
   updateRoleFlags() {
     const role = (this.roleName || '').toLowerCase();
     this.isAshaSupervisor = role === 'asha supervisor';
+    this.isAshaRole = role === 'asha' || role === 'asha supervisor';
   }
 
   setFacilityTypeFromExisting() {
@@ -311,41 +468,55 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
       facilityTypeName: 'Facility Type ID ' + this.existingFacilityTypeID,
       facilityTypeID: existingTypeID,
     };
-    this.filteredFacilityTypes = [this.selectedFacilityType];
+    // Show ALL facility types for the selected Rural/Urban so admin can change
+    this.filterFacilityTypes();
   }
 
   loadFacilityLevels() {
-    this.facilityService.getFacilityLevels().subscribe((response: any) => {
-      if (response && response.data) {
-        this.facilityLevels = response.data;
-      }
-    });
+    this.facilityService
+      .getFacilityLevels()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.data) {
+            this.facilityLevels = response.data;
+          }
+        },
+        error: () => {
+          this.alertService.alert('Failed to load facility levels', 'error');
+        },
+      });
   }
 
   loadFacilityTypes() {
     if (!this.stateID) return;
     this.facilityService
       .getFacilityTypesByState(this.stateID)
-      .subscribe((response: any) => {
-        if (response && response.data) {
-          this.allFacilityTypes = response.data.filter(
-            (ft: any) => !ft.deleted,
-          );
-          // Race condition fix: if loadFacilityTypes() completes AFTER loadVillagesForEdit()
-          // was called, update the placeholder with real facility type data
-          if (this.hasExistingFacility && this.existingFacilityTypeID) {
-            const existingTypeID = Number(this.existingFacilityTypeID);
-            const match = this.allFacilityTypes.find(
-              (ft: any) => Number(ft.facilityTypeID) === existingTypeID,
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.data) {
+            this.allFacilityTypes = response.data.filter(
+              (ft: any) => !ft.deleted,
             );
-            if (match) {
-              this.selectedFacilityType = match;
-              this.filteredFacilityTypes = [match];
+            // Race condition fix: if loadFacilityTypes() completes AFTER loadVillagesForEdit()
+            // was called, update the placeholder with real facility type data
+            if (this.hasExistingFacility && this.existingFacilityTypeID) {
+              const existingTypeID = Number(this.existingFacilityTypeID);
+              const match = this.allFacilityTypes.find(
+                (ft: any) => Number(ft.facilityTypeID) === existingTypeID,
+              );
+              if (match) {
+                this.selectedFacilityType = match;
+              }
             }
-          } else {
+            // Always show all types so admin can change if needed
             this.filterFacilityTypes();
           }
-        }
+        },
+        error: () => {
+          this.alertService.alert('Failed to load facility types', 'error');
+        },
       });
   }
 
@@ -370,6 +541,7 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
     this.orphanVillages = [];
     this.ashaUsers = [];
     this.selectedAshaUserIDs = [];
+    this.ashaWorkersLoaded = false;
     this.filterFacilityTypes();
   }
 
@@ -383,6 +555,7 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
     this.orphanVillages = [];
     this.ashaUsers = [];
     this.selectedAshaUserIDs = [];
+    this.ashaWorkersLoaded = false;
 
     if (!this.selectedFacilityType || !this.blockID) return;
 
@@ -393,10 +566,18 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
         levelID,
         this.selectedRuralUrban,
       )
-      .subscribe((response: any) => {
-        if (response && response.data) {
-          this.facilities = response.data.filter((f: any) => !f.deleted);
-        }
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          if (response && response.data) {
+            this.facilities = response.data.filter((f: any) => !f.deleted);
+          }
+          this.facilitySearch = '';
+          this.applyFacilityFilter();
+        },
+        error: () => {
+          this.alertService.alert('Failed to load facilities', 'error');
+        },
       });
   }
 
@@ -411,18 +592,19 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
 
     this.facilityService
       .getVillageMappingsByFacility(this.selectedFacility.facilityID)
-      .subscribe(
-        (response: any) => {
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
           if (response && response.data) {
             this.facilityVillages = response.data;
           }
           this.buildDisplayVillages();
         },
-        (err: any) => {
-          console.log('Error loading facility villages', err);
+        error: () => {
+          this.alertService.alert('Failed to load facility villages', 'error');
           this.buildDisplayVillages();
         },
-      );
+      });
   }
 
   // Multi-select facilities (ASHA Supervisor role)
@@ -433,96 +615,18 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
     this.orphanVillages = [];
     this.ashaUsers = [];
     this.selectedAshaUserIDs = [];
+    this.ashaWorkersLoaded = false;
 
     if (!this.selectedFacilities || this.selectedFacilities.length === 0)
       return;
 
     const facilityIDs = this.selectedFacilities.map((f: any) => f.facilityID);
 
-    // Load villages from all selected facilities
-    const villageMap = new Map<number, any>();
-    let pending = this.selectedFacilities.length;
-    for (const facility of this.selectedFacilities) {
-      this.facilityService
-        .getVillageMappingsByFacility(facility.facilityID)
-        .subscribe(
-          (response: any) => {
-            if (response && response.data) {
-              for (const v of response.data) {
-                villageMap.set(v.districtBranchID, v);
-              }
-            }
-            pending--;
-            if (pending === 0) {
-              this.facilityVillages = Array.from(villageMap.values());
-              this.buildDisplayVillages();
-            }
-          },
-          () => {
-            pending--;
-            if (pending === 0) {
-              this.facilityVillages = Array.from(villageMap.values());
-              this.buildDisplayVillages();
-            }
-          },
-        );
-    }
+    // Load villages from all selected facilities (parallel via forkJoin)
+    this.loadVillagesFromFacilities(facilityIDs);
 
-    // Load ASHA users + filter based on mode (edit vs create)
-    this.facilityService.getAshasByFacility(facilityIDs).subscribe(
-      (response: any) => {
-        const allAshas = response && response.data ? response.data : [];
-
-        // Fetch supervisor mappings for each facility
-        let pendingMappings = facilityIDs.length;
-        const allSupervisorMappings: any[] = [];
-        for (const fID of facilityIDs) {
-          this.facilityService.getSupervisorMappingByFacility(fID).subscribe(
-            (mapRes: any) => {
-              if (mapRes && mapRes.data) {
-                const mappings = Array.isArray(mapRes.data)
-                  ? mapRes.data
-                  : [mapRes.data];
-                allSupervisorMappings.push(...mappings);
-              }
-              pendingMappings--;
-              if (pendingMappings === 0) {
-                if (this.isEditMode) {
-                  this.filterAshaWorkersForEdit(
-                    allAshas,
-                    allSupervisorMappings,
-                  );
-                } else {
-                  this.filterAshaWorkersForCreate(
-                    allAshas,
-                    allSupervisorMappings,
-                  );
-                }
-              }
-            },
-            () => {
-              pendingMappings--;
-              if (pendingMappings === 0) {
-                if (this.isEditMode) {
-                  this.filterAshaWorkersForEdit(
-                    allAshas,
-                    allSupervisorMappings,
-                  );
-                } else {
-                  this.filterAshaWorkersForCreate(
-                    allAshas,
-                    allSupervisorMappings,
-                  );
-                }
-              }
-            },
-          );
-        }
-      },
-      (err: any) => {
-        console.log('Error loading ASHA users', err);
-      },
-    );
+    // Load ASHA users + filter based on mode (parallel via forkJoin)
+    this.loadAshaWorkersAndMappings(facilityIDs);
   }
 
   /**
@@ -571,21 +675,40 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
       // Merged list: facility villages (BLUE) first, then orphans (RED) at bottom
       this.displayVillages = [...facilityMarked, ...this.orphanVillages];
 
-      // Pre-select ALL of user's existing village IDs:
-      // - Matched villages (in facility) → BLUE checked
-      // - Orphan villages (not in facility) → RED checked
-      this.selectedVillageIDs = userVillageIDs.slice();
+      // Default: auto-select ALL display villages (for read-only chips)
+      this.selectedVillageIDs = this.displayVillages.map(
+        (v: any) => v.districtBranchID,
+      );
     } else {
       // Create mode OR edit mode with no existing villages:
-      // just show facility villages, all unchecked
+      // show facility villages
       this.displayVillages = this.facilityVillages.map((v: any) => ({
         ...v,
         districtBranchID: Number(v.districtBranchID),
         isOrphan: false,
       }));
-      this.selectedVillageIDs = [];
+      // Default: auto-select all (for read-only chips)
+      this.selectedVillageIDs = this.displayVillages.map(
+        (v: any) => v.districtBranchID,
+      );
     }
 
+    // ASHA (not supervisor) sees a selectable dropdown — override selection logic
+    // Edit: pre-select only user's existing villages (includes orphans), not all facility villages
+    // Create: empty, user picks
+    if (this.isAshaRole && !this.isAshaSupervisor) {
+      if (this.isEditMode && userVillageIDs.length > 0) {
+        const userSet = new Set(userVillageIDs);
+        this.selectedVillageIDs = this.displayVillages
+          .filter((v: any) => userSet.has(v.districtBranchID))
+          .map((v: any) => v.districtBranchID);
+      } else {
+        this.selectedVillageIDs = [];
+      }
+    }
+
+    this.villageSearch = '';
+    this.applyVillageFilter();
     this.emitData();
   }
 
@@ -598,6 +721,12 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
   }
 
   emitData() {
+    // For ASHA Supervisor in edit mode, wait until ASHA workers are loaded
+    // so the parent doesn't receive incomplete data before workers finish loading
+    if (this.isAshaSupervisor && this.isEditMode && !this.ashaWorkersLoaded) {
+      return;
+    }
+
     const allVillages =
       this.displayVillages.length > 0
         ? this.displayVillages
@@ -664,47 +793,175 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
       }));
 
     this.selectedAshaUserIDs = [];
+    this.ashaSearch = '';
+    this.applyAshaFilter();
   }
 
   /**
    * Filter ASHA workers for edit mode:
-   * - Workers assigned to THIS supervisor → show & pre-check
+   * - Workers assigned to THIS supervisor & still at facility → show (checked, normal)
+   * - Workers assigned to THIS supervisor but moved away → show (checked, RED)
    * - Workers assigned to ANOTHER supervisor → hide (don't show)
-   * - Workers not assigned to any supervisor → show & unchecked
+   * - Workers not assigned to any supervisor → show (unchecked)
    */
   filterAshaWorkersForEdit(allAshas: any[], supervisorMappings: any[]) {
-    // Normalize to Number to avoid type mismatch (string vs number)
     const currentSupervisorID = Number(this.supervisorUserID);
 
-    // Build set of ASHA userIDs assigned to THIS supervisor
+    // ASHA userIDs assigned to THIS supervisor
+    const thisSupervisorMappings = supervisorMappings.filter(
+      (m: any) => Number(m.supervisorUserID) === currentSupervisorID,
+    );
     const thisSupervisorAshaIDs = new Set(
-      supervisorMappings
-        .filter((m: any) => Number(m.supervisorUserID) === currentSupervisorID)
-        .map((m: any) => Number(m.ashaUserID)),
+      thisSupervisorMappings.map((m: any) => Number(m.ashaUserID)),
     );
 
-    // Build set of ASHA userIDs assigned to ANY other supervisor
+    // ASHA userIDs assigned to OTHER supervisors
     const otherSupervisorAshaIDs = new Set(
       supervisorMappings
         .filter((m: any) => Number(m.supervisorUserID) !== currentSupervisorID)
         .map((m: any) => Number(m.ashaUserID)),
     );
 
-    // Filter: show only workers assigned to this supervisor OR unassigned
-    this.ashaUsers = allAshas
+    // Set of ASHA userIDs currently at the facility
+    const facilityAshaIDs = new Set(allAshas.map((u: any) => Number(u.userID)));
+
+    // Workers currently at facility: show if not assigned to another supervisor
+    const visibleWorkers = allAshas
       .filter((u: any) => !otherSupervisorAshaIDs.has(Number(u.userID)))
       .map((u: any) => ({
         ...u,
         facilityID: u.facilityID,
         facilityName: this.getFacilityNameByID(u.facilityID),
+        movedAway: false,
       }));
 
-    // Pre-select workers already assigned to this supervisor
-    this.selectedAshaUserIDs = allAshas
-      .filter((u: any) => thisSupervisorAshaIDs.has(Number(u.userID)))
-      .map((u: any) => u.userID);
+    // Workers assigned to THIS supervisor but no longer at the facility (moved away)
+    const movedAwayWorkers = thisSupervisorMappings
+      .filter((m: any) => !facilityAshaIDs.has(Number(m.ashaUserID)))
+      .map((m: any) => ({
+        userID: m.ashaUserID,
+        EmployeeName:
+          m.ashaEmployeeName || m.ashaName || 'ASHA ' + m.ashaUserID,
+        facilityID: m.facilityID,
+        facilityName: '',
+        movedAway: true,
+      }));
 
+    this.ashaUsers = [...visibleWorkers, ...movedAwayWorkers];
+
+    // Pre-select ALL workers assigned to this supervisor (including moved-away)
+    this.selectedAshaUserIDs = [...thisSupervisorAshaIDs]
+      .filter((id) => this.ashaUsers.some((u: any) => Number(u.userID) === id))
+      .map((id) => {
+        const user = this.ashaUsers.find((u: any) => Number(u.userID) === id);
+        return user ? user.userID : id;
+      });
+
+    this.ashaWorkersLoaded = true;
+    this.ashaSearch = '';
+    this.applyAshaFilter();
     this.emitData();
+  }
+
+  /**
+   * Shared: Load villages from multiple facilities in parallel using forkJoin.
+   * Deduplicates by districtBranchID, then calls buildDisplayVillages().
+   */
+  private loadVillagesFromFacilities(facilityIDs: number[]) {
+    if (!facilityIDs || facilityIDs.length === 0) {
+      this.facilityVillages = [];
+      this.buildDisplayVillages();
+      return;
+    }
+
+    const requests = facilityIDs.map((fID) =>
+      this.facilityService.getVillageMappingsByFacility(fID),
+    );
+
+    forkJoin(requests)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (responses: any[]) => {
+          const villageMap = new Map<number, any>();
+          for (const response of responses) {
+            if (response && response.data) {
+              for (const v of response.data) {
+                villageMap.set(Number(v.districtBranchID), v);
+              }
+            }
+          }
+          this.facilityVillages = Array.from(villageMap.values());
+          this.buildDisplayVillages();
+        },
+        error: () => {
+          this.alertService.alert('Failed to load village mappings', 'error');
+          this.facilityVillages = [];
+          this.buildDisplayVillages();
+        },
+      });
+  }
+
+  /**
+   * Shared: Load ASHA workers + supervisor mappings from facilities in parallel.
+   * Gets all ASHAs via batch API, then fetches supervisor mappings per facility using forkJoin.
+   * Calls filterAshaWorkersForEdit() or filterAshaWorkersForCreate() based on mode.
+   */
+  private loadAshaWorkersAndMappings(facilityIDs: number[]) {
+    if (!facilityIDs || facilityIDs.length === 0) return;
+
+    this.facilityService
+      .getAshasByFacility(facilityIDs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          const allAshas = response && response.data ? response.data : [];
+
+          const mappingRequests = facilityIDs.map((fID) =>
+            this.facilityService.getSupervisorMappingByFacility(fID),
+          );
+
+          forkJoin(mappingRequests)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: (mappingResponses: any[]) => {
+                const allSupervisorMappings: any[] = [];
+                for (const mapRes of mappingResponses) {
+                  if (mapRes && mapRes.data) {
+                    const mappings = Array.isArray(mapRes.data)
+                      ? mapRes.data
+                      : [mapRes.data];
+                    allSupervisorMappings.push(...mappings);
+                  }
+                }
+                if (this.isEditMode) {
+                  this.filterAshaWorkersForEdit(
+                    allAshas,
+                    allSupervisorMappings,
+                  );
+                } else {
+                  this.filterAshaWorkersForCreate(
+                    allAshas,
+                    allSupervisorMappings,
+                  );
+                }
+              },
+              error: () => {
+                this.alertService.alert(
+                  'Failed to load supervisor mappings',
+                  'error',
+                );
+                if (this.isEditMode) {
+                  this.filterAshaWorkersForEdit(allAshas, []);
+                } else {
+                  this.filterAshaWorkersForCreate(allAshas, []);
+                }
+              },
+            });
+        },
+        error: () => {
+          this.alertService.alert('Failed to load ASHA workers', 'error');
+        },
+      });
   }
 
   getFacilityNameByID(facilityID: any): string {
@@ -736,5 +993,167 @@ export class UserFacilityMappingComponent implements OnInit, OnChanges {
     this.orphanVillages = [];
     this.ashaUsers = [];
     this.selectedAshaUserIDs = [];
+    this.ashaWorkersLoaded = false;
+    this.ashaDirectEditMode = false;
+    this.clearAllSearches();
+  }
+
+  // --- Search filter methods ---
+
+  clearAllSearches() {
+    this.facilityTypeSearch = '';
+    this.facilitySearch = '';
+    this.villageSearch = '';
+    this.ashaSearch = '';
+    this.filteredFacilities = [];
+    this.filteredDisplayVillages = [];
+    this.filteredAshaUsers = [];
+  }
+
+  filterFacilityTypeOptions(term: string) {
+    this.facilityTypeSearch = term;
+  }
+
+  getFilteredFacilityTypes(): any[] {
+    if (!this.facilityTypeSearch) return this.filteredFacilityTypes;
+    const s = this.facilityTypeSearch.toLowerCase();
+    return this.filteredFacilityTypes.filter((ft: any) =>
+      (ft.facilityTypeName || '').toLowerCase().includes(s),
+    );
+  }
+
+  filterFacilityOptions(term: string) {
+    this.facilitySearch = term;
+    this.applyFacilityFilter();
+  }
+
+  applyFacilityFilter() {
+    if (!this.facilitySearch) {
+      this.filteredFacilities = this.facilities.slice();
+    } else {
+      const s = this.facilitySearch.toLowerCase();
+      this.filteredFacilities = this.facilities.filter((f: any) =>
+        (f.facilityName || '').toLowerCase().includes(s),
+      );
+    }
+  }
+
+  filterVillageOptions(term: string) {
+    this.villageSearch = term;
+    this.applyVillageFilter();
+  }
+
+  applyVillageFilter(searchValue?: string) {
+    if (searchValue !== undefined) {
+      this.villageSearch = searchValue;
+    }
+    if (!this.villageSearch) {
+      this.filteredDisplayVillages = this.displayVillages.slice();
+    } else {
+      const s = this.villageSearch.toLowerCase();
+      this.filteredDisplayVillages = this.displayVillages.filter((v: any) =>
+        (v.villageName || '').toLowerCase().includes(s),
+      );
+    }
+  }
+
+  filterAshaOptions(term: string) {
+    this.ashaSearch = term;
+    this.applyAshaFilter();
+  }
+
+  applyAshaFilter() {
+    if (!this.ashaSearch) {
+      this.filteredAshaUsers = this.ashaUsers.slice();
+    } else {
+      const s = this.ashaSearch.toLowerCase();
+      this.filteredAshaUsers = this.ashaUsers.filter((u: any) => {
+        const name =
+          u.EmployeeName ||
+          (u.employeeMaster?.firstName || '') +
+            ' ' +
+            (u.employeeMaster?.lastName || '');
+        const facility = u.facilityName || '';
+        return (
+          name.toLowerCase().includes(s) || facility.toLowerCase().includes(s)
+        );
+      });
+    }
+  }
+
+  // --- Select All / Deselect All toggle methods ---
+
+  get allFacilitiesSelected(): boolean {
+    return (
+      this.filteredFacilities.length > 0 &&
+      this.selectedFacilities.length === this.filteredFacilities.length
+    );
+  }
+
+  toggleSelectAllFacilities() {
+    if (this.allFacilitiesSelected) {
+      this.selectedFacilities = [];
+    } else {
+      this.selectedFacilities = this.filteredFacilities.slice();
+    }
+    this.onFacilitiesSelected();
+  }
+
+  get allVillagesSelected(): boolean {
+    if (this.filteredDisplayVillages.length === 0) return false;
+    const filteredIDs = new Set(
+      this.filteredDisplayVillages.map((v: any) => v.districtBranchID),
+    );
+    return [...filteredIDs].every((id) => this.selectedVillageIDs.includes(id));
+  }
+
+  toggleSelectAllVillages() {
+    const filteredIDs = this.filteredDisplayVillages.map(
+      (v: any) => v.districtBranchID,
+    );
+    if (this.allVillagesSelected) {
+      // Deselect only the filtered/visible villages
+      const removeSet = new Set(filteredIDs);
+      this.selectedVillageIDs = this.selectedVillageIDs.filter(
+        (id) => !removeSet.has(id),
+      );
+    } else {
+      // Add all filtered villages to selection (keep existing selections)
+      const existing = new Set(this.selectedVillageIDs);
+      for (const id of filteredIDs) {
+        if (!existing.has(id)) {
+          this.selectedVillageIDs.push(id);
+        }
+      }
+    }
+    this.onVillageSelectionChange();
+  }
+
+  get allAshaSelected(): boolean {
+    if (this.filteredAshaUsers.length === 0) return false;
+    const filteredIDs = new Set(
+      this.filteredAshaUsers.map((u: any) => u.userID),
+    );
+    return [...filteredIDs].every((id) =>
+      this.selectedAshaUserIDs.includes(id),
+    );
+  }
+
+  toggleSelectAllAsha() {
+    const filteredIDs = this.filteredAshaUsers.map((u: any) => u.userID);
+    if (this.allAshaSelected) {
+      const removeSet = new Set(filteredIDs);
+      this.selectedAshaUserIDs = this.selectedAshaUserIDs.filter(
+        (id) => !removeSet.has(id),
+      );
+    } else {
+      const existing = new Set(this.selectedAshaUserIDs);
+      for (const id of filteredIDs) {
+        if (!existing.has(id)) {
+          this.selectedAshaUserIDs.push(id);
+        }
+      }
+    }
+    this.onAshaSelectionChange();
   }
 }
