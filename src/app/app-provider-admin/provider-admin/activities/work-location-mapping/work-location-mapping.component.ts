@@ -3583,12 +3583,23 @@ export class WorkLocationMappingComponent
     return '';
   }
 
+  noAshaWorkersCreate = false;
+  noAshaWorkersEdit = false;
+
   onFacilityMappingDataReceived(data: any) {
     this.currentFacilityMappingData = data;
   }
 
   onEditFacilityMappingDataReceived(data: any) {
     this.editFacilityMappingData = data;
+  }
+
+  onNoAshaWorkersCreate(flag: boolean) {
+    this.noAshaWorkersCreate = flag;
+  }
+
+  onNoAshaWorkersEdit(flag: boolean) {
+    this.noAshaWorkersEdit = flag;
   }
 
   // ── Grouped row helpers ──

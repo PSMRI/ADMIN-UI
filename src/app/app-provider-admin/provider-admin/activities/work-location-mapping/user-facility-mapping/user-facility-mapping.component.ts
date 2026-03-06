@@ -59,6 +59,7 @@ export class UserFacilityMappingComponent
   @Input() supervisorUserID: any;
 
   @Output() facilityMappingData = new EventEmitter<any>();
+  @Output() noAshaWorkersFlag = new EventEmitter<boolean>();
 
   // Rural/Urban dropdown
   selectedRuralUrban = '';
@@ -100,6 +101,8 @@ export class UserFacilityMappingComponent
   ashaWorkersLoaded = false;
   // True when ASHA Supervisor edit uses direct facility load (bypasses cascade)
   ashaDirectEditMode = false;
+  // True when ASHA workers API returned but no workers available
+  noAshaWorkers = false;
 
   // Facility levels
   facilityLevels: any[] = [];
@@ -430,11 +433,11 @@ export class UserFacilityMappingComponent
    */
   loadFullFacilityListForEdit() {
     if (!this.selectedFacilityType || !this.blockID) return;
-    const levelID = this.selectedFacilityType.facilityLevelID;
+    const levelVal = this.selectedFacilityType.levelValue;
     this.facilityService
       .getFacilitiesByBlockAndLevel(
         this.blockID,
-        levelID,
+        levelVal,
         this.selectedRuralUrban,
       )
       .pipe(takeUntil(this.destroy$))
@@ -481,6 +484,7 @@ export class UserFacilityMappingComponent
           if (response && response.data) {
             this.facilityLevels = response.data;
           }
+          this.filterFacilityTypes();
         },
         error: () => {
           this.alertService.alert('Failed to load facility levels', 'error');
@@ -521,13 +525,20 @@ export class UserFacilityMappingComponent
   }
 
   filterFacilityTypes() {
+    let filtered = this.allFacilityTypes;
     if (this.selectedRuralUrban) {
-      this.filteredFacilityTypes = this.allFacilityTypes.filter(
+      filtered = filtered.filter(
         (ft: any) => ft.ruralUrban === this.selectedRuralUrban,
       );
-    } else {
-      this.filteredFacilityTypes = this.allFacilityTypes;
     }
+    // ASHA / ASHA Supervisor: show only lowest level (Sub-Center) facility types
+    if (this.isAshaRole && this.facilityLevels.length > 0) {
+      const maxLevelValue = Math.max(
+        ...this.facilityLevels.map((l: any) => l.levelValue),
+      );
+      filtered = filtered.filter((ft: any) => ft.levelValue === maxLevelValue);
+    }
+    this.filteredFacilityTypes = filtered;
   }
 
   onRuralUrbanChange() {
@@ -559,11 +570,11 @@ export class UserFacilityMappingComponent
 
     if (!this.selectedFacilityType || !this.blockID) return;
 
-    const levelID = this.selectedFacilityType.facilityLevelID;
+    const levelVal = this.selectedFacilityType.levelValue;
     this.facilityService
       .getFacilitiesByBlockAndLevel(
         this.blockID,
-        levelID,
+        levelVal,
         this.selectedRuralUrban,
       )
       .pipe(takeUntil(this.destroy$))
@@ -616,6 +627,8 @@ export class UserFacilityMappingComponent
     this.ashaUsers = [];
     this.selectedAshaUserIDs = [];
     this.ashaWorkersLoaded = false;
+    this.noAshaWorkers = false;
+    this.noAshaWorkersFlag.emit(false);
 
     if (!this.selectedFacilities || this.selectedFacilities.length === 0)
       return;
@@ -795,6 +808,8 @@ export class UserFacilityMappingComponent
     this.selectedAshaUserIDs = [];
     this.ashaSearch = '';
     this.applyAshaFilter();
+    this.noAshaWorkers = this.ashaUsers.length === 0;
+    this.noAshaWorkersFlag.emit(this.noAshaWorkers);
   }
 
   /**
@@ -860,6 +875,8 @@ export class UserFacilityMappingComponent
     this.ashaWorkersLoaded = true;
     this.ashaSearch = '';
     this.applyAshaFilter();
+    this.noAshaWorkers = this.ashaUsers.length === 0;
+    this.noAshaWorkersFlag.emit(this.noAshaWorkers);
     this.emitData();
   }
 
@@ -995,6 +1012,8 @@ export class UserFacilityMappingComponent
     this.selectedAshaUserIDs = [];
     this.ashaWorkersLoaded = false;
     this.ashaDirectEditMode = false;
+    this.noAshaWorkers = false;
+    this.noAshaWorkersFlag.emit(false);
     this.clearAllSearches();
   }
 

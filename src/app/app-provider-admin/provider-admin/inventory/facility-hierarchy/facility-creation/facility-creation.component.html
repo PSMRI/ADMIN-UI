@@ -212,7 +212,37 @@
         class="row"
         style="width: 100%; margin-left: 0px"
       >
-        <!-- Row 1: Rural/Urban, Facility Type -->
+        <!-- Row 1: District (disabled), Taluk (disabled), Rural/Urban, Facility Type -->
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>District</mat-label>
+            <mat-select
+              required
+              name="formDistrict"
+              [(ngModel)]="district"
+              [disabled]="true"
+            >
+              <mat-option *ngFor="let item of districts_array" [value]="item">
+                {{ item.districtName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Taluk</mat-label>
+            <mat-select
+              required
+              name="formTaluk"
+              [(ngModel)]="taluk"
+              [disabled]="true"
+            >
+              <mat-option *ngFor="let item of taluks_array" [value]="item">
+                {{ item.blockName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Rural / Urban</mat-label>
@@ -249,37 +279,7 @@
           </mat-form-field>
         </div>
 
-        <!-- Row 2: District (disabled), Taluk (disabled), Facility Name -->
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'" class="hide_underline">
-            <mat-label>District</mat-label>
-            <mat-select
-              required
-              name="formDistrict"
-              [(ngModel)]="district"
-              [disabled]="true"
-            >
-              <mat-option *ngFor="let item of districts_array" [value]="item">
-                {{ item.districtName }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'" class="hide_underline">
-            <mat-label>Taluk</mat-label>
-            <mat-select
-              required
-              name="formTaluk"
-              [(ngModel)]="taluk"
-              [disabled]="true"
-            >
-              <mat-option *ngFor="let item of taluks_array" [value]="item">
-                {{ item.blockName }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
+        <!-- Row 2: Facility Name, Govt Code -->
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Facility Name</mat-label>
@@ -290,6 +290,8 @@
               maxlength="100"
               name="facilityName"
               #facilityNameField="ngModel"
+              [disabled]="!facilityTypeID"
+              (input)="checkDuplicateFacilityName()"
             />
             <mat-hint>
               <span
@@ -299,6 +301,11 @@
                   (facilityNameField.dirty || facilityNameField.touched)
                 "
                 >Facility Name is required</span
+              >
+              <span
+                class="error_text"
+                *ngIf="duplicateFacilityName"
+                >Facility Name already exists in this Taluk</span
               >
             </mat-hint>
           </mat-form-field>
@@ -311,12 +318,13 @@
               [(ngModel)]="facilityCode"
               maxlength="50"
               name="facilityCode"
+              [disabled]="!facilityName"
             />
           </mat-form-field>
         </div>
 
-        <!-- Dynamic: Villages multi-select (for Level 1 / SC) -->
-        <div class="col-6" *ngIf="selectedLevel?.levelValue === 1">
+        <!-- Dynamic: Villages multi-select (for lowest level / SC) -->
+        <div class="col-6" *ngIf="selectedLevel && isLowestLevel(selectedLevel.levelValue)">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Select Villages</mat-label>
             <mat-select
@@ -325,9 +333,31 @@
               name="selectedVillages"
               [(ngModel)]="selectedVillages"
               #villagesField="ngModel"
+              (selectionChange)="onVillageSelectionChange()"
             >
+              <div class="select-search-box">
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyVillageFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="villageSearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allVillagesSelected"
+                  (change)="toggleSelectAllVillages()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
               <mat-option
-                *ngFor="let v of villages_array"
+                *ngFor="let v of filteredVillages"
                 [value]="v"
               >
                 {{ v.villageName }}
@@ -336,10 +366,32 @@
           </mat-form-field>
         </div>
 
-        <!-- Dynamic: Child Facilities multi-select (for Level 2+ / PHC, CHC, etc.) -->
-        <div class="col-6" *ngIf="selectedLevel?.levelValue > 1">
+        <!-- Main Village (single-select from selected villages, for lowest level / SC) -->
+        <div class="col-3" *ngIf="selectedLevel && isLowestLevel(selectedLevel.levelValue) && selectedVillages.length > 0">
           <mat-form-field [style.width]="'100%'">
-            <mat-label>Select {{ getLowerLevelName() }}</mat-label>
+            <mat-label>Main Village (SC Location)</mat-label>
+            <mat-select
+              required
+              name="mainVillageID"
+              [(ngModel)]="mainVillageID"
+              #mainVillageField="ngModel"
+            >
+              <mat-option *ngFor="let v of selectedVillages" [value]="v.districtBranchID">
+                {{ v.villageName }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>
+              <span class="error_text" *ngIf="!mainVillageField.valid && (mainVillageField.dirty || mainVillageField.touched)">
+                Main village is required
+              </span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <!-- Dynamic: Child Facilities multi-select (for non-lowest levels / PHC, CHC, etc.) -->
+        <div class="col-6" *ngIf="selectedLevel && !isLowestLevel(selectedLevel.levelValue)">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Select {{ getChildLevelName() }}</mat-label>
             <mat-select
               multiple
               required
@@ -347,8 +399,29 @@
               [(ngModel)]="selectedChildFacilities"
               #childFacilitiesField="ngModel"
             >
+              <div class="select-search-box">
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyChildFacilityFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="childFacilitySearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allChildFacilitiesSelected"
+                  (change)="toggleSelectAllChildFacilities()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
               <mat-option
-                *ngFor="let c of childFacilities_array"
+                *ngFor="let c of filteredChildFacilities"
                 [value]="c"
               >
                 {{ c.facilityName }}
@@ -372,7 +445,7 @@
         mat-raised-button
         color="accent"
         class="pull-right mat_green"
-        [disabled]="facilityAddForm.invalid"
+        [disabled]="facilityAddForm.invalid || duplicateFacilityName"
         (click)="saveSingleFacility()"
       >
         Save
@@ -395,7 +468,35 @@
         class="row"
         style="width: 100%; margin-left: 0px"
       >
-        <!-- Row 1: Rural/Urban (editable), Facility Type (editable) -->
+        <!-- Row 1: District (disabled), Taluk (disabled), Rural/Urban, Facility Type -->
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>District</mat-label>
+            <mat-select
+              name="editFormDistrict"
+              [(ngModel)]="district"
+              [disabled]="true"
+            >
+              <mat-option *ngFor="let item of districts_array" [value]="item">
+                {{ item.districtName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Taluk</mat-label>
+            <mat-select
+              name="editFormTaluk"
+              [(ngModel)]="taluk"
+              [disabled]="true"
+            >
+              <mat-option *ngFor="let item of taluks_array" [value]="item">
+                {{ item.blockName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Rural / Urban</mat-label>
@@ -430,37 +531,7 @@
           </mat-form-field>
         </div>
 
-        <!-- Row 2: District (disabled), Taluk (disabled) -->
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'" class="hide_underline">
-            <mat-label>District</mat-label>
-            <mat-select
-              name="editFormDistrict"
-              [(ngModel)]="district"
-              [disabled]="true"
-            >
-              <mat-option *ngFor="let item of districts_array" [value]="item">
-                {{ item.districtName }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'" class="hide_underline">
-            <mat-label>Taluk</mat-label>
-            <mat-select
-              name="editFormTaluk"
-              [(ngModel)]="taluk"
-              [disabled]="true"
-            >
-              <mat-option *ngFor="let item of taluks_array" [value]="item">
-                {{ item.blockName }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-
-        <!-- Row 3: Facility Name (editable), Description (editable) -->
+        <!-- Row 2: Facility Name, Govt Code -->
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Facility Name</mat-label>
@@ -471,6 +542,7 @@
               [(ngModel)]="edit_facilityName"
               name="edit_facilityName"
               #editFacilityNameField="ngModel"
+              (input)="checkEditDuplicateFacilityName()"
             />
             <mat-hint>
               <span
@@ -481,18 +553,12 @@
                 "
                 >Facility Name is required</span
               >
+              <span
+                class="error_text"
+                *ngIf="edit_duplicateFacilityName"
+                >Facility Name already exists in this Taluk</span
+              >
             </mat-hint>
-          </mat-form-field>
-        </div>
-        <div class="col-3">
-          <mat-form-field [style.width]="'100%'">
-            <mat-label>Description</mat-label>
-            <input
-              matInput
-              maxlength="100"
-              [(ngModel)]="edit_facilityDesc"
-              name="edit_facilityDesc"
-            />
           </mat-form-field>
         </div>
         <div class="col-3">
@@ -507,8 +573,8 @@
           </mat-form-field>
         </div>
 
-        <!-- Dynamic: Villages multi-select (for Level 1 / SC) -->
-        <div class="col-6" *ngIf="edit_selectedLevel?.levelValue === 1">
+        <!-- Dynamic: Villages multi-select (for lowest level / SC) -->
+        <div class="col-6" *ngIf="edit_selectedLevel && isLowestLevel(edit_selectedLevel.levelValue)">
           <mat-form-field [style.width]="'100%'">
             <mat-label>Select Villages</mat-label>
             <mat-select
@@ -518,9 +584,31 @@
               [(ngModel)]="edit_selectedVillages"
               #editVillagesField="ngModel"
               [compareWith]="compareVillages"
+              (selectionChange)="onEditVillageSelectionChange()"
             >
+              <div class="select-search-box">
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyEditVillageFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="edit_villageSearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allEditVillagesSelected"
+                  (change)="toggleSelectAllEditVillages()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
               <mat-option
-                *ngFor="let v of edit_villages_array"
+                *ngFor="let v of edit_filteredVillages"
                 [value]="v"
               >
                 {{ v.villageName }}
@@ -529,10 +617,32 @@
           </mat-form-field>
         </div>
 
-        <!-- Dynamic: Child Facilities multi-select (for Level 2+ / PHC, CHC, etc.) -->
-        <div class="col-6" *ngIf="edit_selectedLevel?.levelValue > 1">
+        <!-- Main Village (single-select from selected villages, for lowest level / SC) -->
+        <div class="col-3" *ngIf="edit_selectedLevel && isLowestLevel(edit_selectedLevel.levelValue) && edit_selectedVillages.length > 0">
           <mat-form-field [style.width]="'100%'">
-            <mat-label>Select {{ getEditLowerLevelName() }}</mat-label>
+            <mat-label>Main Village (SC Location)</mat-label>
+            <mat-select
+              required
+              name="edit_mainVillageID"
+              [(ngModel)]="edit_mainVillageID"
+              #editMainVillageField="ngModel"
+            >
+              <mat-option *ngFor="let v of edit_selectedVillages" [value]="v.districtBranchID">
+                {{ v.villageName }}
+              </mat-option>
+            </mat-select>
+            <mat-hint>
+              <span class="error_text" *ngIf="!editMainVillageField.valid && (editMainVillageField.dirty || editMainVillageField.touched)">
+                Main village is required
+              </span>
+            </mat-hint>
+          </mat-form-field>
+        </div>
+
+        <!-- Dynamic: Child Facilities multi-select (for non-lowest levels / PHC, CHC, etc.) -->
+        <div class="col-6" *ngIf="edit_selectedLevel && !isLowestLevel(edit_selectedLevel.levelValue)">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Select {{ getEditChildLevelName() }}</mat-label>
             <mat-select
               multiple
               required
@@ -541,8 +651,29 @@
               #editChildFacilitiesField="ngModel"
               [compareWith]="compareFacilities"
             >
+              <div class="select-search-box">
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyEditChildFacilityFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="edit_childFacilitySearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allEditChildFacilitiesSelected"
+                  (change)="toggleSelectAllEditChildFacilities()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
               <mat-option
-                *ngFor="let c of edit_childFacilities_array"
+                *ngFor="let c of edit_filteredChildFacilities"
                 [value]="c"
               >
                 {{ c.facilityName }}
@@ -566,7 +697,7 @@
         mat-raised-button
         color="accent"
         class="pull-right mat_green"
-        [disabled]="facilityEditForm.invalid"
+        [disabled]="facilityEditForm.invalid || edit_duplicateFacilityName"
         (click)="updateFacility()"
       >
         Update

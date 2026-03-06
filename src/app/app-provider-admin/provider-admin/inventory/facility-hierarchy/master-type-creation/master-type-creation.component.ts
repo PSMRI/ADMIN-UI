@@ -60,12 +60,12 @@ export class MasterTypeCreationComponent implements OnInit {
   facilityTypeName: any;
   facilityTypeDesc: any;
   ruralUrban: any;
-  facilityLevelID: any;
+  levelValue: any;
   facilityTypeID: any;
   edit_facilityTypeName: any;
   edit_facilityTypeDesc: any;
   edit_ruralUrban: any;
-  edit_facilityLevelID: any;
+  edit_levelValue: any;
   createdBy: any;
   uid: any;
 
@@ -134,9 +134,9 @@ export class MasterTypeCreationComponent implements OnInit {
       });
   }
 
-  getLevelName(facilityLevelID: number): string {
+  getLevelName(levelValue: number): string {
     const level = this.facilityLevels_array.find(
-      (l: any) => l.facilityLevelID === facilityLevelID,
+      (l: any) => l.levelValue === levelValue,
     );
     return level ? `${level.levelName} [${level.levelValue}]` : '';
   }
@@ -188,12 +188,12 @@ export class MasterTypeCreationComponent implements OnInit {
   }
 
   add2bufferArray() {
-    const levelName = this.getLevelName(this.facilityLevelID);
+    const levelName = this.getLevelName(this.levelValue);
     const obj: any = {
       facilityTypeName: this.facilityTypeName,
       facilityTypeDesc: this.facilityTypeDesc,
       ruralUrban: this.ruralUrban,
-      facilityLevelID: this.facilityLevelID,
+      levelValue: this.levelValue,
       levelName: levelName,
       stateID: this.state?.stateID,
       createdBy: this.createdBy,
@@ -266,7 +266,7 @@ export class MasterTypeCreationComponent implements OnInit {
     this.edit_facilityTypeName = item.facilityTypeName;
     this.edit_facilityTypeDesc = item.facilityTypeDesc;
     this.edit_ruralUrban = item.ruralUrban || '';
-    this.edit_facilityLevelID = item.facilityLevelID || null;
+    this.edit_levelValue = item.levelValue || null;
     this.showEditForm();
   }
 
@@ -275,7 +275,7 @@ export class MasterTypeCreationComponent implements OnInit {
       facilityTypeID: this.facilityTypeID,
       facilityTypeName: this.edit_facilityTypeName,
       ruralUrban: this.edit_ruralUrban,
-      facilityLevelID: this.edit_facilityLevelID,
+      levelValue: this.edit_levelValue,
       modifiedBy: this.createdBy,
     };
     this.facility.updateFacility(editObj).subscribe(
@@ -350,10 +350,10 @@ export class MasterTypeCreationComponent implements OnInit {
     this.facilityTypeName = undefined;
     this.facilityTypeDesc = undefined;
     this.ruralUrban = undefined;
-    this.facilityLevelID = undefined;
+    this.levelValue = undefined;
     this.edit_facilityTypeName = undefined;
     this.edit_facilityTypeDesc = undefined;
     this.edit_ruralUrban = undefined;
-    this.edit_facilityLevelID = undefined;
+    this.edit_levelValue = undefined;
   }
 }

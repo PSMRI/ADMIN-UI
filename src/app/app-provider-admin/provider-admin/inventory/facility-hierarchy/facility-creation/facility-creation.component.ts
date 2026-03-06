@@ -63,6 +63,7 @@ export class FacilityCreationComponent implements OnInit {
   edit_selectedLevel: any = null;
   edit_villages_array: any = [];
   edit_selectedVillages: any = [];
+  edit_mainVillageID: number | null = null;
   edit_childFacilities_array: any = [];
   edit_selectedChildFacilities: any = [];
   createdBy: any;
@@ -80,12 +81,25 @@ export class FacilityCreationComponent implements OnInit {
   facilityLevels_array: any = [];
   facilityMasterList: any = [];
   create_filterTerm!: string;
+  duplicateFacilityName = false;
+  edit_duplicateFacilityName = false;
 
   selectedLevel: any = null;
   villages_array: any = [];
   selectedVillages: any = [];
+  mainVillageID: number | null = null;
   childFacilities_array: any = [];
   selectedChildFacilities: any = [];
+
+  // Search & filtered arrays for multi-select dropdowns
+  villageSearch = '';
+  childFacilitySearch = '';
+  edit_villageSearch = '';
+  edit_childFacilitySearch = '';
+  filteredVillages: any = [];
+  filteredChildFacilities: any = [];
+  edit_filteredVillages: any = [];
+  edit_filteredChildFacilities: any = [];
 
   tableMode = true;
   formMode = false;
@@ -123,6 +137,17 @@ export class FacilityCreationComponent implements OnInit {
         this.facilityLevels_array = response.data;
       }
     });
+  }
+
+  // Returns the max levelValue (lowest level = Sub-Center)
+  getMaxLevelValue(): number {
+    if (!this.facilityLevels_array || this.facilityLevels_array.length === 0)
+      return 5;
+    return Math.max(...this.facilityLevels_array.map((l: any) => l.levelValue));
+  }
+
+  isLowestLevel(levelValue: number): boolean {
+    return levelValue === this.getMaxLevelValue();
   }
 
   getDistricts(stateId: number) {
@@ -182,13 +207,40 @@ export class FacilityCreationComponent implements OnInit {
       });
   }
 
+  onVillageSelectionChange() {
+    if (this.mainVillageID) {
+      const stillSelected = this.selectedVillages.some(
+        (v: any) => v.districtBranchID === this.mainVillageID,
+      );
+      if (!stillSelected) {
+        this.mainVillageID = null;
+      }
+    }
+  }
+
+  onEditVillageSelectionChange() {
+    if (this.edit_mainVillageID) {
+      const stillSelected = this.edit_selectedVillages.some(
+        (v: any) => v.districtBranchID === this.edit_mainVillageID,
+      );
+      if (!stillSelected) {
+        this.edit_mainVillageID = null;
+      }
+    }
+  }
+
   onRuralUrbanChange() {
     this.facilityTypeID = undefined;
     this.selectedLevel = null;
     this.villages_array = [];
     this.selectedVillages = [];
+    this.mainVillageID = null;
     this.childFacilities_array = [];
     this.selectedChildFacilities = [];
+    this.villageSearch = '';
+    this.childFacilitySearch = '';
+    this.applyVillageFilter();
+    this.applyChildFacilityFilter();
     if (this.formRuralUrban) {
       this.filteredFacilityTypes = this.facilityTypes_array.filter(
         (item: any) => item.ruralUrban === this.formRuralUrban,
@@ -202,25 +254,30 @@ export class FacilityCreationComponent implements OnInit {
     this.selectedLevel = null;
     this.villages_array = [];
     this.selectedVillages = [];
+    this.mainVillageID = null;
     this.childFacilities_array = [];
     this.selectedChildFacilities = [];
+    this.villageSearch = '';
+    this.childFacilitySearch = '';
+    this.applyVillageFilter();
+    this.applyChildFacilityFilter();
 
     if (!this.facilityTypeID) return;
 
     const selectedType = this.facilityTypes_array.find(
       (item: any) => item.facilityTypeID === this.facilityTypeID,
     );
-    if (!selectedType || !selectedType.facilityLevelID) return;
+    if (!selectedType || !selectedType.levelValue) return;
 
     this.selectedLevel = this.facilityLevels_array.find(
-      (level: any) => level.facilityLevelID === selectedType.facilityLevelID,
+      (level: any) => level.levelValue === selectedType.levelValue,
     );
     if (!this.selectedLevel) return;
 
     const blockID = this.taluk?.blockID;
     if (!blockID) return;
 
-    if (this.selectedLevel.levelValue === 1) {
+    if (this.isLowestLevel(this.selectedLevel.levelValue)) {
       this.facility.getVillages(blockID).subscribe(
         (response: any) => {
           if (response && response.data) {
@@ -235,6 +292,8 @@ export class FacilityCreationComponent implements OnInit {
                 } else {
                   this.villages_array = allVillages;
                 }
+                this.villageSearch = '';
+                this.applyVillageFilter();
               },
               (err: any) => {
                 this.dialogService.alert(
@@ -250,21 +309,23 @@ export class FacilityCreationComponent implements OnInit {
         },
       );
     } else {
-      const lowerLevelValue = this.selectedLevel.levelValue - 1;
-      const lowerLevel = this.facilityLevels_array.find(
-        (level: any) => level.levelValue === lowerLevelValue,
+      const childLevelValue = this.selectedLevel.levelValue + 1;
+      const childLevel = this.facilityLevels_array.find(
+        (level: any) => level.levelValue === childLevelValue,
       );
-      if (lowerLevel) {
+      if (childLevel) {
         this.facility
           .getFacilitiesByBlockAndLevel(
             blockID,
-            lowerLevel.facilityLevelID,
+            childLevelValue,
             this.formRuralUrban,
           )
           .subscribe(
             (response: any) => {
               if (response && response.data) {
                 this.childFacilities_array = response.data;
+                this.childFacilitySearch = '';
+                this.applyChildFacilityFilter();
               }
             },
             (err: any) => {
@@ -278,13 +339,17 @@ export class FacilityCreationComponent implements OnInit {
     }
   }
 
-  getLowerLevelName(): string {
-    if (!this.selectedLevel || this.selectedLevel.levelValue <= 1) return '';
-    const lowerLevelValue = this.selectedLevel.levelValue - 1;
-    const lowerLevel = this.facilityLevels_array.find(
-      (level: any) => level.levelValue === lowerLevelValue,
+  getChildLevelName(): string {
+    if (
+      !this.selectedLevel ||
+      this.isLowestLevel(this.selectedLevel.levelValue)
+    )
+      return '';
+    const childLevelValue = this.selectedLevel.levelValue + 1;
+    const childLevel = this.facilityLevels_array.find(
+      (level: any) => level.levelValue === childLevelValue,
     );
-    return lowerLevel ? lowerLevel.levelName : '';
+    return childLevel ? childLevel.levelName : '';
   }
 
   showTable() {
@@ -346,6 +411,31 @@ export class FacilityCreationComponent implements OnInit {
     return ft ? ft.ruralUrban : '';
   }
 
+  checkDuplicateFacilityName() {
+    if (this.facilityName) {
+      this.duplicateFacilityName = this.facilityMasterList.some(
+        (item: any) =>
+          item.facilityName?.trim().toLowerCase() ===
+          this.facilityName.trim().toLowerCase(),
+      );
+    } else {
+      this.duplicateFacilityName = false;
+    }
+  }
+
+  checkEditDuplicateFacilityName() {
+    if (this.edit_facilityName) {
+      this.edit_duplicateFacilityName = this.facilityMasterList.some(
+        (item: any) =>
+          item.facilityName?.trim().toLowerCase() ===
+            this.edit_facilityName.trim().toLowerCase() &&
+          item.facilityID !== this.facilityID,
+      );
+    } else {
+      this.edit_duplicateFacilityName = false;
+    }
+  }
+
   saveSingleFacility() {
     const facilityObj: any = {
       facilityName: this.facilityName,
@@ -364,14 +454,16 @@ export class FacilityCreationComponent implements OnInit {
     const childFacilityIDs: number[] = [];
 
     if (
-      this.selectedLevel?.levelValue === 1 &&
+      this.selectedLevel &&
+      this.isLowestLevel(this.selectedLevel.levelValue) &&
       this.selectedVillages.length > 0
     ) {
       for (const v of this.selectedVillages) {
         villageIDs.push(v.districtBranchID);
       }
     } else if (
-      this.selectedLevel?.levelValue > 1 &&
+      this.selectedLevel &&
+      !this.isLowestLevel(this.selectedLevel.levelValue) &&
       this.selectedChildFacilities.length > 0
     ) {
       for (const c of this.selectedChildFacilities) {
@@ -382,6 +474,7 @@ export class FacilityCreationComponent implements OnInit {
     const requestObj = {
       facility: facilityObj,
       villageIDs: villageIDs.length > 0 ? villageIDs : null,
+      mainVillageID: this.mainVillageID || null,
       childFacilityIDs: childFacilityIDs.length > 0 ? childFacilityIDs : null,
     };
 
@@ -405,21 +498,11 @@ export class FacilityCreationComponent implements OnInit {
     this.edit_facilityDesc = item.facilityDesc;
     this.edit_facilityCode = item.facilityCode;
     this.edit_facilityTypeID = item.facilityTypeID;
-
-    console.log('[editFacility] item:', item);
-    console.log(
-      '[editFacility] facilityTypes_array length:',
-      this.facilityTypes_array.length,
-    );
-    console.log(
-      '[editFacility] facilityLevels_array:',
-      this.facilityLevels_array,
-    );
+    this.edit_mainVillageID = item.mainVillageID || null;
 
     const selectedType = this.facilityTypes_array.find(
       (ft: any) => ft.facilityTypeID === item.facilityTypeID,
     );
-    console.log('[editFacility] selectedType:', selectedType);
     this.edit_ruralUrban = selectedType ? selectedType.ruralUrban : '';
 
     this.edit_filteredFacilityTypes = this.facilityTypes_array.filter(
@@ -427,58 +510,35 @@ export class FacilityCreationComponent implements OnInit {
     );
 
     this.edit_selectedLevel = null;
-    if (selectedType && selectedType.facilityLevelID) {
+    if (selectedType && selectedType.levelValue) {
       this.edit_selectedLevel = this.facilityLevels_array.find(
-        (level: any) => level.facilityLevelID === selectedType.facilityLevelID,
+        (level: any) => level.levelValue === selectedType.levelValue,
       );
     }
-    console.log('[editFacility] edit_selectedLevel:', this.edit_selectedLevel);
 
     const blockID = this.taluk?.blockID;
-    console.log('[editFacility] blockID:', blockID);
     if (this.edit_selectedLevel && blockID) {
-      if (this.edit_selectedLevel.levelValue === 1) {
+      if (this.isLowestLevel(this.edit_selectedLevel.levelValue)) {
         this.loadEditVillages(blockID, item.facilityID);
       } else {
         this.loadEditChildFacilities(blockID, item.facilityID);
       }
-    } else {
-      console.warn(
-        '[editFacility] Skipping village/child load: edit_selectedLevel or blockID is missing',
-      );
     }
 
     this.showEditForm();
   }
 
   loadEditVillages(blockID: number, facilityID: number) {
-    console.log(
-      '[loadEditVillages] blockID:',
-      blockID,
-      'facilityID:',
-      facilityID,
-    );
     this.facility.getVillages(blockID).subscribe(
       (allVillagesRes: any) => {
-        console.log('[loadEditVillages] allVillagesRes:', allVillagesRes);
         if (allVillagesRes && allVillagesRes.data) {
           const allVillages = allVillagesRes.data;
-          console.log(
-            '[loadEditVillages] allVillages count:',
-            allVillages.length,
-          );
           this.facility.getMappedVillageIDs(blockID).subscribe(
             (mappedRes: any) => {
-              console.log('[loadEditVillages] mappedRes:', mappedRes);
               const allMappedIDs: number[] =
                 mappedRes && mappedRes.data ? mappedRes.data : [];
-              console.log('[loadEditVillages] allMappedIDs:', allMappedIDs);
               this.facility.getVillageMappingsByFacility(facilityID).subscribe(
                 (myMappingsRes: any) => {
-                  console.log(
-                    '[loadEditVillages] myMappingsRes:',
-                    myMappingsRes,
-                  );
                   const myMappings =
                     myMappingsRes && myMappingsRes.data
                       ? myMappingsRes.data
@@ -486,75 +546,60 @@ export class FacilityCreationComponent implements OnInit {
                   const myMappedIDs: number[] = myMappings.map(
                     (m: any) => m.districtBranchID,
                   );
-                  console.log('[loadEditVillages] myMappedIDs:', myMappedIDs);
 
                   this.edit_villages_array = allVillages.filter(
                     (v: any) =>
                       !allMappedIDs.includes(v.districtBranchID) ||
                       myMappedIDs.includes(v.districtBranchID),
                   );
-                  console.log(
-                    '[loadEditVillages] edit_villages_array count:',
-                    this.edit_villages_array.length,
-                  );
 
                   this.edit_selectedVillages = this.edit_villages_array.filter(
                     (v: any) => myMappedIDs.includes(v.districtBranchID),
                   );
-                  console.log(
-                    '[loadEditVillages] edit_selectedVillages count:',
-                    this.edit_selectedVillages.length,
-                  );
-                  console.log(
-                    '[loadEditVillages] edit_selectedVillages:',
-                    this.edit_selectedVillages,
-                  );
+
+                  this.edit_villageSearch = '';
+                  this.applyEditVillageFilter();
                 },
                 (err: any) => {
-                  console.error(
-                    '[loadEditVillages] getVillageMappingsByFacility error:',
-                    err,
+                  this.dialogService.alert(
+                    'Failed to load facility village mappings',
+                    'error',
                   );
                 },
               );
             },
             (err: any) => {
-              console.error(
-                '[loadEditVillages] getMappedVillageIDs error:',
-                err,
+              this.dialogService.alert(
+                'Failed to load mapped villages',
+                'error',
               );
             },
           );
         }
       },
       (err: any) => {
-        console.error('[loadEditVillages] getVillages error:', err);
+        this.dialogService.alert('Failed to load villages', 'error');
       },
     );
   }
 
   loadEditChildFacilities(blockID: number, facilityID: number) {
-    const lowerLevelValue = this.edit_selectedLevel.levelValue - 1;
-    const lowerLevel = this.facilityLevels_array.find(
-      (level: any) => level.levelValue === lowerLevelValue,
+    const childLevelValue = this.edit_selectedLevel.levelValue + 1;
+    const childLevel = this.facilityLevels_array.find(
+      (level: any) => level.levelValue === childLevelValue,
     );
-    console.log('[loadEditChildFacilities] lowerLevel:', lowerLevel);
-    if (!lowerLevel) return;
+    if (!childLevel) return;
 
     this.facility
       .getFacilitiesByBlockAndLevel(
         blockID,
-        lowerLevel.facilityLevelID,
+        childLevelValue,
         this.edit_ruralUrban,
       )
       .subscribe(
         (availableRes: any) => {
           const availableFacilities =
             availableRes && availableRes.data ? availableRes.data : [];
-          console.log(
-            '[loadEditChildFacilities] availableFacilities:',
-            availableFacilities,
-          );
           this.facility.getChildFacilitiesByParent(facilityID).subscribe(
             (childrenRes: any) => {
               const currentChildren =
@@ -562,12 +607,7 @@ export class FacilityCreationComponent implements OnInit {
               const currentChildIDs: number[] = currentChildren.map(
                 (c: any) => c.facilityID,
               );
-              console.log(
-                '[loadEditChildFacilities] currentChildren:',
-                currentChildren,
-              );
 
-              // Deduplicate: exclude current children already in available list
               const filteredAvailable = availableFacilities.filter(
                 (f: any) => !currentChildIDs.includes(f.facilityID),
               );
@@ -580,36 +620,34 @@ export class FacilityCreationComponent implements OnInit {
                 this.edit_childFacilities_array.filter((c: any) =>
                   currentChildIDs.includes(c.facilityID),
                 );
-              console.log(
-                '[loadEditChildFacilities] edit_selectedChildFacilities:',
-                this.edit_selectedChildFacilities,
-              );
+              this.edit_childFacilitySearch = '';
+              this.applyEditChildFacilityFilter();
             },
             (err: any) => {
-              console.error(
-                '[loadEditChildFacilities] getChildFacilitiesByParent error:',
-                err,
+              this.dialogService.alert(
+                'Failed to load child facilities',
+                'error',
               );
             },
           );
         },
         (err: any) => {
-          console.error(
-            '[loadEditChildFacilities] getFacilitiesByBlockAndLevel error:',
-            err,
-          );
+          this.dialogService.alert('Failed to load child facilities', 'error');
         },
       );
   }
 
-  getEditLowerLevelName(): string {
-    if (!this.edit_selectedLevel || this.edit_selectedLevel.levelValue <= 1)
+  getEditChildLevelName(): string {
+    if (
+      !this.edit_selectedLevel ||
+      this.isLowestLevel(this.edit_selectedLevel.levelValue)
+    )
       return '';
-    const lowerLevelValue = this.edit_selectedLevel.levelValue - 1;
-    const lowerLevel = this.facilityLevels_array.find(
-      (level: any) => level.levelValue === lowerLevelValue,
+    const childLevelValue = this.edit_selectedLevel.levelValue + 1;
+    const childLevel = this.facilityLevels_array.find(
+      (level: any) => level.levelValue === childLevelValue,
     );
-    return lowerLevel ? lowerLevel.levelName : '';
+    return childLevel ? childLevel.levelName : '';
   }
 
   onEditRuralUrbanChange() {
@@ -617,8 +655,13 @@ export class FacilityCreationComponent implements OnInit {
     this.edit_selectedLevel = null;
     this.edit_villages_array = [];
     this.edit_selectedVillages = [];
+    this.edit_mainVillageID = null;
     this.edit_childFacilities_array = [];
     this.edit_selectedChildFacilities = [];
+    this.edit_villageSearch = '';
+    this.edit_childFacilitySearch = '';
+    this.applyEditVillageFilter();
+    this.applyEditChildFacilityFilter();
     if (this.edit_ruralUrban) {
       this.edit_filteredFacilityTypes = this.facilityTypes_array.filter(
         (item: any) => item.ruralUrban === this.edit_ruralUrban,
@@ -632,25 +675,30 @@ export class FacilityCreationComponent implements OnInit {
     this.edit_selectedLevel = null;
     this.edit_villages_array = [];
     this.edit_selectedVillages = [];
+    this.edit_mainVillageID = null;
     this.edit_childFacilities_array = [];
     this.edit_selectedChildFacilities = [];
+    this.edit_villageSearch = '';
+    this.edit_childFacilitySearch = '';
+    this.applyEditVillageFilter();
+    this.applyEditChildFacilityFilter();
 
     if (!this.edit_facilityTypeID) return;
 
     const selectedType = this.facilityTypes_array.find(
       (item: any) => item.facilityTypeID === this.edit_facilityTypeID,
     );
-    if (!selectedType || !selectedType.facilityLevelID) return;
+    if (!selectedType || !selectedType.levelValue) return;
 
     this.edit_selectedLevel = this.facilityLevels_array.find(
-      (level: any) => level.facilityLevelID === selectedType.facilityLevelID,
+      (level: any) => level.levelValue === selectedType.levelValue,
     );
     if (!this.edit_selectedLevel) return;
 
     const blockID = this.taluk?.blockID;
     if (!blockID) return;
 
-    if (this.edit_selectedLevel.levelValue === 1) {
+    if (this.isLowestLevel(this.edit_selectedLevel.levelValue)) {
       this.facility.getVillages(blockID).subscribe(
         (response: any) => {
           if (response && response.data) {
@@ -680,6 +728,8 @@ export class FacilityCreationComponent implements OnInit {
                         this.edit_villages_array.filter((v: any) =>
                           myMappedIDs.includes(v.districtBranchID),
                         );
+                      this.edit_villageSearch = '';
+                      this.applyEditVillageFilter();
                     },
                     (err: any) => {
                       this.dialogService.alert(
@@ -703,15 +753,15 @@ export class FacilityCreationComponent implements OnInit {
         },
       );
     } else {
-      const lowerLevelValue = this.edit_selectedLevel.levelValue - 1;
-      const lowerLevel = this.facilityLevels_array.find(
-        (level: any) => level.levelValue === lowerLevelValue,
+      const childLevelValue = this.edit_selectedLevel.levelValue + 1;
+      const childLevel = this.facilityLevels_array.find(
+        (level: any) => level.levelValue === childLevelValue,
       );
-      if (lowerLevel) {
+      if (childLevel) {
         this.facility
           .getFacilitiesByBlockAndLevel(
             blockID,
-            lowerLevel.facilityLevelID,
+            childLevelValue,
             this.edit_ruralUrban,
           )
           .subscribe(
@@ -739,6 +789,8 @@ export class FacilityCreationComponent implements OnInit {
                         this.edit_childFacilities_array.filter((c: any) =>
                           currentChildIDs.includes(c.facilityID),
                         );
+                      this.edit_childFacilitySearch = '';
+                      this.applyEditChildFacilityFilter();
                     },
                     (err: any) => {
                       this.dialogService.alert(
@@ -757,6 +809,122 @@ export class FacilityCreationComponent implements OnInit {
             },
           );
       }
+    }
+  }
+
+  // --- Search filter methods ---
+
+  applyVillageFilter(term?: string) {
+    if (term !== undefined) this.villageSearch = term;
+    if (!this.villageSearch) {
+      this.filteredVillages = this.villages_array.slice();
+    } else {
+      const s = this.villageSearch.toLowerCase();
+      this.filteredVillages = this.villages_array.filter((v: any) =>
+        (v.villageName || '').toLowerCase().includes(s),
+      );
+    }
+  }
+
+  applyChildFacilityFilter(term?: string) {
+    if (term !== undefined) this.childFacilitySearch = term;
+    if (!this.childFacilitySearch) {
+      this.filteredChildFacilities = this.childFacilities_array.slice();
+    } else {
+      const s = this.childFacilitySearch.toLowerCase();
+      this.filteredChildFacilities = this.childFacilities_array.filter(
+        (c: any) => (c.facilityName || '').toLowerCase().includes(s),
+      );
+    }
+  }
+
+  applyEditVillageFilter(term?: string) {
+    if (term !== undefined) this.edit_villageSearch = term;
+    if (!this.edit_villageSearch) {
+      this.edit_filteredVillages = this.edit_villages_array.slice();
+    } else {
+      const s = this.edit_villageSearch.toLowerCase();
+      this.edit_filteredVillages = this.edit_villages_array.filter((v: any) =>
+        (v.villageName || '').toLowerCase().includes(s),
+      );
+    }
+  }
+
+  applyEditChildFacilityFilter(term?: string) {
+    if (term !== undefined) this.edit_childFacilitySearch = term;
+    if (!this.edit_childFacilitySearch) {
+      this.edit_filteredChildFacilities =
+        this.edit_childFacilities_array.slice();
+    } else {
+      const s = this.edit_childFacilitySearch.toLowerCase();
+      this.edit_filteredChildFacilities =
+        this.edit_childFacilities_array.filter((c: any) =>
+          (c.facilityName || '').toLowerCase().includes(s),
+        );
+    }
+  }
+
+  // --- Select All toggle methods ---
+
+  get allVillagesSelected(): boolean {
+    return (
+      this.filteredVillages.length > 0 &&
+      this.selectedVillages.length === this.villages_array.length
+    );
+  }
+
+  toggleSelectAllVillages() {
+    if (this.allVillagesSelected) {
+      this.selectedVillages = [];
+    } else {
+      this.selectedVillages = this.villages_array.slice();
+    }
+  }
+
+  get allChildFacilitiesSelected(): boolean {
+    return (
+      this.filteredChildFacilities.length > 0 &&
+      this.selectedChildFacilities.length === this.childFacilities_array.length
+    );
+  }
+
+  toggleSelectAllChildFacilities() {
+    if (this.allChildFacilitiesSelected) {
+      this.selectedChildFacilities = [];
+    } else {
+      this.selectedChildFacilities = this.childFacilities_array.slice();
+    }
+  }
+
+  get allEditVillagesSelected(): boolean {
+    return (
+      this.edit_filteredVillages.length > 0 &&
+      this.edit_selectedVillages.length === this.edit_villages_array.length
+    );
+  }
+
+  toggleSelectAllEditVillages() {
+    if (this.allEditVillagesSelected) {
+      this.edit_selectedVillages = [];
+    } else {
+      this.edit_selectedVillages = this.edit_villages_array.slice();
+    }
+  }
+
+  get allEditChildFacilitiesSelected(): boolean {
+    return (
+      this.edit_filteredChildFacilities.length > 0 &&
+      this.edit_selectedChildFacilities.length ===
+        this.edit_childFacilities_array.length
+    );
+  }
+
+  toggleSelectAllEditChildFacilities() {
+    if (this.allEditChildFacilitiesSelected) {
+      this.edit_selectedChildFacilities = [];
+    } else {
+      this.edit_selectedChildFacilities =
+        this.edit_childFacilities_array.slice();
     }
   }
 
@@ -782,11 +950,17 @@ export class FacilityCreationComponent implements OnInit {
     let villageIDs: number[] | null = null;
     let childFacilityIDs: number[] | null = null;
 
-    if (this.edit_selectedLevel?.levelValue === 1) {
+    if (
+      this.edit_selectedLevel &&
+      this.isLowestLevel(this.edit_selectedLevel.levelValue)
+    ) {
       villageIDs = this.edit_selectedVillages.map(
         (v: any) => v.districtBranchID,
       );
-    } else if (this.edit_selectedLevel?.levelValue > 1) {
+    } else if (
+      this.edit_selectedLevel &&
+      !this.isLowestLevel(this.edit_selectedLevel.levelValue)
+    ) {
       childFacilityIDs = this.edit_selectedChildFacilities.map(
         (c: any) => c.facilityID,
       );
@@ -795,6 +969,7 @@ export class FacilityCreationComponent implements OnInit {
     const requestObj = {
       facility: facilityObj,
       villageIDs: villageIDs,
+      mainVillageID: this.edit_mainVillageID || null,
       childFacilityIDs: childFacilityIDs,
     };
 
@@ -873,6 +1048,7 @@ export class FacilityCreationComponent implements OnInit {
     this.filteredFacilityTypes = [];
     this.villages_array = [];
     this.selectedVillages = [];
+    this.mainVillageID = null;
     this.childFacilities_array = [];
     this.selectedChildFacilities = [];
     this.edit_facilityName = undefined;
@@ -884,7 +1060,18 @@ export class FacilityCreationComponent implements OnInit {
     this.edit_selectedLevel = null;
     this.edit_villages_array = [];
     this.edit_selectedVillages = [];
+    this.edit_mainVillageID = null;
     this.edit_childFacilities_array = [];
     this.edit_selectedChildFacilities = [];
+    this.duplicateFacilityName = false;
+    this.edit_duplicateFacilityName = false;
+    this.villageSearch = '';
+    this.childFacilitySearch = '';
+    this.edit_villageSearch = '';
+    this.edit_childFacilitySearch = '';
+    this.filteredVillages = [];
+    this.filteredChildFacilities = [];
+    this.edit_filteredVillages = [];
+    this.edit_filteredChildFacilities = [];
   }
 }

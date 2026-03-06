@@ -67,10 +67,12 @@
             autocomplete="off"
           />
         </div>
-        <div class="select-all-option" (click)="toggleSelectAllFacilities(); $event.stopPropagation()">
+        <div class="select-all-option" (click)="$event.stopPropagation()">
           <mat-checkbox
             [checked]="allFacilitiesSelected"
+            (change)="toggleSelectAllFacilities()"
             (click)="$event.stopPropagation()"
+            color="warn"
           >
             Select All
           </mat-checkbox>
@@ -131,10 +133,12 @@
             autocomplete="off"
           />
         </div>
-        <div class="select-all-option" (click)="toggleSelectAllVillages(); $event.stopPropagation()">
+        <div class="select-all-option" (click)="$event.stopPropagation()">
           <mat-checkbox
             [checked]="allVillagesSelected"
+            (change)="toggleSelectAllVillages()"
             (click)="$event.stopPropagation()"
+            color="warn"
           >
             Select All
           </mat-checkbox>
@@ -165,6 +169,11 @@
     </div>
   </div>
 
+  <!-- No ASHA Workers message -->
+  <div class="col-6" *ngIf="isAshaSupervisor && noAshaWorkers">
+    <span class="no-asha-message">No ASHA workers found for the selected facilities. Please add ASHA workers first.</span>
+  </div>
+
   <!-- ASHA Workers (multi-select dropdown, ASHA Supervisor only) -->
   <div class="col-3" *ngIf="isAshaSupervisor && ashaUsers.length > 0">
     <mat-form-field [style.width]="'100%'">
@@ -186,10 +195,12 @@
             autocomplete="off"
           />
         </div>
-        <div class="select-all-option" (click)="toggleSelectAllAsha(); $event.stopPropagation()">
+        <div class="select-all-option" (click)="$event.stopPropagation()">
           <mat-checkbox
             [checked]="allAshaSelected"
+            (change)="toggleSelectAllAsha()"
             (click)="$event.stopPropagation()"
+            color="warn"
           >
             Select All
           </mat-checkbox>

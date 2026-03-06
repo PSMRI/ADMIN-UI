@@ -116,3 +116,11 @@
 ::ng-deep .select-all-option:hover {
   background: #f5f5f5;
 }
+
+.no-asha-message {
+  color: #f44336;
+  font-size: 13px;
+  font-weight: 500;
+  display: inline-block;
+  margin-top: 20px;
+}

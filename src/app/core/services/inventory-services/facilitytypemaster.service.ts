@@ -139,12 +139,12 @@ export class FacilityMasterService {
 
   getFacilitiesByBlockAndLevel(
     blockID: number,
-    facilityLevelID: number,
+    levelValue: number,
     ruralUrban: string,
   ) {
     return this.http.post(environment.get_FacilitiesByBlockAndLevel_Url, {
       blockID: blockID,
-      facilityLevelID: facilityLevelID,
+      levelValue: levelValue,
       ruralUrban: ruralUrban,
     });
   }

@@ -78,7 +78,7 @@
           <ng-container matColumnDef="facilityLevel">
             <th mat-header-cell *matHeaderCellDef>Facility Level</th>
             <td mat-cell *matCellDef="let item">
-              {{ getLevelName(item.facilityLevelID) }}
+              {{ getLevelName(item.levelValue) }}
             </td>
           </ng-container>
 
@@ -216,13 +216,13 @@
             <mat-label>Facility Level</mat-label>
             <mat-select
               required
-              name="facilityLevelID"
-              [(ngModel)]="facilityLevelID"
+              name="levelValue"
+              [(ngModel)]="levelValue"
               #facilityLevelField="ngModel"
             >
               <mat-option
                 *ngFor="let level of facilityLevels_array"
-                [value]="level.facilityLevelID"
+                [value]="level.levelValue"
               >
                 {{ level.levelName }} [{{ level.levelValue }}]
               </mat-option>
@@ -268,7 +268,7 @@
             class="xs-pull-right sm-pull-right md-pull-left lg-pull-left mat_icon_white"
             *ngIf="!editMode && facilityAddForm1.valid"
             color="primary"
-            (click)="add2bufferArray(); facilityAddForm1.reset()"
+            (click)="add2bufferArray()"
           >
             <mat-icon>add</mat-icon>
           </button>
@@ -314,7 +314,7 @@
           <!-- Facility Level Column -->
           <ng-container matColumnDef="facilityLevel">
             <th mat-header-cell *matHeaderCellDef>Facility Level</th>
-            <td mat-cell *matCellDef="let item">{{ getLevelName(item.facilityLevelID) }}</td>
+            <td mat-cell *matCellDef="let item">{{ getLevelName(item.levelValue) }}</td>
           </ng-container>
 
           <!-- Delete Column -->
@@ -419,12 +419,12 @@
             <mat-label>Facility Level</mat-label>
             <mat-select
               required
-              name="edit_facilityLevelID"
-              [(ngModel)]="edit_facilityLevelID"
+              name="edit_levelValue"
+              [(ngModel)]="edit_levelValue"
             >
               <mat-option
                 *ngFor="let level of facilityLevels_array"
-                [value]="level.facilityLevelID"
+                [value]="level.levelValue"
               >
                 {{ level.levelName }} [{{ level.levelValue }}]
               </mat-option>
