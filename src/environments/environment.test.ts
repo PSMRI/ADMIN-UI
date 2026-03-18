@@ -163,6 +163,7 @@ export const environment = {
   delete_facilities_Url: `${adminBaseUrl}deleteFacility`,
   get_FacilityLevels_Url: `${adminBaseUrl}getFacilityLevels`,
   get_FacilitiesByBlock_Url: `${adminBaseUrl}getFacilitiesByBlock`,
+  get_AllFacilitiesByBlock_Url: `${adminBaseUrl}getAllFacilitiesByBlock`,
   get_FacilitiesByBlockAndLevel_Url: `${adminBaseUrl}getFacilitiesByBlockAndLevel`,
   create_FacilityWithHierarchy_Url: `${adminBaseUrl}createFacilityWithHierarchy`,
   get_MappedVillageIDs_Url: `${adminBaseUrl}getMappedVillageIDs`,
@@ -170,6 +171,7 @@ export const environment = {
   get_VillageMappingsByFacility_Url: `${adminBaseUrl}getVillageMappingsByFacility`,
   get_ChildFacilitiesByParent_Url: `${adminBaseUrl}getChildFacilitiesByParent`,
   update_FacilityWithHierarchy_Url: `${adminBaseUrl}updateFacilityWithHierarchy`,
+  delete_FacilityWithHierarchy_Url: `${adminBaseUrl}deleteFacilityWithHierarchy`,
   get_itemform_Url: `${adminBaseUrl}getItemForm`,
   save_itemform_Url: `${adminBaseUrl}createItemForms`,
   update_itemform_Url: `${adminBaseUrl}editItemForm`,
@@ -525,4 +527,5 @@ export const environment = {
   getFacilityByMappingID_Url: `${adminBaseUrl}userFacilityMapping/getFacilityByMappingID`,
   deleteAshaSupervisorMapping_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/delete`,
   restoreAshaSupervisorMapping_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/restore`,
+  updateAshaSupervisorMappingAtomically_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/updateAtomically`,
 };
