@@ -101,6 +101,7 @@ import { ProjectConfigutationScreenComponent } from './project-configutation-scr
 import { ProjectConfigurationService } from './services/project-configuration-service';
 import { AddFieldsToProjectComponent } from './add-fields-to-project/add-fields-to-project.component';
 import { AddFieldsService } from './services/add-fields-service';
+import { LinkExistingFacilityComponent } from './link-existing-facility/link-existing-facility.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
 
@@ -156,6 +157,7 @@ import { CoreModule } from 'src/app/core/core.module';
     AddFieldsToProjectComponent,
     EmployeeMasterBulkUploadComponent,
     UserFacilityMappingComponent,
+    LinkExistingFacilityComponent,
   ],
   imports: [
     CommonModule,
@@ -247,6 +249,7 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectServicelineMappingComponent,
     ProjectConfigutationScreenComponent,
     AddFieldsToProjectComponent,
+    LinkExistingFacilityComponent,
   ],
 })
 export class ActivitiesModule {}

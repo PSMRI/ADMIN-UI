@@ -180,6 +180,7 @@
       <button mat-menu-item (click)="show('39')">Facility Type Master</button>
       <button mat-menu-item (click)="show('40')">Main Store & Sub Store</button>
       <button mat-menu-item (click)="show('42')">Item To Store Mapping</button>
+      <button mat-menu-item (click)="show('81')">Item To Facility Mapping</button>
       <button mat-menu-item (click)="show('51')">
         Van/Parking Place to Store Mapping
       </button>
@@ -187,6 +188,7 @@
     <mat-menu #facilityHierarchyMenu="matMenu">
       <button mat-menu-item (click)="show('78')">Facility Type Master</button>
       <button mat-menu-item (click)="show('79')">Facility Master</button>
+      <button mat-menu-item (click)="show('80')">Link Existing Facility</button>
     </mat-menu>
 
     <div
@@ -288,6 +290,8 @@
         <app-facility-type-master *ngSwitchCase="39"></app-facility-type-master>
         <app-master-type-creation *ngSwitchCase="78"></app-master-type-creation>
         <app-facility-creation *ngSwitchCase="79"></app-facility-creation>
+        <app-link-existing-facility *ngSwitchCase="80"></app-link-existing-facility>
+        <app-item-to-facility-mapping *ngSwitchCase="81"></app-item-to-facility-mapping>
         <app-main-store-and-sub-store
           *ngSwitchCase="40"
         ></app-main-store-and-sub-store>

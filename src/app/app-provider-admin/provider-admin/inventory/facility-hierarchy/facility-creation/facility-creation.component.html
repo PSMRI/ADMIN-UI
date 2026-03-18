@@ -682,6 +682,7 @@
               [(ngModel)]="edit_selectedChildFacilities"
               #editChildFacilitiesField="ngModel"
               [compareWith]="compareFacilities"
+              (selectionChange)="initEditDrillDown()"
             >
               <div class="select-search-box">
                 <input
@@ -713,6 +714,38 @@
             </mat-select>
           </mat-form-field>
         </div>
+
+        <!-- For higher levels in edit: cascading drill-down to reach village -->
+        <ng-container *ngIf="edit_selectedLevel && isHigherLevel(edit_selectedLevel.levelValue)">
+          <div class="col-3" *ngFor="let step of edit_drillDownSteps; let i = index">
+            <mat-form-field [style.width]="'100%'" *ngIf="step.facilities.length > 0">
+              <mat-label>Select {{ step.levelName }}</mat-label>
+              <mat-select
+                [name]="'edit_drillDown_' + i"
+                [(ngModel)]="step.selectedFacilityID"
+                (selectionChange)="onEditDrillDownSelect(i, $event.value)"
+              >
+                <mat-option *ngFor="let f of step.facilities" [value]="f.facilityID">
+                  {{ f.facilityName }} [{{ f.facilityID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="edit_drillDownVillages.length > 0">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Main Village</mat-label>
+              <mat-select
+                name="edit_drillDown_mainVillageID"
+                [(ngModel)]="edit_mainVillageID"
+              >
+                <mat-option *ngFor="let v of edit_drillDownVillages" [value]="v.districtBranchID">
+                  {{ v.villageName }} [{{ v.districtBranchID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </ng-container>
       </form>
     </div>
 

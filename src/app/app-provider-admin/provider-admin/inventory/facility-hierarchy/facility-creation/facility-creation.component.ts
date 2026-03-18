@@ -98,6 +98,10 @@ export class FacilityCreationComponent implements OnInit {
   drillDownSteps: any[] = [];
   drillDownVillages: any[] = [];
 
+  // For edit mode: cascading drill-down
+  edit_drillDownSteps: any[] = [];
+  edit_drillDownVillages: any[] = [];
+
   // Search & filtered arrays for multi-select dropdowns
   villageSearch = '';
   childFacilitySearch = '';
@@ -215,6 +219,93 @@ export class FacilityCreationComponent implements OnInit {
         .getChildFacilitiesByParent(facilityID)
         .subscribe((res: any) => {
           this.drillDownSteps[stepIndex + 1].facilities = res.data || res || [];
+        });
+    }
+  }
+
+  initEditDrillDown() {
+    if (!this.edit_selectedLevel) return;
+    const currentLevel = this.edit_selectedLevel.levelValue;
+    const maxLevel = this.getMaxLevelValue();
+    const savedMainVillageID = this.edit_mainVillageID;
+    this.edit_drillDownSteps = [];
+    this.edit_drillDownVillages = [];
+
+    for (let lv = currentLevel + 1; lv <= maxLevel; lv++) {
+      const level = this.facilityLevels_array.find(
+        (l: any) => l.levelValue === lv,
+      );
+      this.edit_drillDownSteps.push({
+        levelValue: lv,
+        levelName: level ? level.levelName : 'Level ' + lv,
+        facilities: [],
+        selectedFacilityID: null,
+      });
+    }
+
+    if (
+      this.edit_drillDownSteps.length > 0 &&
+      this.edit_selectedChildFacilities.length > 0
+    ) {
+      this.edit_drillDownSteps[0].facilities =
+        this.edit_selectedChildFacilities;
+
+      // Reverse lookup: find which child SC has the saved mainVillageID
+      if (savedMainVillageID) {
+        this.reverseLoopupMainVillage(savedMainVillageID);
+      }
+    }
+  }
+
+  reverseLoopupMainVillage(mainVillageID: number) {
+    if (
+      !this.edit_drillDownSteps.length ||
+      !this.edit_drillDownSteps[0].facilities.length
+    )
+      return;
+    const lastStepIndex = this.edit_drillDownSteps.length - 1;
+    const scFacilities = this.edit_drillDownSteps[lastStepIndex].facilities;
+
+    for (const sc of scFacilities) {
+      this.facility
+        .getVillageMappingsByFacility(sc.facilityID)
+        .subscribe((res: any) => {
+          const villages = res.data || res || [];
+          const found = villages.some(
+            (v: any) => v.districtBranchID === mainVillageID,
+          );
+          if (found) {
+            this.edit_drillDownSteps[lastStepIndex].selectedFacilityID =
+              sc.facilityID;
+            this.edit_drillDownVillages = villages;
+            this.edit_mainVillageID = mainVillageID;
+          }
+        });
+    }
+  }
+
+  onEditDrillDownSelect(stepIndex: number, facilityID: number) {
+    for (let i = stepIndex + 1; i < this.edit_drillDownSteps.length; i++) {
+      this.edit_drillDownSteps[i].facilities = [];
+      this.edit_drillDownSteps[i].selectedFacilityID = null;
+    }
+    this.edit_drillDownVillages = [];
+    this.edit_mainVillageID = null;
+
+    if (!facilityID) return;
+
+    if (stepIndex === this.edit_drillDownSteps.length - 1) {
+      this.facility
+        .getVillageMappingsByFacility(facilityID)
+        .subscribe((res: any) => {
+          this.edit_drillDownVillages = res.data || res || [];
+        });
+    } else {
+      this.facility
+        .getChildFacilitiesByParent(facilityID)
+        .subscribe((res: any) => {
+          this.edit_drillDownSteps[stepIndex + 1].facilities =
+            res.data || res || [];
         });
     }
   }
@@ -669,11 +760,7 @@ export class FacilityCreationComponent implements OnInit {
     if (!childLevel) return;
 
     this.facility
-      .getFacilitiesByBlockAndLevel(
-        blockID,
-        childLevelValue,
-        this.edit_ruralUrban,
-      )
+      .getFacilitiesByBlockAndLevel(blockID, childLevelValue, null)
       .subscribe(
         (availableRes: any) => {
           const availableFacilities =
@@ -700,6 +787,7 @@ export class FacilityCreationComponent implements OnInit {
                 );
               this.edit_childFacilitySearch = '';
               this.applyEditChildFacilityFilter();
+              this.initEditDrillDown();
             },
             (err: any) => {
               this.dialogService.alert(

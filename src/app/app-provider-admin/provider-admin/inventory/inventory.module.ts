@@ -27,6 +27,7 @@ import { UpdateStoreMappingComponent } from './store-mapping/update-store-mappin
 import { CreateStoreMappingComponent } from './store-mapping/create-store-mapping/create-store-mapping.component';
 import { MasterTypeCreationComponent } from './facility-hierarchy/master-type-creation/master-type-creation.component';
 import { FacilityCreationComponent } from './facility-hierarchy/facility-creation/facility-creation.component';
+import { ItemToFacilityMappingComponent } from './item-to-facility-mapping/item-to-facility-mapping.component';
 
 @NgModule({
   declarations: [
@@ -50,6 +51,7 @@ import { FacilityCreationComponent } from './facility-hierarchy/facility-creatio
     CreateStoreMappingComponent,
     MasterTypeCreationComponent,
     FacilityCreationComponent,
+    ItemToFacilityMappingComponent,
   ],
   imports: [
     CommonModule,
@@ -81,6 +83,7 @@ import { FacilityCreationComponent } from './facility-hierarchy/facility-creatio
     CreateStoreMappingComponent,
     MasterTypeCreationComponent,
     FacilityCreationComponent,
+    ItemToFacilityMappingComponent,
   ],
 })
 export class InventoryModule {}
