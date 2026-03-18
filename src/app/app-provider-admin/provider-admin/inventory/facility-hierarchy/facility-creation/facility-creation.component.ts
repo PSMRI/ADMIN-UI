@@ -59,6 +59,8 @@ export class FacilityCreationComponent implements OnInit {
   edit_facilityCode: any;
   edit_ruralUrban: any;
   edit_facilityTypeID: any;
+  original_facilityTypeID: any; // Fix 13: track original type to warn on change
+  original_levelValue: any; // Lock edit to same level
   edit_filteredFacilityTypes: any[] = [];
   edit_selectedLevel: any = null;
   edit_villages_array: any = [];
@@ -90,6 +92,11 @@ export class FacilityCreationComponent implements OnInit {
   mainVillageID: number | null = null;
   childFacilities_array: any = [];
   selectedChildFacilities: any = [];
+
+  // For higher levels: cascading drill-down to reach village
+  // Each entry: { levelValue, levelName, facilities: [], selectedFacilityID }
+  drillDownSteps: any[] = [];
+  drillDownVillages: any[] = [];
 
   // Search & filtered arrays for multi-select dropdowns
   villageSearch = '';
@@ -150,6 +157,68 @@ export class FacilityCreationComponent implements OnInit {
     return levelValue === this.getMaxLevelValue();
   }
 
+  isHigherLevel(levelValue: number): boolean {
+    return levelValue < this.getMaxLevelValue();
+  }
+
+  initDrillDown() {
+    if (!this.selectedLevel) return;
+    const currentLevel = this.selectedLevel.levelValue;
+    const maxLevel = this.getMaxLevelValue();
+    this.drillDownSteps = [];
+    this.drillDownVillages = [];
+    this.mainVillageID = null;
+
+    // Build steps from currentLevel+1 down to maxLevel (SC)
+    for (let lv = currentLevel + 1; lv <= maxLevel; lv++) {
+      const level = this.facilityLevels_array.find(
+        (l: any) => l.levelValue === lv,
+      );
+      this.drillDownSteps.push({
+        levelValue: lv,
+        levelName: level ? level.levelName : 'Level ' + lv,
+        facilities: [],
+        selectedFacilityID: null,
+      });
+    }
+
+    // First step: load from selected child facilities
+    if (
+      this.drillDownSteps.length > 0 &&
+      this.selectedChildFacilities.length > 0
+    ) {
+      this.drillDownSteps[0].facilities = this.selectedChildFacilities;
+    }
+  }
+
+  onDrillDownSelect(stepIndex: number, facilityID: number) {
+    // Clear subsequent steps
+    for (let i = stepIndex + 1; i < this.drillDownSteps.length; i++) {
+      this.drillDownSteps[i].facilities = [];
+      this.drillDownSteps[i].selectedFacilityID = null;
+    }
+    this.drillDownVillages = [];
+    this.mainVillageID = null;
+
+    if (!facilityID) return;
+
+    // If this is the last step (SC level), load villages
+    if (stepIndex === this.drillDownSteps.length - 1) {
+      this.facility
+        .getVillageMappingsByFacility(facilityID)
+        .subscribe((res: any) => {
+          this.drillDownVillages = res.data || res || [];
+        });
+    } else {
+      // Load children of selected facility for next step
+      this.facility
+        .getChildFacilitiesByParent(facilityID)
+        .subscribe((res: any) => {
+          this.drillDownSteps[stepIndex + 1].facilities = res.data || res || [];
+        });
+    }
+  }
+
   getDistricts(stateId: number) {
     this.districts_array = [];
     this.taluks_array = [];
@@ -179,17 +248,19 @@ export class FacilityCreationComponent implements OnInit {
 
   loadFacilitiesByBlock(blockID: number) {
     this.createButton = true;
-    this.facility.getFacilitiesByBlock(blockID).subscribe((response: any) => {
-      if (response && response.data) {
-        this.facilityMasterList = response.data;
-        this.facilityList.data = response.data;
-        this.facilityList.paginator = this.tablePaginator;
-      } else {
-        this.facilityMasterList = [];
-        this.facilityList.data = [];
-      }
-      this.showTableFlag = true;
-    });
+    this.facility
+      .getAllFacilitiesByBlock(blockID)
+      .subscribe((response: any) => {
+        if (response && response.data) {
+          this.facilityMasterList = response.data;
+          this.facilityList.data = response.data;
+          this.facilityList.paginator = this.tablePaginator;
+        } else {
+          this.facilityMasterList = [];
+          this.facilityList.data = [];
+        }
+        this.showTableFlag = true;
+      });
   }
 
   loadFacilityTypesByState(stateID: number) {
@@ -446,6 +517,8 @@ export class FacilityCreationComponent implements OnInit {
       stateID: this.state?.stateID,
       districtID: this.district?.districtID,
       blockID: this.taluk?.blockID,
+      providerServiceMapID:
+        this.commonDataService.provider_serviceMapID || null,
       isMainFacility: true,
       createdBy: this.createdBy,
     };
@@ -474,7 +547,7 @@ export class FacilityCreationComponent implements OnInit {
     const requestObj = {
       facility: facilityObj,
       villageIDs: villageIDs.length > 0 ? villageIDs : null,
-      mainVillageID: this.mainVillageID || null,
+      mainVillageID: this.mainVillageID ? this.mainVillageID : null,
       childFacilityIDs: childFacilityIDs.length > 0 ? childFacilityIDs : null,
     };
 
@@ -498,15 +571,20 @@ export class FacilityCreationComponent implements OnInit {
     this.edit_facilityDesc = item.facilityDesc;
     this.edit_facilityCode = item.facilityCode;
     this.edit_facilityTypeID = item.facilityTypeID;
+    this.original_facilityTypeID = item.facilityTypeID; // Fix 13: remember original type
     this.edit_mainVillageID = item.mainVillageID || null;
 
     const selectedType = this.facilityTypes_array.find(
       (ft: any) => ft.facilityTypeID === item.facilityTypeID,
     );
     this.edit_ruralUrban = selectedType ? selectedType.ruralUrban : '';
+    this.original_levelValue = selectedType ? selectedType.levelValue : null;
 
+    // Only show facility types with same level (e.g., SC Rural ↔ SC Urban, but not SC → PHC)
     this.edit_filteredFacilityTypes = this.facilityTypes_array.filter(
-      (ft: any) => ft.ruralUrban === this.edit_ruralUrban,
+      (ft: any) =>
+        ft.ruralUrban === this.edit_ruralUrban &&
+        ft.levelValue === this.original_levelValue,
     );
 
     this.edit_selectedLevel = null;
@@ -652,20 +730,18 @@ export class FacilityCreationComponent implements OnInit {
 
   onEditRuralUrbanChange() {
     this.edit_facilityTypeID = undefined;
-    this.edit_selectedLevel = null;
-    this.edit_villages_array = [];
-    this.edit_selectedVillages = [];
-    this.edit_mainVillageID = null;
-    this.edit_childFacilities_array = [];
-    this.edit_selectedChildFacilities = [];
-    this.edit_villageSearch = '';
-    this.edit_childFacilitySearch = '';
-    this.applyEditVillageFilter();
-    this.applyEditChildFacilityFilter();
-    if (this.edit_ruralUrban) {
+    if (this.edit_ruralUrban && this.original_levelValue != null) {
+      // Only show facility types with same level (lock level, allow rural/urban switch)
       this.edit_filteredFacilityTypes = this.facilityTypes_array.filter(
-        (item: any) => item.ruralUrban === this.edit_ruralUrban,
+        (item: any) =>
+          item.ruralUrban === this.edit_ruralUrban &&
+          item.levelValue === this.original_levelValue,
       );
+      // Auto-select if only one type at this level
+      if (this.edit_filteredFacilityTypes.length === 1) {
+        this.edit_facilityTypeID =
+          this.edit_filteredFacilityTypes[0].facilityTypeID;
+      }
     } else {
       this.edit_filteredFacilityTypes = [];
     }
@@ -937,6 +1013,12 @@ export class FacilityCreationComponent implements OnInit {
   }
 
   updateFacility() {
+    // Fix 13: level change is locked via UI (same-level filter on dropdown)
+    // No warning needed — only rural/urban switch within same level is possible
+    this.doUpdateFacility();
+  }
+
+  doUpdateFacility() {
     const facilityObj: any = {
       facilityID: this.facilityID,
       facilityName: this.edit_facilityName,
@@ -989,14 +1071,20 @@ export class FacilityCreationComponent implements OnInit {
 
   activate(facilityID: any) {
     this.dialogService
-      .confirm('Confirm', 'Are you sure you want to Activate?')
+      .confirm(
+        'Confirm',
+        'Are you sure you want to Activate? Note: Village mappings and ASHA supervisor mappings were cleared on deactivation. Please reassign them after activation.',
+      )
       .subscribe((response: any) => {
         if (response) {
           const object = { facilityID: facilityID, deleted: false };
           this.facility.deleteFacilityStore(object).subscribe(
             (res: any) => {
               if (res) {
-                this.dialogService.alert('Activated successfully', 'success');
+                this.dialogService.alert(
+                  'Activated successfully. Please reassign villages and ASHA mappings.',
+                  'success',
+                );
                 if (this.taluk?.blockID) {
                   this.loadFacilitiesByBlock(this.taluk.blockID);
                 }
@@ -1016,24 +1104,27 @@ export class FacilityCreationComponent implements OnInit {
       .confirm('Confirm', 'Are you sure you want to Deactivate?')
       .subscribe((response: any) => {
         if (response) {
-          const object = { facilityID: facilityID, deleted: true };
-          this.facility.deleteFacilityStore(object).subscribe(
-            (res: any) => {
-              if (res) {
-                this.dialogService.alert('Deactivated successfully', 'success');
-                if (this.taluk?.blockID) {
-                  this.loadFacilitiesByBlock(this.taluk.blockID);
+          this.facility
+            .deleteFacilityWithHierarchy(facilityID, this.createdBy)
+            .subscribe(
+              (res: any) => {
+                if (res) {
+                  this.dialogService.alert(
+                    'Deactivated successfully',
+                    'success',
+                  );
+                  if (this.taluk?.blockID) {
+                    this.loadFacilitiesByBlock(this.taluk.blockID);
+                  }
+                  this.create_filterTerm = '';
                 }
-                this.create_filterTerm = '';
-              }
-            },
-            (err: any) => {
-              this.dialogService.alert(
-                'Failed to deactivate facility',
-                'error',
-              );
-            },
-          );
+              },
+              (err: any) => {
+                const msg =
+                  err?.error?.errorMessage || 'Failed to deactivate facility';
+                this.dialogService.alert(msg, 'error');
+              },
+            );
         }
       });
   }

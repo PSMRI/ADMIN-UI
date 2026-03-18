@@ -360,7 +360,7 @@
                 *ngFor="let v of filteredVillages"
                 [value]="v"
               >
-                {{ v.villageName }}
+                {{ v.villageName }} [{{ v.districtBranchID }}]
               </mat-option>
             </mat-select>
           </mat-form-field>
@@ -377,7 +377,7 @@
               #mainVillageField="ngModel"
             >
               <mat-option *ngFor="let v of selectedVillages" [value]="v.districtBranchID">
-                {{ v.villageName }}
+                {{ v.villageName }} [{{ v.districtBranchID }}]
               </mat-option>
             </mat-select>
             <mat-hint>
@@ -397,6 +397,7 @@
               required
               name="selectedChildFacilities"
               [(ngModel)]="selectedChildFacilities"
+              (selectionChange)="initDrillDown()"
               #childFacilitiesField="ngModel"
             >
               <div class="select-search-box">
@@ -429,6 +430,38 @@
             </mat-select>
           </mat-form-field>
         </div>
+
+        <!-- For higher levels: cascading drill-down to reach village -->
+        <ng-container *ngIf="selectedLevel && isHigherLevel(selectedLevel.levelValue)">
+          <div class="col-3" *ngFor="let step of drillDownSteps; let i = index">
+            <mat-form-field [style.width]="'100%'" *ngIf="step.facilities.length > 0">
+              <mat-label>Select {{ step.levelName }}</mat-label>
+              <mat-select
+                [name]="'drillDown_' + i"
+                [(ngModel)]="step.selectedFacilityID"
+                (selectionChange)="onDrillDownSelect(i, $event.value)"
+              >
+                <mat-option *ngFor="let f of step.facilities" [value]="f.facilityID">
+                  {{ f.facilityName }} [{{ f.facilityID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="drillDownVillages.length > 0">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Main Village</mat-label>
+              <mat-select
+                name="mainVillageID"
+                [(ngModel)]="mainVillageID"
+              >
+                <mat-option *ngFor="let v of drillDownVillages" [value]="v.districtBranchID">
+                  {{ v.villageName }} [{{ v.districtBranchID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </ng-container>
       </form>
     </div>
 
@@ -504,7 +537,7 @@
               required
               name="edit_ruralUrban"
               [(ngModel)]="edit_ruralUrban"
-              (selectionChange)="onEditRuralUrbanChange()"
+              [disabled]="true"
             >
               <mat-option value="Rural">Rural</mat-option>
               <mat-option value="Urban">Urban</mat-option>
@@ -518,8 +551,7 @@
               required
               name="edit_facilityTypeID"
               [(ngModel)]="edit_facilityTypeID"
-              [disabled]="!edit_ruralUrban"
-              (selectionChange)="onEditFacilityTypeChange()"
+              [disabled]="true"
             >
               <mat-option
                 *ngFor="let ft of edit_filteredFacilityTypes"
@@ -611,7 +643,7 @@
                 *ngFor="let v of edit_filteredVillages"
                 [value]="v"
               >
-                {{ v.villageName }}
+                {{ v.villageName }} [{{ v.districtBranchID }}]
               </mat-option>
             </mat-select>
           </mat-form-field>
@@ -628,7 +660,7 @@
               #editMainVillageField="ngModel"
             >
               <mat-option *ngFor="let v of edit_selectedVillages" [value]="v.districtBranchID">
-                {{ v.villageName }}
+                {{ v.villageName }} [{{ v.districtBranchID }}]
               </mat-option>
             </mat-select>
             <mat-hint>

@@ -1067,7 +1067,7 @@
         <div class="table-responsive">
           <table
             mat-table
-            [dataSource]="objs.data"
+            [dataSource]="objs"
             class="table table-striped table-hover"
           >
             <ng-container matColumnDef="SNo">
@@ -1091,7 +1091,7 @@
               </td>
             </ng-container>
             <ng-container matColumnDef="action">
-              <th mat-header-cell *matHeaderCellDef mat-sort-header>Action</th>
+              <th mat-header-cell *matHeaderCellDef>Action</th>
               <td mat-cell *matCellDef="let element">
                 <mat-icon
                   class="cursorPointer"

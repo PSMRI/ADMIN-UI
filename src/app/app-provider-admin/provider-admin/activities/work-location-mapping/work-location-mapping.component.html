@@ -386,7 +386,7 @@
                 [required]="isVillageRequired"
               >
                 <mat-option *ngFor="let item of village" [value]="item">
-                  {{ item.villageName }}
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -442,6 +442,8 @@
           [serviceName]="Serviceline?.serviceName"
           [existingVillageIDs]="[]"
           [supervisorUserID]="User?.userID"
+          [userOtherVillageIDs]="createUserVillageIDs"
+          [userOtherVillageNames]="createUserVillageNames"
           (facilityMappingData)="onFacilityMappingDataReceived($event)"
           (noAshaWorkersFlag)="onNoAshaWorkersCreate($event)"
         ></app-user-facility-mapping>
@@ -497,7 +499,7 @@
         <div
           class="col-3"
           style="text-align: center; float: right"
-          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles && !noAshaWorkersCreate"
+          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles && !noAshaWorkersCreate && (!isFacilityServiceline || currentFacilityMappingData?.villageIDs?.length > 0)"
         >
           <button
             md-mini-fab
@@ -692,7 +694,7 @@
                 [style.width]="'100%'"
                 [(ngModel)]="serviceID_duringEdit"
                 name="serviceID"
-                (selectionChange)="refresh2()"
+                [disabled]="true"
                 required
               >
                 <mat-option
@@ -725,15 +727,10 @@
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select State</mat-label>
               <mat-select
-                [disabled]="isNational_edit"
+                [disabled]="true"
                 [style.width]="'100%'"
                 [(ngModel)]="stateID_duringEdit"
                 name="state"
-                (selectionChange)="
-                  refresh1();
-                  getAllDistricts_duringEdit(stateID_duringEdit);
-                  resetEditBlockVillageFields()
-                "
                 required
               >
                 <mat-option
@@ -753,21 +750,10 @@
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select District</mat-label>
               <mat-select
-                [disabled]="isNational_edit"
+                [disabled]="true"
                 [style.width]="'100%'"
                 [(ngModel)]="district_duringEdit"
                 name="district"
-                (selectionChange)="
-                  refresh5();
-                  getAllWorkLocations_duringEdit(
-                    stateID_duringEdit,
-                    serviceID_duringEdit,
-                    isNational_edit,
-                    district_duringEdit
-                  );
-                  getEditBlockMaster(district_duringEdit);
-                  resetEditBlockVillageFields()
-                "
                 required
               >
                 <mat-option
@@ -787,7 +773,7 @@
               <mat-select
                 [style.width]="'100%'"
                 [(ngModel)]="ServiceEditblock"
-                (selectionChange)="getEditVillageMaster(ServiceEditblock)"
+                [disabled]="true"
                 name="ServiceEditblock"
                 required
               >
@@ -814,11 +800,19 @@
                 name="serviceEditvillage"
                 required
               >
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allEditVillagesSelected"
+                    (change)="toggleSelectAllEditVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
                 <mat-option
                   *ngFor="let item of editVillageArr"
                   [value]="item.villageName"
                 >
-                  {{ item.villageName }}
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -859,7 +853,8 @@
                   teleConsultationEditSaveFunction(
                     serviceID_duringEdit,
                     roleID_duringEdit
-                  )
+                  );
+                  onEditRoleChange(roleID_duringEdit)
                 "
                 required
               >
@@ -960,7 +955,7 @@
           mat-raised-button
           color="accent"
           class="pull-right mat_green"
-          [disabled]="workplaceeform.invalid || (isFacilityServicelineEdit && !editFacilityMappingData) || noAshaWorkersEdit"
+          [disabled]="workplaceeform.invalid || (isFacilityServicelineEdit && (!editFacilityMappingData || !editFacilityMappingData.villageIDs?.length)) || noAshaWorkersEdit"
           (click)="(editGroupedElement && editServiceName !== 'FLW') ? updateGroupedWorkLocation(workplaceeform.value) : updateWorkLocation(workplaceeform.value)"
         >
           Update

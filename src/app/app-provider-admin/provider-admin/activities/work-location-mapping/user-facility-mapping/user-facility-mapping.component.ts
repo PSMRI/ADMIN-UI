@@ -57,6 +57,8 @@ export class UserFacilityMappingComponent
   @Input() existingFacilityTypeID: any;
   @Input() existingRuralUrban = '';
   @Input() supervisorUserID: any;
+  @Input() userOtherVillageIDs: number[] = [];
+  @Input() userOtherVillageNames: string[] = [];
 
   @Output() facilityMappingData = new EventEmitter<any>();
   @Output() noAshaWorkersFlag = new EventEmitter<boolean>();
@@ -155,6 +157,20 @@ export class UserFacilityMappingComponent
     // Always update role flags first (needed before loadVillagesForEdit)
     if (changes['roleName']) {
       this.updateRoleFlags();
+      if (!changes['roleName'].isFirstChange()) {
+        if (this.existingFacilityID) {
+          // Same-category role change: reload with existing facility data
+          if (this.isAshaSupervisor && this.existingFacilityIDs?.length > 0) {
+            this.loadAshaDirectEdit();
+          } else if (!this.isAshaSupervisor) {
+            this.loadVillagesForEdit();
+          }
+        } else {
+          // Cross-category role change (parent cleared facility/village inputs):
+          // reset to fresh create-mode state — admin starts from rural/urban
+          this.resetFacilitySelection();
+        }
+      }
     }
 
     // Determine edit mode: user has existing villages OR existing facilityID
@@ -296,23 +312,8 @@ export class UserFacilityMappingComponent
             existingIDs.has(Number(f.facilityID)),
           );
 
-          // If some facilityIDs not found in block (edge case), add placeholders
-          for (let i = 0; i < this.existingFacilityIDs.length; i++) {
-            const id = Number(this.existingFacilityIDs[i]);
-            if (
-              !this.facilities.some((f: any) => Number(f.facilityID) === id)
-            ) {
-              const placeholder = {
-                facilityID: id,
-                facilityName:
-                  (this.existingFacilityNames &&
-                    this.existingFacilityNames[i]) ||
-                  'Facility ID ' + id,
-              };
-              this.facilities.push(placeholder);
-              this.selectedFacilities.push(placeholder);
-            }
-          }
+          // Skip facilityIDs not found in block (deleted facilities)
+          // — don't add placeholders for deleted facilities
 
           this.facilitySearch = '';
           this.applyFacilityFilter();
@@ -662,17 +663,39 @@ export class UserFacilityMappingComponent
     const facilityVillageIDs = new Set(
       this.facilityVillages.map((v: any) => Number(v.districtBranchID)),
     );
-    const userVillageIDs = this.existingVillageIDs.map((id: any) => Number(id));
 
-    if (this.isEditMode && userVillageIDs.length > 0) {
+    // Edit mode uses existingVillageIDs; create mode uses userOtherVillageIDs from other mappings
+    const editVillageIDs = this.existingVillageIDs.map((id: any) => Number(id));
+    const otherVillageIDs = this.userOtherVillageIDs.map((id: any) =>
+      Number(id),
+    );
+
+    // Merge both sources, deduplicated
+    const mergedIDSet = new Set<number>([
+      ...editVillageIDs,
+      ...otherVillageIDs,
+    ]);
+    const mergedVillageIDs = Array.from(mergedIDSet);
+
+    // Build a name lookup from both sources
+    const villageNameMap = new Map<number, string>();
+    editVillageIDs.forEach((id, idx) => {
+      villageNameMap.set(id, this.existingVillageNames[idx] || '');
+    });
+    otherVillageIDs.forEach((id, idx) => {
+      if (!villageNameMap.has(id)) {
+        villageNameMap.set(id, this.userOtherVillageNames[idx] || '');
+      }
+    });
+
+    if (mergedVillageIDs.length > 0) {
       // Find orphan villages: user's existing villages NOT in facility's village list
       this.orphanVillages = [];
-      for (let i = 0; i < userVillageIDs.length; i++) {
-        const vid = userVillageIDs[i];
+      for (const vid of mergedVillageIDs) {
         if (!facilityVillageIDs.has(vid)) {
           this.orphanVillages.push({
             districtBranchID: vid,
-            villageName: this.existingVillageNames[i] || `Village ID ${vid}`,
+            villageName: villageNameMap.get(vid) || `Village ID ${vid}`,
             isOrphan: true,
           });
         }
@@ -688,13 +711,12 @@ export class UserFacilityMappingComponent
       // Merged list: facility villages (BLUE) first, then orphans (RED) at bottom
       this.displayVillages = [...facilityMarked, ...this.orphanVillages];
 
-      // Default: auto-select ALL display villages (for read-only chips)
-      this.selectedVillageIDs = this.displayVillages.map(
+      // Auto-select only facility (blue) villages — orphans shown in red but unchecked/not mapped
+      this.selectedVillageIDs = facilityMarked.map(
         (v: any) => v.districtBranchID,
       );
     } else {
-      // Create mode OR edit mode with no existing villages:
-      // show facility villages
+      // No existing villages: show facility villages only
       this.displayVillages = this.facilityVillages.map((v: any) => ({
         ...v,
         districtBranchID: Number(v.districtBranchID),
@@ -707,13 +729,13 @@ export class UserFacilityMappingComponent
     }
 
     // ASHA (not supervisor) sees a selectable dropdown — override selection logic
-    // Edit: pre-select only user's existing villages (includes orphans), not all facility villages
+    // Edit: pre-select only user's existing villages that are IN the facility (exclude orphans)
     // Create: empty, user picks
     if (this.isAshaRole && !this.isAshaSupervisor) {
-      if (this.isEditMode && userVillageIDs.length > 0) {
-        const userSet = new Set(userVillageIDs);
+      if (this.isEditMode && editVillageIDs.length > 0) {
+        const userSet = new Set(editVillageIDs);
         this.selectedVillageIDs = this.displayVillages
-          .filter((v: any) => userSet.has(v.districtBranchID))
+          .filter((v: any) => userSet.has(v.districtBranchID) && !v.isOrphan)
           .map((v: any) => v.districtBranchID);
       } else {
         this.selectedVillageIDs = [];
@@ -744,7 +766,15 @@ export class UserFacilityMappingComponent
       this.displayVillages.length > 0
         ? this.displayVillages
         : this.facilityVillages;
-    const selectedIDs = this.selectedVillageIDs.map((id: any) => Number(id));
+    // Filter out orphan villages — only facility (non-orphan) villages get emitted
+    const orphanIDSet = new Set(
+      this.displayVillages
+        .filter((v: any) => v.isOrphan)
+        .map((v: any) => Number(v.districtBranchID)),
+    );
+    const selectedIDs = this.selectedVillageIDs
+      .map((id: any) => Number(id))
+      .filter((id) => !orphanIDSet.has(id));
 
     if (this.isAshaSupervisor) {
       const ashaSupervisorMappings = this.selectedAshaUserIDs.map((id) => {
@@ -1119,27 +1149,27 @@ export class UserFacilityMappingComponent
   }
 
   get allVillagesSelected(): boolean {
-    if (this.filteredDisplayVillages.length === 0) return false;
-    const filteredIDs = new Set(
-      this.filteredDisplayVillages.map((v: any) => v.districtBranchID),
-    );
-    return [...filteredIDs].every((id) => this.selectedVillageIDs.includes(id));
+    // Only consider non-orphan villages for Select All state
+    const selectableIDs = this.filteredDisplayVillages
+      .filter((v: any) => !v.isOrphan)
+      .map((v: any) => v.districtBranchID);
+    if (selectableIDs.length === 0) return false;
+    return selectableIDs.every((id) => this.selectedVillageIDs.includes(id));
   }
 
   toggleSelectAllVillages() {
-    const filteredIDs = this.filteredDisplayVillages.map(
-      (v: any) => v.districtBranchID,
-    );
+    // Only add/remove non-orphan villages
+    const selectableIDs = this.filteredDisplayVillages
+      .filter((v: any) => !v.isOrphan)
+      .map((v: any) => v.districtBranchID);
     if (this.allVillagesSelected) {
-      // Deselect only the filtered/visible villages
-      const removeSet = new Set(filteredIDs);
+      const removeSet = new Set(selectableIDs);
       this.selectedVillageIDs = this.selectedVillageIDs.filter(
         (id) => !removeSet.has(id),
       );
     } else {
-      // Add all filtered villages to selection (keep existing selections)
       const existing = new Set(this.selectedVillageIDs);
-      for (const id of filteredIDs) {
+      for (const id of selectableIDs) {
         if (!existing.has(id)) {
           this.selectedVillageIDs.push(id);
         }

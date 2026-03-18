@@ -112,6 +112,8 @@ export class WorkLocationMappingComponent
   districts_array: any = [];
   filteredStates: any = [];
   mappedWorkLocationsList: any = [];
+  createUserVillageIDs: number[] = [];
+  createUserVillageNames: string[] = [];
   workLocationsList: any = [];
   RolesList: any = [];
   edit_Details: any = [];
@@ -233,6 +235,7 @@ export class WorkLocationMappingComponent
   singleSelectForEcd = false;
   disableSelectRoles = false;
   ServiceEditblock: any;
+  private _fix15WarnConfirmed = false; // Fix 15: re-entry guard for location-change warning
   villagename: any;
   blockname: any;
   blockid: any;
@@ -339,6 +342,7 @@ export class WorkLocationMappingComponent
             const allGroups = this.groupWorkLocations(response.data);
 
             // Separate ASHA Supervisor groups into a dedicated table
+            // Include both active and deactivated supervisors
             const ashaSupervisorGroups = allGroups.filter(
               (g: GroupedWorkLocation) =>
                 g.roles.some(
@@ -1863,77 +1867,32 @@ export class WorkLocationMappingComponent
     facilityIDs: any[],
     onSuccess: (oldMappings: any[]) => void,
   ) {
-    // Step 1: Fetch old ASHA mappings before deleting (for rollback)
-    const fetchRequests = facilityIDs.map((fID: any) =>
-      this.facilityMasterService.getSupervisorMappingByFacility(fID),
-    );
+    // Fix 7: single atomic call — delete old + save new in one backend transaction
+    // No more gap between delete and save where a timeout could wipe all mappings
+    const newMappings = (
+      this.editFacilityMappingData?.ashaSupervisorMappings || []
+    ).map((m: any) => ({
+      supervisorUserID: this.userID_duringEdit,
+      ashaUserID: m.ashaUserID,
+      facilityID: m.facilityID,
+      createdBy: this.createdBy,
+    }));
 
-    forkJoin(fetchRequests)
+    this.facilityMasterService
+      .updateAshaSupervisorMappingAtomically(
+        this.userID_duringEdit,
+        facilityIDs,
+        newMappings,
+        this.createdBy,
+      )
       .pipe(takeUntil(this.destroy$))
       .subscribe(
-        (responses: any[]) => {
-          // Collect old mappings that belong to this supervisor
-          const oldMappings: any[] = [];
-          for (const res of responses) {
-            if (res && res.data) {
-              const supervisorMappings = res.data.filter(
-                (m: any) =>
-                  m.supervisorUserID === this.userID_duringEdit && !m.deleted,
-              );
-              oldMappings.push(...supervisorMappings);
-            }
-          }
-
-          // Step 2: Delete old ASHA mappings
-          this.facilityMasterService
-            .deleteAshaSupervisorMapping(this.userID_duringEdit, facilityIDs)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe(
-              () => {
-                // Step 3: Save new mappings
-                if (
-                  this.editFacilityMappingData?.ashaSupervisorMappings?.length >
-                  0
-                ) {
-                  const newMappings =
-                    this.editFacilityMappingData.ashaSupervisorMappings.map(
-                      (m: any) => ({
-                        supervisorUserID: this.userID_duringEdit,
-                        ashaUserID: m.ashaUserID,
-                        facilityID: m.facilityID,
-                        createdBy: this.createdBy,
-                      }),
-                    );
-
-                  this.facilityMasterService
-                    .saveAshaSupervisorMapping(newMappings)
-                    .pipe(takeUntil(this.destroy$))
-                    .subscribe(
-                      () => {
-                        // ASHA mapping saved — proceed with work location update
-                        onSuccess(oldMappings);
-                      },
-                      (err: any) => {
-                        // Save new failed — restore old mappings
-                        this.restoreOldAshaMappings(oldMappings);
-                      },
-                    );
-                } else {
-                  // No ASHA workers to save — proceed with work location update
-                  onSuccess(oldMappings);
-                }
-              },
-              (err: any) => {
-                this.alertService.alert(
-                  'Failed to update ASHA supervisor mapping. Work location not updated.',
-                  'error',
-                );
-              },
-            );
+        () => {
+          onSuccess([]);
         },
         (err: any) => {
           this.alertService.alert(
-            'Failed to load existing ASHA mappings. Work location not updated.',
+            'Failed to update ASHA supervisor mapping. Work location not updated.',
             'error',
           );
         },
@@ -2750,6 +2709,35 @@ export class WorkLocationMappingComponent
   }
 
   updateWorkLocation(workLocations: any) {
+    // Fix 15: warn if district or block changed
+    if (!this._fix15WarnConfirmed) {
+      const origDistrict = parseInt(this.edit_Details?.workingDistrictID, 10);
+      const origBlock = this.edit_Details?.blockID;
+      const districtChanged =
+        !isNaN(origDistrict) &&
+        this.district_duringEdit != null &&
+        this.district_duringEdit !== origDistrict;
+      const blockChanged =
+        origBlock != null &&
+        this.ServiceEditblock != null &&
+        this.ServiceEditblock !== origBlock;
+      if (districtChanged || blockChanged) {
+        this.alertService
+          .confirm(
+            'Warning',
+            'Changing the district or block will invalidate existing village mappings and ASHA supervisor assignments. Are you sure you want to continue?',
+          )
+          .subscribe((confirmed: any) => {
+            if (confirmed) {
+              this._fix15WarnConfirmed = true;
+              this.updateWorkLocation(workLocations);
+              this._fix15WarnConfirmed = false;
+            }
+          });
+        return;
+      }
+    }
+    this._fix15WarnConfirmed = false;
     const duplicate: boolean =
       this.checkHWCDuplicateMainArrayForEditScreen(workLocations);
     if (workLocations.serviceID === 1) {
@@ -2800,8 +2788,132 @@ export class WorkLocationMappingComponent
         });
       }
 
+      // Detect if admin changed role away from ASHA Supervisor
+      const newRoleName = (
+        (this.RolesList.find((r: any) => r.roleID === workLocations.role) || {})
+          .roleName || ''
+      ).toLowerCase();
+      const isStillAshaSupervisor = newRoleName === 'asha supervisor';
+
+      console.log(
+        '[DEBUG SAVE] editIsAshaSupervisor:',
+        this.editIsAshaSupervisor,
+        'editAshaMappingPairs.length:',
+        this.editAshaMappingPairs.length,
+        'isStillAshaSupervisor:',
+        isStillAshaSupervisor,
+        'editFacilityMappingData:',
+        JSON.stringify(this.editFacilityMappingData),
+      );
+
+      // Role changed from ASHA Supervisor → another role: keep 1 row, delete extras, clear ASHA mappings
+      if (
+        this.editIsAshaSupervisor &&
+        this.editAshaMappingPairs.length > 0 &&
+        !isStillAshaSupervisor
+      ) {
+        const oldPairs = this.editAshaMappingPairs;
+        const allOldFacilityIDs = oldPairs.map((p: any) => p.facilityID);
+        // Use the single facility the admin selected, fall back to first old facility
+        const chosenFacilityID =
+          this.editFacilityMappingData?.facilityID || oldPairs[0].facilityID;
+
+        // Step 1: Delete all ASHA supervisor mappings (no re-save)
+        this.facilityMasterService
+          .deleteAshaSupervisorMapping(
+            this.userID_duringEdit,
+            allOldFacilityIDs,
+          )
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(
+            () => {
+              // Step 2: Update first USR row with new role + chosen facility
+              const primaryLangObj: any = {
+                uSRMappingID: oldPairs[0].uSRMappingID,
+                userID: this.userID_duringEdit,
+                roleID: workLocations.role,
+                teleConsultation: this.teleConsultationEdit,
+                providerServiceMapID: this.providerServiceMapID_duringEdit,
+                blockID: this.ServiceEditblock,
+                blockName: this.blockname,
+                villageID: editVillageIdArray,
+                villageName:
+                  editVillageNameArray.length > 0 ? editVillageNameArray : null,
+                workingLocationID: this.isFacilityServicelineEdit
+                  ? null
+                  : this.workLocationID_duringEdit,
+                stateID: this.stateID_duringEdit,
+                districtID: this.district_duringEdit,
+                modifiedBy: this.createdBy,
+                facilityID: chosenFacilityID,
+              };
+              // Step 3: Soft-delete all extra USR rows (indices 1..n)
+              const deleteRequests = oldPairs.slice(1).map((p: any) =>
+                this.worklocationmapping.DeleteWorkLocationMapping({
+                  uSRMappingID: p.uSRMappingID,
+                  deleted: true,
+                }),
+              );
+              this.worklocationmapping
+                .UpdateWorkLocationMapping(primaryLangObj)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(
+                  () => {
+                    if (deleteRequests.length > 0) {
+                      forkJoin(deleteRequests)
+                        .pipe(takeUntil(this.destroy$))
+                        .subscribe(
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated successfully',
+                              'success',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                            this.bufferArray.data = [];
+                            this.bufferArray.paginator = this.paginatorSecond;
+                          },
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated but extra rows could not be removed. Contact admin.',
+                              'error',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                          },
+                        );
+                    } else {
+                      this.alertService.alert(
+                        'Mapping updated successfully',
+                        'success',
+                      );
+                      this.showTable();
+                      this.getAllMappedWorkLocations();
+                      this.bufferArray.data = [];
+                      this.bufferArray.paginator = this.paginatorSecond;
+                    }
+                  },
+                  () => {
+                    this.alertService.alert(
+                      'Failed to update mapping',
+                      'error',
+                    );
+                  },
+                );
+            },
+            () => {
+              this.alertService.alert(
+                'Failed to clear ASHA supervisor mappings. Work location not updated.',
+                'error',
+              );
+            },
+          );
+      }
       // ASHA Supervisor: update existing rows, create new rows if facilities changed
-      if (this.editIsAshaSupervisor && this.editAshaMappingPairs.length > 0) {
+      else if (
+        this.editIsAshaSupervisor &&
+        this.editAshaMappingPairs.length > 0
+      ) {
         const oldPairs = this.editAshaMappingPairs;
         const oldFacilityIDs = oldPairs.map((p) => p.facilityID);
         // Use new facility IDs from sub-component if available, else keep old ones
@@ -2850,8 +2962,16 @@ export class WorkLocationMappingComponent
           );
         }
 
+        // Only create new rows for facilities that have at least one ASHA worker assigned
+        const ashaMappedFacilitySet1 = new Set(
+          (this.editFacilityMappingData?.ashaSupervisorMappings || []).map(
+            (m: any) => m.facilityID,
+          ),
+        );
+
         // Create new rows for extra facilities (admin added more)
         for (let i = reusableCount; i < newFacilityIDs.length; i++) {
+          if (!ashaMappedFacilitySet1.has(newFacilityIDs[i])) continue;
           const newObj: any = {
             previleges: [
               {
@@ -2882,7 +3002,7 @@ export class WorkLocationMappingComponent
             serviceProviderID: this.serviceProviderID,
           };
           allRequests.push(
-            this.worklocationmapping.SaveWorkLocationMapping(newObj),
+            this.worklocationmapping.SaveWorkLocationMapping([newObj]),
           );
         }
 
@@ -2925,7 +3045,22 @@ export class WorkLocationMappingComponent
       ) {
         // ASHA Supervisor without existing facilities (old user):
         // Step 1: ASHA supervisor mapping FIRST
-        const facilityIDs = this.editFacilityMappingData.facilityIDs;
+        // Only use facilities that have at least one ASHA worker assigned
+        const ashaMappedFacilitySet2 = new Set(
+          (this.editFacilityMappingData?.ashaSupervisorMappings || []).map(
+            (m: any) => m.facilityID,
+          ),
+        );
+        const facilityIDs = (
+          this.editFacilityMappingData.facilityIDs as any[]
+        ).filter((id) => ashaMappedFacilitySet2.has(id));
+        if (facilityIDs.length === 0) {
+          this.alertService.alert(
+            'No ASHA workers assigned to the selected facilities. Please assign ASHA workers before saving.',
+            'error',
+          );
+          return;
+        }
         const firstFacilityID = facilityIDs[0];
 
         this.updateAshaSupervisorMappings(facilityIDs, (oldMappings: any[]) => {
@@ -2992,9 +3127,9 @@ export class WorkLocationMappingComponent
                         createdBy: this.createdBy,
                         serviceProviderID: this.serviceProviderID,
                       };
-                      return this.worklocationmapping.SaveWorkLocationMapping(
+                      return this.worklocationmapping.SaveWorkLocationMapping([
                         newObj,
-                      );
+                      ]);
                     });
 
                   forkJoin(additionalRequests)
@@ -3075,6 +3210,163 @@ export class WorkLocationMappingComponent
               },
             );
         });
+      } else if (
+        isStillAshaSupervisor &&
+        this.editFacilityMappingData?.isAshaSupervisor
+      ) {
+        // Role changed TO ASHA Supervisor (e.g. ASHA → ASHA Sup, CHO → ASHA Sup)
+        // Only use facilities that have ASHA workers assigned
+        const ashaMappedSet = new Set(
+          (this.editFacilityMappingData?.ashaSupervisorMappings || []).map(
+            (m: any) => m.facilityID,
+          ),
+        );
+        const supFacilityIDs = (
+          (this.editFacilityMappingData.facilityIDs as any[]) || []
+        ).filter((id) => ashaMappedSet.has(id));
+
+        if (supFacilityIDs.length === 0) {
+          this.alertService.alert(
+            'No ASHA workers assigned to the selected facilities. Please assign ASHA workers before saving.',
+            'error',
+          );
+          return;
+        }
+
+        const firstFacilityID = supFacilityIDs[0];
+
+        // Step 1: Save ASHA supervisor mappings first
+        const newMappings =
+          this.editFacilityMappingData.ashaSupervisorMappings.map((m: any) => ({
+            supervisorUserID: this.userID_duringEdit,
+            ashaUserID: m.ashaUserID,
+            facilityID: m.facilityID,
+            createdBy: this.createdBy,
+          }));
+
+        this.facilityMasterService
+          .saveAshaSupervisorMapping(newMappings)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(
+            () => {
+              // Step 2: Update existing USR row with first facility
+              const primaryObj: any = {
+                uSRMappingID: this.uSRMappingID,
+                userID: this.userID_duringEdit,
+                roleID: workLocations.role,
+                teleConsultation: this.teleConsultationEdit,
+                providerServiceMapID: this.providerServiceMapID_duringEdit,
+                blockID: this.ServiceEditblock,
+                blockName: this.blockname,
+                villageID: editVillageIdArray,
+                villageName:
+                  editVillageNameArray.length > 0 ? editVillageNameArray : null,
+                workingLocationID: this.isFacilityServicelineEdit
+                  ? null
+                  : this.workLocationID_duringEdit,
+                stateID: this.stateID_duringEdit,
+                districtID: this.district_duringEdit,
+                modifiedBy: this.createdBy,
+                facilityID: firstFacilityID,
+              };
+
+              this.worklocationmapping
+                .UpdateWorkLocationMapping(primaryObj)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(
+                  () => {
+                    // Step 3: Create new USR rows for additional facilities
+                    if (supFacilityIDs.length > 1) {
+                      const additionalReqs = supFacilityIDs
+                        .slice(1)
+                        .map((fID: any) => {
+                          const newObj: any = {
+                            previleges: [
+                              {
+                                ID: [
+                                  {
+                                    roleID: workLocations.role,
+                                    teleConsultation: this.teleConsultationEdit,
+                                    inbound: null,
+                                    outbound: null,
+                                  },
+                                ],
+                                providerServiceMapID:
+                                  this.providerServiceMapID_duringEdit,
+                                workingLocationID: this
+                                  .isFacilityServicelineEdit
+                                  ? null
+                                  : this.workLocationID_duringEdit,
+                                stateID: this.stateID_duringEdit,
+                                districtID: this.district_duringEdit,
+                                blockID: this.ServiceEditblock,
+                                blockName: this.blockname,
+                                villageID: editVillageIdArray,
+                                villageName:
+                                  editVillageNameArray.length > 0
+                                    ? editVillageNameArray
+                                    : null,
+                                facilityID: fID,
+                              },
+                            ],
+                            userID: this.userID_duringEdit,
+                            createdBy: this.createdBy,
+                            serviceProviderID: this.serviceProviderID,
+                          };
+                          return this.worklocationmapping.SaveWorkLocationMapping(
+                            [newObj],
+                          );
+                        });
+
+                      forkJoin(additionalReqs)
+                        .pipe(takeUntil(this.destroy$))
+                        .subscribe(
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated successfully',
+                              'success',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                            this.bufferArray.data = [];
+                            this.bufferArray.paginator = this.paginatorSecond;
+                          },
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated but extra facility rows failed. Contact admin.',
+                              'error',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                          },
+                        );
+                    } else {
+                      this.alertService.alert(
+                        'Mapping updated successfully',
+                        'success',
+                      );
+                      this.showTable();
+                      this.getAllMappedWorkLocations();
+                      this.bufferArray.data = [];
+                      this.bufferArray.paginator = this.paginatorSecond;
+                    }
+                  },
+                  () => {
+                    // USR update failed — rollback ASHA supervisor mappings
+                    this.rollbackAshaSupervisorMapping(
+                      this.userID_duringEdit,
+                      supFacilityIDs,
+                    );
+                  },
+                );
+            },
+            () => {
+              this.alertService.alert(
+                'Failed to save ASHA supervisor mapping. Work location not updated.',
+                'error',
+              );
+            },
+          );
       } else {
         // Single row update (FLW/HWC non-ASHA or standard)
         const langObj: any = {
@@ -3255,6 +3547,60 @@ export class WorkLocationMappingComponent
     this.Servicevillage = undefined;
     this.teleConsultation = null;
     this.teleConsultationFlag = false;
+    this.createUserVillageIDs = [];
+    this.createUserVillageNames = [];
+    this.collectUserExistingVillages();
+  }
+
+  get allEditVillagesSelected(): boolean {
+    if (!this.editVillageArr?.length) return false;
+    const selected = new Set(this.serviceEditvillage || []);
+    return this.editVillageArr.every((v: any) => selected.has(v.villageName));
+  }
+
+  toggleSelectAllEditVillages() {
+    if (this.allEditVillagesSelected) {
+      this.serviceEditvillage = [];
+    } else {
+      this.serviceEditvillage = this.editVillageArr.map(
+        (v: any) => v.villageName,
+      );
+    }
+  }
+
+  collectUserExistingVillages() {
+    if (!this.User?.userID) return;
+    const userID = this.User.userID;
+    const villageIDSet = new Set<number>();
+    const villageIDToName = new Map<number, string>();
+
+    // Use the grouped lists — villageID arrays are properly built there
+    const allGroups: GroupedWorkLocation[] = [
+      ...this.groupedWorkLocationsList,
+      ...this.ashaSupervisorGroupedList,
+    ];
+    for (const group of allGroups) {
+      if (group.userID !== userID) continue;
+      if (!group.anyActive) continue;
+      if (Array.isArray(group.villageID)) {
+        group.villageID.forEach((vid: any, idx: number) => {
+          const id = Number(vid);
+          if (!villageIDSet.has(id)) {
+            villageIDSet.add(id);
+            villageIDToName.set(
+              id,
+              Array.isArray(group.villageName)
+                ? group.villageName[idx] || ''
+                : '',
+            );
+          }
+        });
+      }
+    }
+    this.createUserVillageIDs = Array.from(villageIDSet);
+    this.createUserVillageNames = this.createUserVillageIDs.map(
+      (id) => villageIDToName.get(id) || '',
+    );
   }
 
   resetBlockVillageFields() {
@@ -3284,6 +3630,34 @@ export class WorkLocationMappingComponent
     if (!event.checked) {
       this.isOutbound = false;
     } else this.isOutbound = true;
+  }
+
+  onEditRoleChange(roleID: any) {
+    const selected = this.RolesList.find((r: any) => r.roleID === roleID);
+    if (!selected) return;
+
+    const oldIsAshaSup = this.editIsAshaSupervisor;
+    const newIsAshaSup =
+      (selected.roleName || '').toLowerCase() === 'asha supervisor';
+
+    this.editRoleName = selected.roleName || '';
+
+    // If role crosses the ASHA Supervisor boundary (to or from), reset all
+    // facility/village inputs so the child starts fresh — correct single vs
+    // multi facility mode, no pre-populated data, no orphan red villages
+    if (oldIsAshaSup !== newIsAshaSup) {
+      this.editIsAshaSupervisor = newIsAshaSup;
+      this.editSupervisorUserID = newIsAshaSup ? this.userID_duringEdit : null;
+      this.editExistingFacilityID = null;
+      this.editExistingFacilityIDs = [];
+      this.editExistingFacilityNames = [];
+      this.editExistingFacilityName = '';
+      this.editExistingFacilityTypeID = null;
+      this.editExistingRuralUrban = '';
+      this.editExistingVillageIDs = [];
+      this.editExistingVillageNames = [];
+      this.editFacilityMappingData = null;
+    }
   }
 
   showInboundOutboundEdit(value: any, role: any) {
@@ -3591,6 +3965,10 @@ export class WorkLocationMappingComponent
   }
 
   onEditFacilityMappingDataReceived(data: any) {
+    console.log(
+      '[DEBUG] editFacilityMappingData received:',
+      JSON.stringify(data),
+    );
     this.editFacilityMappingData = data;
   }
 

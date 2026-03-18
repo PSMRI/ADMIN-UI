@@ -125,6 +125,12 @@ export class FacilityMasterService {
     });
   }
 
+  getAllFacilitiesByBlock(blockID: number) {
+    return this.http.post(environment.get_AllFacilitiesByBlock_Url, {
+      blockID: blockID,
+    });
+  }
+
   createFacilities(obj: any) {
     return this.http.post(environment.save_stores_Url, obj);
   }
@@ -187,6 +193,13 @@ export class FacilityMasterService {
     );
   }
 
+  deleteFacilityWithHierarchy(facilityID: number, modifiedBy: string) {
+    return this.http.post(environment.delete_FacilityWithHierarchy_Url, {
+      facilityID: facilityID,
+      modifiedBy: modifiedBy,
+    });
+  }
+
   getAshasByFacility(facilityIDs: number[]) {
     return this.http.post(environment.getAshasByFacility_Url, {
       facilityIDs: facilityIDs,
@@ -201,6 +214,18 @@ export class FacilityMasterService {
     return this.http.post(environment.getSupervisorMappingByFacility_Url, {
       facilityID: facilityID,
     });
+  }
+
+  updateAshaSupervisorMappingAtomically(
+    supervisorUserID: number,
+    facilityIDs: number[],
+    newMappings: any[],
+    modifiedBy: string,
+  ) {
+    return this.http.post(
+      environment.updateAshaSupervisorMappingAtomically_Url,
+      { supervisorUserID, facilityIDs, newMappings, modifiedBy },
+    );
   }
 
   getFacilityByMappingID(uSRMappingID: number) {

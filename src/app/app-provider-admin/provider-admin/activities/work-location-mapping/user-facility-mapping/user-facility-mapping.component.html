@@ -144,8 +144,8 @@
           </mat-checkbox>
         </div>
         <mat-option *ngFor="let v of filteredDisplayVillages" [value]="v.districtBranchID"
-          [ngClass]="{ 'village-orphan-option': v.isOrphan }">
-          {{ v.villageName }}
+          [ngClass]="{ 'orphan-village': v.isOrphan }">
+          {{ v.villageName }} [{{ v.districtBranchID }}]
           <span *ngIf="v.isOrphan" class="orphan-tag"> (not in sub-center)</span>
         </mat-option>
       </mat-select>
@@ -162,11 +162,16 @@
           class="village-chip"
           [ngClass]="{ 'village-orphan': v.isOrphan }"
         >
-          {{ v.villageName }}
+          {{ v.villageName }} [{{ v.districtBranchID }}]
           <span *ngIf="v.isOrphan" class="orphan-tag">(not in sub-center)</span>
         </span>
       </div>
     </div>
+  </div>
+
+  <!-- Orphan villages warning -->
+  <div class="col-12" *ngIf="orphanVillages.length > 0" style="margin-top:4px; color:#d32f2f; font-size:12px; font-style:italic;">
+    Some villages are not in sub-center
   </div>
 
   <!-- No ASHA Workers message -->

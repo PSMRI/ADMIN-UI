@@ -1311,17 +1311,20 @@ export class EmployeeMasterNewComponent implements OnInit {
       reqObject.push(tempObj);
     }
     console.log('Details to be saved', reqObject);
-    this.employeeMasterNewService
-      .createNewUser(reqObject)
-      .subscribe((response) => {
+    this.employeeMasterNewService.createNewUser(reqObject).subscribe(
+      (response) => {
         console.log('response', response.data);
         this.dialogService.alert('Saved successfully', 'success');
         this.objs.data = [];
         this.getAllUserDetails();
         this.showTable();
         this.resetAllFlags();
-      }),
-      (err: any) => console.log('error', err);
+      },
+      (err: any) => {
+        console.log('error', err);
+        this.dialogService.alert('Failed to create user', 'error');
+      },
+    );
   }
 
   showEditForm() {
