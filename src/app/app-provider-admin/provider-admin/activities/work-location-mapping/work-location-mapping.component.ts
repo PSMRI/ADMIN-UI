@@ -20,7 +20,13 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import {
+  AfterViewInit,
+  Component,
+  OnDestroy,
+  OnInit,
+  ViewChild,
+} from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
@@ -29,13 +35,57 @@ import { VillageMasterService } from 'src/app/core/services/adminServices/AdminV
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { WorkLocationMapping } from '../services/work-location-mapping.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
+import { forkJoin, Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
+
+interface RoleEntry {
+  roleID: number;
+  roleName: string;
+  uSRMappingID: any;
+  inbound: any;
+  outbound: any;
+  teleConsultation: any;
+  userServciceRoleDeleted: boolean;
+  userDeleted: boolean;
+  providerServiceMappingDeleted: boolean;
+  facilityID: any;
+}
+
+interface GroupedWorkLocation {
+  userID: any;
+  userName: string;
+  realName: string;
+  serviceID: any;
+  serviceName: string;
+  stateID: any;
+  stateName: string;
+  workingDistrictID: any;
+  workingDistrictName: string;
+  blockID: any;
+  blockName: string;
+  providerServiceMapID: any;
+  workingLocationID: any;
+  locationName: string;
+  villageID: any[];
+  villageName: any[];
+  roles: RoleEntry[];
+  roleNamesDisplay: string;
+  allDeleted: boolean;
+  anyActive: boolean;
+  originalRows: any[];
+}
 
 @Component({
   selector: 'app-work-location-mapping',
   templateUrl: './work-location-mapping.component.html',
   styleUrls: ['./work-location-mapping.component.css'],
 })
-export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
+export class WorkLocationMappingComponent
+  implements OnInit, AfterViewInit, OnDestroy
+{
+  private destroy$ = new Subject<void>();
+
   userID: any;
   serviceProviderID: any;
   createdBy: any;
@@ -56,11 +106,14 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   // Arrays
   filteredRoles: any = '';
   userNamesList: any = [];
+  unmappedUserNamesList: any = [];
   services_array: any = [];
   states_array: any = [];
   districts_array: any = [];
   filteredStates: any = [];
   mappedWorkLocationsList: any = [];
+  createUserVillageIDs: number[] = [];
+  createUserVillageNames: string[] = [];
   workLocationsList: any = [];
   RolesList: any = [];
   edit_Details: any = [];
@@ -83,6 +136,24 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
   isNational = false;
   blockFlag = false;
+  isFacilityServiceline = false;
+
+  // Edit-mode facility integration
+  isFacilityServicelineEdit = false;
+  editExistingVillageIDs: number[] = [];
+  editExistingVillageNames: string[] = [];
+  editExistingFacilityID: any = null;
+  editExistingFacilityIDs: any[] = [];
+  editExistingFacilityNames: string[] = [];
+  editExistingFacilityName = '';
+  editExistingFacilityTypeID: any = null;
+  editExistingRuralUrban = '';
+  editIsAshaSupervisor = false;
+  editAshaMappingPairs: { uSRMappingID: any; facilityID: any }[] = [];
+  editFacilityMappingData: any = null;
+  editRoleName = '';
+  editServiceName = '';
+  editSupervisorUserID: any = null;
 
   villageFlag = false;
   searchTerm: any;
@@ -103,7 +174,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     'District',
     'Block',
     'Village',
-    'WorkLocation',
+    'FacilityID',
     'Role',
     'Inbound',
     'Outbound',
@@ -118,7 +189,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     'District',
     'Block',
     'Village',
-    'WorkLocation',
+    'FacilityID',
     'Role',
     'Inbound',
     'Outbound',
@@ -127,11 +198,32 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   ];
   filteredmappedWorkLocationsList = new MatTableDataSource<any>();
   bufferArray = new MatTableDataSource<any>();
+  groupedBufferArray = new MatTableDataSource<any>();
+  groupedWorkLocationsList: GroupedWorkLocation[] = [];
+  editGroupedElement: GroupedWorkLocation | null = null;
+  roleIDs_duringEdit: number[] = [];
+  facilityNameMap = new Map<number, string>();
+  editFacilityLoading = false;
+
+  // ASHA Supervisor separate table
+  ashaSupervisorGroupedList: GroupedWorkLocation[] = [];
+  filteredAshaSupervisorList = new MatTableDataSource<any>();
+  ashaSupervisorColumns: string[] = [
+    'SNo',
+    'UserName',
+    'State',
+    'District',
+    'Facilities',
+    'edit',
+    'action',
+  ];
 
   @ViewChild('paginatorFirst') paginatorFirst!: MatPaginator;
   @ViewChild('paginatorSecond') paginatorSecond!: MatPaginator;
+  @ViewChild('paginatorAsha') paginatorAsha!: MatPaginator;
   @ViewChild('sortFirst') sortFirst!: MatSort;
   @ViewChild('sortSecond') sortSecond!: MatSort;
+  @ViewChild('sortAsha') sortAsha!: MatSort;
   @ViewChild('workplaceform')
   eForm!: NgForm;
   @ViewChild('workplaceeform')
@@ -143,6 +235,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   singleSelectForEcd = false;
   disableSelectRoles = false;
   ServiceEditblock: any;
+  private _fix15WarnConfirmed = false; // Fix 15: re-entry guard for location-change warning
   villagename: any;
   blockname: any;
   blockid: any;
@@ -151,14 +244,15 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   villageIdValue: any;
   item: any;
   workplaceform: any;
-  isVillageRequired = true;
-  isBlockRequired = true;
+  isVillageRequired = false;
+  isBlockRequired = false;
 
   constructor(
     private alertService: ConfirmationDialogsService,
     private worklocationmapping: WorkLocationMapping,
     private villagemasterService: VillageMasterService,
     readonly sessionstorage: SessionStorageService,
+    private facilityMasterService: FacilityMasterService,
   ) {}
 
   ngOnInit() {
@@ -168,6 +262,11 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.getProviderServices(this.userID);
     this.getAllMappedWorkLocations();
     this.getUserName(this.serviceProviderID);
+  }
+
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   ngAfterViewInit(): void {
@@ -185,11 +284,12 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.availableRoles = [];
     this.worklocationmapping
       .getStates(this.userID, serviceID, isNational)
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) =>
           this.getStatesSuccessHandeler(response.data, isNational),
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load states', 'error');
         },
       );
   }
@@ -215,18 +315,22 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     }
   }
   getProviderServices(userID: any) {
-    this.worklocationmapping.getServices(userID).subscribe(
-      (response: any) => {
-        this.services_array = response.data;
-      },
-      (err: any) => {
-        console.log(err, 'error');
-      },
-    );
+    this.worklocationmapping
+      .getServices(userID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          this.services_array = response.data;
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to load services', 'error');
+        },
+      );
   }
   getAllMappedWorkLocations() {
     this.worklocationmapping
       .getMappedWorkLocationList(this.serviceProviderID)
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -235,7 +339,34 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
               response,
             );
             this.mappedWorkLocationsList = response.data;
-            this.filteredmappedWorkLocationsList.data = response.data;
+            const allGroups = this.groupWorkLocations(response.data);
+
+            // Separate ASHA Supervisor groups into a dedicated table
+            // Include both active and deactivated supervisors
+            const ashaSupervisorGroups = allGroups.filter(
+              (g: GroupedWorkLocation) =>
+                g.roles.some(
+                  (r) => (r.roleName || '').toLowerCase() === 'asha supervisor',
+                ),
+            );
+            const otherGroups = allGroups.filter(
+              (g: GroupedWorkLocation) =>
+                !g.roles.some(
+                  (r) => (r.roleName || '').toLowerCase() === 'asha supervisor',
+                ),
+            );
+
+            // Merge ASHA Supervisor groups by userID (handles multiple facility rows)
+            this.ashaSupervisorGroupedList =
+              this.mergeAshaSupervisorGroups(ashaSupervisorGroups);
+            this.groupedWorkLocationsList = otherGroups;
+
+            // Update real names from SearchEmployee4 data (userNamesList)
+            this.updateRealNamesInGroupedList();
+            this.filteredmappedWorkLocationsList.data =
+              this.groupedWorkLocationsList;
+            this.filteredAshaSupervisorList.data =
+              this.ashaSupervisorGroupedList;
             if (this.paginatorFirst) {
               this.filteredmappedWorkLocationsList.paginator =
                 this.paginatorFirst;
@@ -243,32 +374,271 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             if (this.sortFirst) {
               this.filteredmappedWorkLocationsList.sort = this.sortFirst;
             }
+            if (this.paginatorAsha) {
+              this.filteredAshaSupervisorList.paginator = this.paginatorAsha;
+            }
+            if (this.sortAsha) {
+              this.filteredAshaSupervisorList.sort = this.sortAsha;
+            }
+            // Load facility names for groups that have facilityIDs
+            this.loadFacilityNamesForGroups();
+            this.updateUnmappedUsersList();
           }
         },
         (err: any) => {
-          console.log('Error', err);
+          this.alertService.alert('Failed to load work locations', 'error');
         },
       );
   }
-  getUserName(serviceProviderID: any) {
-    this.worklocationmapping.getUserName(serviceProviderID).subscribe(
-      (response: any) => {
-        if (response) {
-          console.log(
-            'All User names under this provider Success Handeler',
-            response,
-          );
-          this.userNamesList = response.data;
-          this.states_array = [];
-          this.districts_array = [];
-          this.workLocationsList = [];
-          this.RolesList = [];
+
+  groupWorkLocations(flatRows: any[]): GroupedWorkLocation[] {
+    const groupMap = new Map<string, GroupedWorkLocation>();
+
+    for (const row of flatRows) {
+      // Group rows for HWC/FLW service lines (including ASHA Supervisor) by user+block
+      // Other services get one row per entry
+      const isFacilityService =
+        row.serviceName === 'HWC' || row.serviceName === 'FLW';
+      let key: string;
+      if (isFacilityService) {
+        key = [
+          row.userID,
+          row.serviceID,
+          row.stateID || '',
+          row.workingDistrictID || '',
+          row.blockID || '',
+        ].join('|');
+      } else {
+        key = `single_${row.uSRMappingID}`;
+      }
+
+      if (!groupMap.has(key)) {
+        groupMap.set(key, {
+          userID: row.userID,
+          userName: row.userName,
+          realName: ((row.firstName || '') + ' ' + (row.lastName || '')).trim(),
+          serviceID: row.serviceID,
+          serviceName: row.serviceName,
+          stateID: row.stateID,
+          stateName: row.stateName,
+          workingDistrictID: row.workingDistrictID,
+          workingDistrictName: row.workingDistrictName,
+          blockID: row.blockID,
+          blockName: row.blockName,
+          providerServiceMapID: row.providerServiceMapID,
+          workingLocationID: row.workingLocationID,
+          locationName: row.locationName,
+          villageID: Array.isArray(row.villageID) ? [...row.villageID] : [],
+          villageName: Array.isArray(row.villageName)
+            ? [...row.villageName]
+            : [],
+          roles: [],
+          roleNamesDisplay: '',
+          allDeleted: true,
+          anyActive: false,
+          originalRows: [],
+        });
+      }
+
+      const group = groupMap.get(key)!;
+      group.originalRows.push(row);
+
+      if (Array.isArray(row.villageID)) {
+        for (const vid of row.villageID) {
+          if (!group.villageID.includes(vid)) {
+            group.villageID.push(vid);
+          }
         }
-      },
-      (err: any) => {
-        console.log('Error', err);
-        console.log(err, 'error');
-      },
+      }
+      if (Array.isArray(row.villageName)) {
+        for (const vn of row.villageName) {
+          if (!group.villageName.includes(vn)) {
+            group.villageName.push(vn);
+          }
+        }
+      }
+
+      if (!group.locationName && row.locationName) {
+        group.locationName = row.locationName;
+        group.workingLocationID = row.workingLocationID;
+      }
+
+      const alreadyHasRole = group.roles.some(
+        (r) => r.uSRMappingID === row.uSRMappingID,
+      );
+      if (!alreadyHasRole) {
+        group.roles.push({
+          roleID: row.roleID,
+          roleName: row.roleName,
+          uSRMappingID: row.uSRMappingID,
+          inbound: row.inbound,
+          outbound: row.outbound,
+          teleConsultation: row.teleConsultation,
+          userServciceRoleDeleted: row.userServciceRoleDeleted,
+          userDeleted: row.userDeleted,
+          providerServiceMappingDeleted: row.providerServiceMappingDeleted,
+          facilityID: row.facilityID,
+        });
+      }
+
+      const isRowDeleted =
+        row.userServciceRoleDeleted ||
+        row.userDeleted ||
+        row.providerServiceMappingDeleted;
+      if (!isRowDeleted) {
+        group.allDeleted = false;
+        group.anyActive = true;
+      }
+    }
+
+    for (const group of groupMap.values()) {
+      const uniqueRoleNames = [...new Set(group.roles.map((r) => r.roleName))];
+      group.roleNamesDisplay = uniqueRoleNames.join(', ');
+      group.allDeleted = group.roles.every(
+        (r) =>
+          r.userServciceRoleDeleted ||
+          r.userDeleted ||
+          r.providerServiceMappingDeleted,
+      );
+      group.anyActive = !group.allDeleted;
+    }
+
+    return Array.from(groupMap.values());
+  }
+
+  /**
+   * Merge multiple ASHA Supervisor groups (which may have been split by blockID)
+   * into one group per userID. This guarantees 1 row per ASHA Supervisor in the table.
+   */
+  mergeAshaSupervisorGroups(
+    groups: GroupedWorkLocation[],
+  ): GroupedWorkLocation[] {
+    const mergeMap = new Map<any, GroupedWorkLocation>();
+
+    for (const group of groups) {
+      const key = group.userID;
+      if (!mergeMap.has(key)) {
+        // Clone the first group as base
+        mergeMap.set(key, {
+          ...group,
+          roles: [...group.roles],
+          villageID: [...group.villageID],
+          villageName: [...group.villageName],
+          originalRows: [...group.originalRows],
+        });
+      } else {
+        const existing = mergeMap.get(key)!;
+        // Merge roles (deduplicate by uSRMappingID)
+        for (const role of group.roles) {
+          if (
+            !existing.roles.some((r) => r.uSRMappingID === role.uSRMappingID)
+          ) {
+            existing.roles.push(role);
+          }
+        }
+        // Merge villages
+        for (const vid of group.villageID) {
+          if (!existing.villageID.includes(vid)) {
+            existing.villageID.push(vid);
+          }
+        }
+        for (const vn of group.villageName) {
+          if (!existing.villageName.includes(vn)) {
+            existing.villageName.push(vn);
+          }
+        }
+        // Merge original rows
+        existing.originalRows.push(...group.originalRows);
+      }
+    }
+
+    // Recalculate display fields
+    for (const group of mergeMap.values()) {
+      group.roleNamesDisplay = [
+        ...new Set(group.roles.map((r) => r.roleName)),
+      ].join(', ');
+      group.allDeleted = group.roles.every(
+        (r) =>
+          r.userServciceRoleDeleted ||
+          r.userDeleted ||
+          r.providerServiceMappingDeleted,
+      );
+      group.anyActive = !group.allDeleted;
+    }
+
+    return Array.from(mergeMap.values());
+  }
+
+  getUserName(serviceProviderID: any) {
+    this.worklocationmapping
+      .getUserName(serviceProviderID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          if (response) {
+            console.log(
+              'All User names under this provider Success Handeler',
+              response,
+            );
+            this.userNamesList = response.data;
+            this.states_array = [];
+            this.districts_array = [];
+            this.workLocationsList = [];
+            this.RolesList = [];
+            // Update real names in grouped list (SearchEmployee4 has firstName/lastName)
+            this.updateRealNamesInGroupedList();
+            this.updateUnmappedUsersList();
+          }
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to load users', 'error');
+        },
+      );
+  }
+
+  updateRealNamesInGroupedList() {
+    if (!this.userNamesList) return;
+    const nameMap = new Map<number, string>();
+    for (const user of this.userNamesList) {
+      const name = (
+        (user.firstName || '') +
+        ' ' +
+        (user.lastName || '')
+      ).trim();
+      if (name) nameMap.set(user.userID, name);
+    }
+    if (this.groupedWorkLocationsList) {
+      for (const group of this.groupedWorkLocationsList) {
+        const name = nameMap.get(group.userID);
+        if (name) group.realName = name;
+      }
+    }
+    if (this.ashaSupervisorGroupedList) {
+      for (const group of this.ashaSupervisorGroupedList) {
+        const name = nameMap.get(group.userID);
+        if (name) group.realName = name;
+      }
+    }
+  }
+
+  updateUnmappedUsersList() {
+    if (!this.userNamesList || !this.mappedWorkLocationsList) {
+      this.unmappedUserNamesList = this.userNamesList || [];
+      return;
+    }
+    // Collect userIDs that have at least one active (non-deleted) mapping
+    const mappedUserIDs = new Set<number>();
+    for (const row of this.mappedWorkLocationsList) {
+      const isDeleted =
+        row.userServciceRoleDeleted ||
+        row.userDeleted ||
+        row.providerServiceMappingDeleted;
+      if (!isDeleted && row.userID) {
+        mappedUserIDs.add(row.userID);
+      }
+    }
+    this.unmappedUserNamesList = this.userNamesList.filter(
+      (user: any) => !mappedUserIDs.has(user.userID),
     );
   }
 
@@ -278,19 +648,22 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
       user.userID,
       state.providerServiceMapID,
     );
-    this.worklocationmapping.getAllDistricts(state.stateID || state).subscribe(
-      (response: any) => {
-        if (response) {
-          console.log(response, 'get all districts success handeler');
-          this.districts_array = response.data;
-          this.workLocationsList = [];
-          this.RolesList = [];
-        }
-      },
-      (err: any) => {
-        console.log(err, 'error');
-      },
-    );
+    this.worklocationmapping
+      .getAllDistricts(state.stateID || state)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          if (response) {
+            console.log(response, 'get all districts success handeler');
+            this.districts_array = response.data;
+            this.workLocationsList = [];
+            this.RolesList = [];
+          }
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to load districts', 'error');
+        },
+      );
     this.disableSelectRoles = false; //For resetting the disbaled selected role field on change of states
   }
   showAlertsForMappedRoles(
@@ -304,20 +677,25 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     };
     this.worklocationmapping
       .getAllMappedRolesForTm(reqObj)
-      .subscribe((response: any) => {
-        console.log('mappedroles of tm', response);
-        response.data.forEach((mappedRolesOfTm: any) => {
-          if (
-            mappedRolesOfTm.screenName === 'TC Specialist' ||
-            mappedRolesOfTm.screenName === 'Supervisor'
-          ) {
-            this.alertService.alert(
-              'This user is already mapped to supervisor/TC Specialist',
-            );
-            this.State = null;
-          }
-        });
-      });
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          response.data.forEach((mappedRolesOfTm: any) => {
+            if (
+              mappedRolesOfTm.screenName === 'TC Specialist' ||
+              mappedRolesOfTm.screenName === 'Supervisor'
+            ) {
+              this.alertService.alert(
+                'This user is already mapped to supervisor/TC Specialist',
+              );
+              this.State = null;
+            }
+          });
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to load mapped roles', 'error');
+        },
+      );
     if (this.bufferArray.data.length > 0) {
       this.bufferArray.data.forEach((bufferScreenList: any) => {
         if (
@@ -337,6 +715,10 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   }
 
   getAllWorkLocations(state: any, service: any, isNational: any) {
+    // HWC/FLW: no workingLocationID dependency — skip API call
+    if (this.isFacilityServiceline) {
+      return;
+    }
     this.worklocationmapping
       .getAllWorkLocations(
         this.serviceProviderID,
@@ -345,6 +727,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
         isNational,
         this.District.districtID,
       )
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -354,43 +737,49 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load work locations', 'error');
         },
       );
   }
 
   getAllRoles(serviceID: any, providerServiceMapID: any, userID: any) {
     if (serviceID === 4) {
-      this.worklocationmapping.getAllRolesForTM(providerServiceMapID).subscribe(
-        (response: any) => {
-          console.log(response, 'get all roles success handeler');
-          this.RolesList = response.data;
-          if (this.RolesList) {
-            this.checkExistance(serviceID, providerServiceMapID, userID);
-          }
-        },
-        (err: any) => {
-          console.log(err, 'error');
-        },
-      );
+      this.worklocationmapping
+        .getAllRolesForTM(providerServiceMapID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(
+          (response: any) => {
+            console.log(response, 'get all roles success handeler');
+            this.RolesList = response.data;
+            if (this.RolesList) {
+              this.checkExistance(serviceID, providerServiceMapID, userID);
+            }
+          },
+          (err: any) => {
+            this.alertService.alert('Failed to load roles', 'error');
+          },
+        );
     } else {
       this.teleConsultationFlag = false;
       this.teleConsultation = null;
       const psmID = providerServiceMapID
         ? providerServiceMapID
         : this.states_array[0].providerServiceMapID;
-      this.worklocationmapping.getAllRoles(psmID).subscribe(
-        (response: any) => {
-          console.log(response, 'get all roles success handeler');
-          this.RolesList = response.data;
-          if (this.RolesList) {
-            this.checkExistance(serviceID, psmID, userID);
-          }
-        },
-        (err: any) => {
-          console.log(err, 'error');
-        },
-      );
+      this.worklocationmapping
+        .getAllRoles(psmID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(
+          (response: any) => {
+            console.log(response, 'get all roles success handeler');
+            this.RolesList = response.data;
+            if (this.RolesList) {
+              this.checkExistance(serviceID, psmID, userID);
+            }
+          },
+          (err: any) => {
+            this.alertService.alert('Failed to load roles', 'error');
+          },
+        );
     }
   }
   existingRoles: any = [];
@@ -547,7 +936,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   }
 
   allowSingleRoleOnlyForECD(serviceline: any) {
-    if (serviceline === 'ECD') {
+    if (serviceline === 'ECD' || serviceline === 'FLW') {
       this.singleSelectForEcd = true;
     } else {
       this.singleSelectForEcd = false;
@@ -573,6 +962,18 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
       this.disableSelectRoles = false;
       this.teleConsultationEditFlag = false;
       this.teleConsultationEdit = null;
+      this.isFacilityServicelineEdit = false;
+      this.editExistingVillageIDs = [];
+      this.editExistingVillageNames = [];
+      this.editExistingFacilityID = null;
+      this.editExistingFacilityIDs = [];
+      this.editExistingFacilityNames = [];
+      this.editAshaMappingPairs = [];
+      this.editIsAshaSupervisor = false;
+      this.editFacilityMappingData = null;
+      this.editFacilityLoading = false;
+      this.editGroupedElement = null;
+      this.roleIDs_duringEdit = [];
     } else {
       if (this.bufferArray.data.length > 0) {
         this.tableMode = true;
@@ -669,6 +1070,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
               this.worklocationmapping
                 .DeleteWorkLocationMappingForTM(object)
+                .pipe(takeUntil(this.destroy$))
                 .subscribe(
                   (response: any) => {
                     if (response) {
@@ -682,8 +1084,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
                     }
                   },
                   (err: any) => {
-                    console.log('error', err);
-                    this.alertService.alert(err.errorMessage);
+                    this.alertService.alert('Failed to activate', 'error');
                   },
                 );
             }
@@ -738,6 +1139,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
                 this.worklocationmapping
                   .DeleteWorkLocationMapping(object)
+                  .pipe(takeUntil(this.destroy$))
                   .subscribe(
                     (response: any) => {
                       if (response) {
@@ -751,7 +1153,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
                       }
                     },
                     (err: any) => {
-                      console.log('error', err);
+                      this.alertService.alert('Failed to activate', 'error');
                     },
                   );
               }
@@ -773,6 +1175,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
               this.worklocationmapping
                 .DeleteWorkLocationMapping(object)
+                .pipe(takeUntil(this.destroy$))
                 .subscribe(
                   (response: any) => {
                     if (response) {
@@ -786,7 +1189,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
                     }
                   },
                   (err: any) => {
-                    console.log('error', err);
+                    this.alertService.alert('Failed to activate', 'error');
                   },
                 );
             }
@@ -804,6 +1207,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
             this.worklocationmapping
               .DeleteWorkLocationMappingForTM(object)
+              .pipe(takeUntil(this.destroy$))
               .subscribe(
                 (res: any) => {
                   if (res) {
@@ -817,8 +1221,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
                   }
                 },
                 (err: any) => {
-                  console.log('error', err);
-                  console.log(err, 'error');
+                  this.alertService.alert('Failed to deactivate', 'error');
                 },
               );
           }
@@ -832,6 +1235,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
             this.worklocationmapping
               .DeleteWorkLocationMapping(object)
+              .pipe(takeUntil(this.destroy$))
               .subscribe(
                 (res: any) => {
                   if (res) {
@@ -845,8 +1249,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
                   }
                 },
                 (err: any) => {
-                  console.log('error', err);
-                  console.log(err, 'error');
+                  this.alertService.alert('Failed to deactivate', 'error');
                 },
               );
           }
@@ -963,6 +1366,18 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
         this.bufferArray.paginator = this.paginatorSecond;
       }
       console.log('Result Array', this.bufferArray);
+      if (this.bufferArray.data.length > 0) {
+        this.eForm.resetForm();
+        this.bufferArray.paginator = this.paginatorSecond;
+      }
+    } else if (objectToBeAdded.serviceline.serviceName === 'FLW') {
+      const obj = {
+        roleID1: objectToBeAdded.role.roleID,
+        roleName: objectToBeAdded.role.roleName,
+        screenName: objectToBeAdded.role.screenName,
+      };
+      this.setWorkLocationObject(objectToBeAdded, obj, false, false);
+      this.resetAllArrays();
       if (this.bufferArray.data.length > 0) {
         this.eForm.resetForm();
         this.bufferArray.paginator = this.paginatorSecond;
@@ -1107,81 +1522,105 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   ) {
     const villageIDArr: any = [];
     const villageNameArr: any = [];
-    const roleArr = [];
-    roleArr.push(obj);
-    if (objectToBeAdded.Serviceblock !== undefined) {
+    if (this.isFacilityServiceline) {
+      const fmVillageIDs = this.currentFacilityMappingData?.villageIDs || [];
+      const fmVillageNames =
+        this.currentFacilityMappingData?.villageNames || [];
+      villageIDArr.push(...fmVillageIDs);
+      villageNameArr.push(...fmVillageNames);
+    } else if (
+      objectToBeAdded.Serviceblock !== undefined &&
+      objectToBeAdded.Servicevillage
+    ) {
       objectToBeAdded.Servicevillage.filter((item: any) => {
         villageNameArr.push(item.villageName);
         villageIDArr.push(item.districtBranchID);
       });
     }
+    const roleArr = [];
+    roleArr.push(obj);
     const allRolesArr = [];
     for (let i = 0; i < roleArr.length; i++) {
       allRolesArr.push(roleArr[i].teleConsultation);
     }
-    const workLocationObj: any = {
-      previleges: [],
-      userID: objectToBeAdded.user.userID,
-      userName: objectToBeAdded.user.userName,
-      serviceID: objectToBeAdded.serviceline.serviceID,
-      serviceName: objectToBeAdded.serviceline.serviceName,
-      blockName:
-        objectToBeAdded.Serviceblock !== undefined &&
-        objectToBeAdded.Serviceblock.blockName !== undefined &&
-        objectToBeAdded.Serviceblock.blockName !== '' &&
-        objectToBeAdded.Serviceblock.blockName !== null
-          ? objectToBeAdded.Serviceblock.blockName
-          : null,
-      blockID:
-        objectToBeAdded.Serviceblock !== undefined &&
-        objectToBeAdded.Serviceblock.blockID !== undefined &&
-        objectToBeAdded.Serviceblock.blockID !== null
-          ? objectToBeAdded.Serviceblock.blockID
-          : null,
-      workingLocation: objectToBeAdded.worklocation.locationName,
-      roleID1: roleArr,
-      villageName:
-        villageNameArr !== undefined && villageNameArr.length > 0
-          ? villageNameArr
-          : null,
-      villageID:
-        villageIDArr !== undefined && villageIDArr.length > 0
-          ? villageIDArr
-          : null,
-      Inbound:
-        objectToBeAdded.serviceline.serviceName === '1097'
-          ? InboundValue
-          : 'N/A',
-      Outbound:
-        objectToBeAdded.serviceline.serviceName === '1097'
-          ? OnboundValue
-          : 'N/A',
-      // tslint:disable-next-line:max-line-length
-      providerServiceMapID:
-        objectToBeAdded.serviceline.isNational === false
-          ? objectToBeAdded.state.providerServiceMapID
-          : this.states_array[0].providerServiceMapID,
-      createdBy: this.createdBy,
-      workingLocationID: objectToBeAdded.worklocation.pSAddMapID,
-      teleConsultation: allRolesArr,
-    };
-    if (objectToBeAdded.state) {
-      workLocationObj['stateName'] = objectToBeAdded.state.stateName;
-    } else {
-      workLocationObj['stateName'] = 'All States';
+    // For ASHA Supervisor with multiple facilities, create one row per facility
+    const facilityIDs = this.currentFacilityMappingData?.facilityIDs || [];
+    const singleFacilityID =
+      this.currentFacilityMappingData?.facilityID || null;
+    const facilityList =
+      this.currentFacilityMappingData?.isAshaSupervisor &&
+      facilityIDs.length > 0
+        ? facilityIDs
+        : [singleFacilityID];
+
+    for (const fID of facilityList) {
+      const workLocationObj: any = {
+        previleges: [],
+        userID: objectToBeAdded.user.userID,
+        userName: objectToBeAdded.user.userName,
+        serviceID: objectToBeAdded.serviceline.serviceID,
+        serviceName: objectToBeAdded.serviceline.serviceName,
+        blockName:
+          objectToBeAdded.Serviceblock !== undefined &&
+          objectToBeAdded.Serviceblock.blockName !== undefined &&
+          objectToBeAdded.Serviceblock.blockName !== '' &&
+          objectToBeAdded.Serviceblock.blockName !== null
+            ? objectToBeAdded.Serviceblock.blockName
+            : null,
+        blockID:
+          objectToBeAdded.Serviceblock !== undefined &&
+          objectToBeAdded.Serviceblock.blockID !== undefined &&
+          objectToBeAdded.Serviceblock.blockID !== null
+            ? objectToBeAdded.Serviceblock.blockID
+            : null,
+        workingLocation: objectToBeAdded.worklocation?.locationName || null,
+        roleID1: roleArr,
+        villageName:
+          villageNameArr !== undefined && villageNameArr.length > 0
+            ? villageNameArr
+            : null,
+        villageID:
+          villageIDArr !== undefined && villageIDArr.length > 0
+            ? villageIDArr
+            : null,
+        Inbound:
+          objectToBeAdded.serviceline.serviceName === '1097'
+            ? InboundValue
+            : 'N/A',
+        Outbound:
+          objectToBeAdded.serviceline.serviceName === '1097'
+            ? OnboundValue
+            : 'N/A',
+        providerServiceMapID:
+          objectToBeAdded.serviceline.isNational === false
+            ? objectToBeAdded.state.providerServiceMapID
+            : this.states_array[0].providerServiceMapID,
+        createdBy: this.createdBy,
+        workingLocationID: objectToBeAdded.worklocation?.pSAddMapID || null,
+        stateID: objectToBeAdded.state?.stateID || null,
+        districtID: objectToBeAdded.district?.districtID || null,
+        teleConsultation: allRolesArr,
+        facilityID: fID,
+      };
+      if (objectToBeAdded.state) {
+        workLocationObj['stateName'] = objectToBeAdded.state.stateName;
+      } else {
+        workLocationObj['stateName'] = 'All States';
+      }
+      if (objectToBeAdded.district !== undefined) {
+        workLocationObj['district'] = objectToBeAdded.district.districtName;
+      } else {
+        workLocationObj['district'] = null;
+      }
+      this.bufferArray.data.push(workLocationObj);
     }
-    if (objectToBeAdded.district !== undefined) {
-      workLocationObj['district'] = objectToBeAdded.district.districtName;
-    } else {
-      workLocationObj['district'] = null;
-    }
-    this.bufferArray.data.push(workLocationObj);
     if (this.paginatorSecond) {
       this.bufferArray.paginator = this.paginatorSecond;
     }
     if (this.sortSecond) {
       this.bufferArray.sort = this.sortSecond;
     }
+    this.rebuildGroupedBuffer();
   }
 
   resetAllArrays() {
@@ -1209,6 +1648,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     if (this.sortSecond) {
       this.bufferArray.sort = this.sortSecond;
     }
+    this.rebuildGroupedBuffer();
     this.getAllRoles(serviceID, providerServiceMapID, userID);
     this.availableRoles = [];
     this.RolesList = [];
@@ -1290,6 +1730,10 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
             workingLocationID: this.bufferArray.data[i].workingLocationID,
 
+            stateID: this.bufferArray.data[i].stateID,
+
+            districtID: this.bufferArray.data[i].districtID,
+
             blockID: this.bufferArray.data[i].blockID,
 
             blockName: this.bufferArray.data[i].blockName,
@@ -1297,6 +1741,8 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             villageID: this.bufferArray.data[i].villageID,
 
             villageName: this.bufferArray.data[i].villageName,
+
+            facilityID: this.bufferArray.data[i].facilityID,
           },
         ],
 
@@ -1310,39 +1756,238 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
       requestArray.push(workLocationObj);
     }
 
-    console.log(requestArray, 'after modification array');
+    const supervisorUserID =
+      requestArray.length > 0 ? requestArray[0].userID : null;
 
-    this.bufferArray.data = [];
-    this.bufferArray.paginator = this.paginatorSecond;
+    // ASHA Supervisor: save ASHA mapping FIRST, then work location
+    if (
+      this.currentFacilityMappingData?.isAshaSupervisor &&
+      this.currentFacilityMappingData?.ashaSupervisorMappings?.length > 0
+    ) {
+      this.saveAshaSupervisorMappingsThenWorkLocation(
+        requestArray,
+        supervisorUserID,
+      );
+    } else {
+      // Non-ASHA: save work location directly
+      this.saveWorkLocationOnly(requestArray);
+    }
+  }
 
-    this.worklocationmapping
-      .SaveWorkLocationMapping(requestArray)
+  saveAshaSupervisorMappingsThenWorkLocation(
+    requestArray: any,
+    supervisorUserID: any,
+  ) {
+    const mappings = this.currentFacilityMappingData.ashaSupervisorMappings.map(
+      (m: any) => ({
+        supervisorUserID: supervisorUserID,
+        ashaUserID: m.ashaUserID,
+        facilityID: m.facilityID,
+        createdBy: this.createdBy,
+      }),
+    );
 
+    // Collect facilityIDs for potential rollback
+    const facilityIDs: number[] = Array.from(
+      new Set<number>(mappings.map((m: any) => m.facilityID)),
+    );
+
+    // Step 1: Save ASHA supervisor mapping first
+    this.facilityMasterService
+      .saveAshaSupervisorMapping(mappings)
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
-        (response: any) => {
-          console.log(response, 'after successful mapping of work-location');
-
-          this.alertService.alert('Mapping saved successfully', 'success');
-
-          this.getAllMappedWorkLocations();
-
-          this.eForm.resetForm();
-
-          this.showTable();
-
-          this.resetAllArrays();
-
-          this.disableSelectRoles = false;
-
-          this.filteredStates = [];
-
-          this.bufferArray.data = [];
-          this.bufferArray.paginator = this.paginatorSecond;
+        () => {
+          // Step 2: ASHA mapping saved — now save work location
+          this.worklocationmapping
+            .SaveWorkLocationMapping(requestArray)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(
+              () => {
+                this.alertService.alert(
+                  'Mapping saved successfully',
+                  'success',
+                );
+                this.cleanupAfterSave();
+              },
+              (err: any) => {
+                // Work location failed — rollback ASHA mapping
+                this.rollbackAshaSupervisorMapping(
+                  supervisorUserID,
+                  facilityIDs,
+                );
+              },
+            );
         },
         (err: any) => {
-          console.log(err, 'ERROR');
+          // ASHA mapping failed — don't save work location at all
+          this.alertService.alert(
+            'Failed to save ASHA supervisor mapping. Work location not saved.',
+            'error',
+          );
+        },
+      );
+  }
 
-          console.log(err, 'error');
+  saveWorkLocationOnly(requestArray: any) {
+    this.worklocationmapping
+      .SaveWorkLocationMapping(requestArray)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          this.alertService.alert('Mapping saved successfully', 'success');
+          this.cleanupAfterSave();
+        },
+        (err: any) => {
+          this.alertService.alert(
+            'Failed to save work location mapping',
+            'error',
+          );
+        },
+      );
+  }
+
+  cleanupAfterSave() {
+    this.getAllMappedWorkLocations();
+    this.eForm.resetForm();
+    this.showTable();
+    this.resetAllArrays();
+    this.disableSelectRoles = false;
+    this.filteredStates = [];
+    this.bufferArray.data = [];
+    this.bufferArray.paginator = this.paginatorSecond;
+    this.currentFacilityMappingData = null;
+  }
+
+  /**
+   * ASHA Supervisor edit: fetch old mappings, delete them, save new ones, then call onSuccess.
+   * Old mappings are stored so they can be restored on rollback.
+   */
+  updateAshaSupervisorMappings(
+    facilityIDs: any[],
+    onSuccess: (oldMappings: any[]) => void,
+  ) {
+    // Fix 7: single atomic call — delete old + save new in one backend transaction
+    // No more gap between delete and save where a timeout could wipe all mappings
+    const newMappings = (
+      this.editFacilityMappingData?.ashaSupervisorMappings || []
+    ).map((m: any) => ({
+      supervisorUserID: this.userID_duringEdit,
+      ashaUserID: m.ashaUserID,
+      facilityID: m.facilityID,
+      createdBy: this.createdBy,
+    }));
+
+    this.facilityMasterService
+      .updateAshaSupervisorMappingAtomically(
+        this.userID_duringEdit,
+        facilityIDs,
+        newMappings,
+        this.createdBy,
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          onSuccess([]);
+        },
+        (err: any) => {
+          this.alertService.alert(
+            'Failed to update ASHA supervisor mapping. Work location not updated.',
+            'error',
+          );
+        },
+      );
+  }
+
+  /**
+   * Rollback for edit flow: delete new ASHA mappings, then re-save old ones.
+   */
+  rollbackAshaSupervisorMappingWithRestore(
+    supervisorUserID: any,
+    facilityIDs: number[],
+    oldMappings: any[],
+  ) {
+    this.facilityMasterService
+      .deleteAshaSupervisorMapping(supervisorUserID, facilityIDs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          // Re-save old mappings to restore original state
+          this.restoreOldAshaMappings(oldMappings);
+        },
+        () => {
+          this.alertService.alert(
+            'Work location failed. ASHA rollback also failed — contact admin.',
+            'error',
+          );
+          this.showTable();
+          this.getAllMappedWorkLocations();
+        },
+      );
+  }
+
+  /**
+   * Rollback for create flow: just delete the newly saved ASHA mappings.
+   */
+  rollbackAshaSupervisorMapping(supervisorUserID: any, facilityIDs: number[]) {
+    this.facilityMasterService
+      .deleteAshaSupervisorMapping(supervisorUserID, facilityIDs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          this.alertService.alert(
+            'Work location save failed. ASHA mapping rolled back.',
+            'error',
+          );
+          this.showTable();
+          this.getAllMappedWorkLocations();
+        },
+        () => {
+          this.alertService.alert(
+            'Work location save failed. ASHA rollback also failed — contact admin.',
+            'error',
+          );
+          this.showTable();
+          this.getAllMappedWorkLocations();
+        },
+      );
+  }
+
+  /**
+   * Restore soft-deleted ASHA supervisor mappings by setting deleted=false on original rows.
+   */
+  private restoreOldAshaMappings(oldMappings: any[]) {
+    if (!oldMappings || oldMappings.length === 0) {
+      this.alertService.alert(
+        'ASHA mapping update failed. Work location not updated.',
+        'error',
+      );
+      this.showTable();
+      this.getAllMappedWorkLocations();
+      return;
+    }
+
+    const ids = oldMappings.map((m: any) => m.id);
+
+    this.facilityMasterService
+      .restoreAshaSupervisorMapping(ids)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          this.alertService.alert(
+            'ASHA mapping update failed. Original mappings restored. Work location not updated.',
+            'error',
+          );
+          this.showTable();
+          this.getAllMappedWorkLocations();
+        },
+        () => {
+          this.alertService.alert(
+            'ASHA mapping update failed. Restore also failed — contact admin.',
+            'error',
+          );
+          this.showTable();
+          this.getAllMappedWorkLocations();
         },
       );
   }
@@ -1388,10 +2033,8 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
     this.uSRMappingID = rowObject.uSRMappingID;
 
-    this.workLocationID_duringEdit = parseInt(
-      this.edit_Details.workingLocationID,
-      10,
-    );
+    const parsedWLID2 = parseInt(this.edit_Details.workingLocationID, 10);
+    this.workLocationID_duringEdit = isNaN(parsedWLID2) ? null : parsedWLID2;
 
     this.userID_duringEdit = this.edit_Details.userID;
 
@@ -1432,6 +2075,151 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
       this.teleConsultationEditFlag = false;
     }
 
+    // Set facility serviceline flag for edit mode
+    this.isFacilityServicelineEdit =
+      this.edit_Details.serviceName === 'FLW' ||
+      this.edit_Details.serviceName === 'HWC';
+
+    if (this.isFacilityServicelineEdit) {
+      this.editExistingVillageIDs = Array.isArray(this.edit_Details.villageID)
+        ? this.edit_Details.villageID.slice()
+        : [];
+      this.editExistingVillageNames = Array.isArray(
+        this.edit_Details.villageName,
+      )
+        ? this.edit_Details.villageName.slice()
+        : [];
+      this.editServiceName = this.edit_Details.serviceName || '';
+      this.editRoleName = this.edit_Details.roleName || '';
+      this.editSupervisorUserID = this.edit_Details.userID;
+      this.editExistingFacilityID = null;
+      this.editExistingFacilityIDs = [];
+      this.editExistingFacilityNames = [];
+      this.editAshaMappingPairs = [];
+      this.editFacilityMappingData = null;
+      this.editIsAshaSupervisor =
+        (this.edit_Details.roleName || '').toLowerCase() === 'asha supervisor';
+
+      if (this.editIsAshaSupervisor) {
+        // ASHA Supervisor: find ALL rows for same user in table data
+        const userRows = this.mappedWorkLocationsList.filter(
+          (row: any) =>
+            row.userID === this.edit_Details.userID &&
+            row.providerServiceMapID ===
+              this.edit_Details.providerServiceMapID &&
+            row.roleName === this.edit_Details.roleName,
+        );
+        const mappingIDs = userRows
+          .map((row: any) => row.uSRMappingID)
+          .filter((id: any) => !!id);
+
+        if (mappingIDs.length > 0) {
+          // Fetch facility details for ALL rows in parallel
+          const requests = mappingIDs.map((id: any) =>
+            this.facilityMasterService.getFacilityByMappingID(id),
+          );
+          forkJoin(requests)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(
+              (results: any) => {
+                const facilityIDs: any[] = [];
+                const facilityNames: string[] = [];
+                const pairs: { uSRMappingID: any; facilityID: any }[] = [];
+                let firstFacilityTypeID: any = null;
+                let firstRuralUrban = '';
+                for (let i = 0; i < results.length; i++) {
+                  const res = results[i];
+                  const data =
+                    res && res.data
+                      ? typeof res.data === 'string'
+                        ? JSON.parse(res.data)
+                        : res.data
+                      : {};
+                  const hasFacility =
+                    data.facilityID != null && data.facilityID !== 0;
+
+                  // Always track the mapping pair (needed to soft-delete rows for deleted facilities)
+                  pairs.push({
+                    uSRMappingID: mappingIDs[i],
+                    facilityID: hasFacility ? data.facilityID : null,
+                  });
+
+                  // Only add to display lists if facility is active (not deleted)
+                  if (hasFacility) {
+                    facilityIDs.push(data.facilityID);
+                    facilityNames.push(
+                      data.facilityName || 'Facility ID ' + data.facilityID,
+                    );
+                    if (!firstFacilityTypeID) {
+                      firstFacilityTypeID = data.facilityTypeID;
+                      firstRuralUrban = data.ruralUrban || '';
+                    }
+                  }
+                }
+                this.editExistingFacilityIDs = facilityIDs;
+                this.editExistingFacilityNames = facilityNames;
+                this.editAshaMappingPairs = pairs;
+                // Use first facility's details for dropdown pre-population
+                this.editExistingFacilityID =
+                  facilityIDs.length > 0 ? facilityIDs[0] : null;
+                this.editExistingFacilityName =
+                  facilityNames.length > 0 ? facilityNames[0] : '';
+                this.editExistingFacilityTypeID = firstFacilityTypeID;
+                this.editExistingRuralUrban = firstRuralUrban;
+              },
+              (err: any) => {
+                this.alertService.alert(
+                  'Failed to load facility details for edit',
+                  'error',
+                );
+              },
+            );
+        }
+      } else {
+        // FLW/HWC (non-ASHA Supervisor): single facility
+        if (this.edit_Details.uSRMappingID) {
+          this.facilityMasterService
+            .getFacilityByMappingID(this.edit_Details.uSRMappingID)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(
+              (res: any) => {
+                if (res && res.data) {
+                  const data =
+                    typeof res.data === 'string'
+                      ? JSON.parse(res.data)
+                      : res.data;
+                  this.editExistingFacilityID =
+                    data.facilityID != null && data.facilityID !== 0
+                      ? data.facilityID
+                      : null;
+                  this.editExistingFacilityName = data.facilityName || '';
+                  this.editExistingFacilityTypeID =
+                    data.facilityTypeID != null && data.facilityTypeID !== 0
+                      ? data.facilityTypeID
+                      : null;
+                  this.editExistingRuralUrban = data.ruralUrban || '';
+                }
+              },
+              (err: any) => {
+                this.alertService.alert(
+                  'Failed to load facility details for edit',
+                  'error',
+                );
+              },
+            );
+        }
+      }
+    } else {
+      this.editExistingVillageIDs = [];
+      this.editExistingVillageNames = [];
+      this.editExistingFacilityID = null;
+      this.editExistingFacilityIDs = [];
+      this.editExistingFacilityNames = [];
+      this.editAshaMappingPairs = [];
+      this.editFacilityMappingData = null;
+      this.editIsAshaSupervisor = false;
+    }
+
     this.getProviderServices(this.userID);
 
     this.checkService_forIsNational();
@@ -1448,14 +2236,23 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
       this.district_duringEdit = null;
 
-      this.getAllWorkLocations_duringEdit2(
-        this.states_array[0].stateID,
-        this.serviceID_duringEdit,
-        this.isNational_edit,
-        this.district_duringEdit,
-        this.providerServiceMapID_duringEdit,
-        this.userID_duringEdit,
-      );
+      // HWC/FLW: no workingLocationID — load roles directly
+      if (this.isFacilityServicelineEdit) {
+        this.getAllRoles_duringEdit2(
+          this.serviceID_duringEdit,
+          this.providerServiceMapID_duringEdit,
+          this.userID_duringEdit,
+        );
+      } else {
+        this.getAllWorkLocations_duringEdit2(
+          this.states_array[0].stateID,
+          this.serviceID_duringEdit,
+          this.isNational_edit,
+          this.district_duringEdit,
+          this.providerServiceMapID_duringEdit,
+          this.userID_duringEdit,
+        );
+      }
     } else {
       this.getAllDistricts_duringEdit2(
         this.edit_Details.stateID,
@@ -1481,6 +2278,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.worklocationmapping
       .getAllDistricts(state)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1488,18 +2286,23 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
             this.districts_array = response.data;
 
-            this.getAllWorkLocations_duringEdit2(
-              stateID,
-              serviceID,
-              isNational_edit,
-              districtID,
-              psmID,
-              userID,
-            );
+            // HWC/FLW: no workingLocationID — load roles directly
+            if (this.isFacilityServicelineEdit) {
+              this.getAllRoles_duringEdit2(serviceID, psmID, userID);
+            } else {
+              this.getAllWorkLocations_duringEdit2(
+                stateID,
+                serviceID,
+                isNational_edit,
+                districtID,
+                psmID,
+                userID,
+              );
+            }
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load districts', 'error');
         },
       );
   }
@@ -1521,6 +2324,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
         districtID,
       )
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1530,12 +2334,13 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             );
 
             this.workLocationsList = response.data;
-
-            this.getAllRoles_duringEdit2(serviceID, psmID, userID);
           }
+          // Always load roles — even when workLocationsList is empty (null workingLocationID)
+          this.getAllRoles_duringEdit2(serviceID, psmID, userID);
         },
         (err: any) => {
-          console.log(err, 'error');
+          // Even if work locations API fails, still load roles so edit form works
+          this.getAllRoles_duringEdit2(serviceID, psmID, userID);
         },
       );
   }
@@ -1544,6 +2349,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.worklocationmapping
       .getAllRoles(psmID)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1554,7 +2360,24 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             this.checkExistance(serviceID, psmID, userID);
           }
 
-          if (this.edit_Details !== undefined) {
+          if (this.editGroupedElement) {
+            const groupRoleIDs = this.editGroupedElement.roles
+              .filter((r) => !r.userServciceRoleDeleted)
+              .map((r) => r.roleID);
+            for (const rid of groupRoleIDs) {
+              const existingRole = this.RolesList.find(
+                (r: any) => r.roleID === rid,
+              );
+              if (
+                existingRole &&
+                !this.availableRoles.some(
+                  (ar: any) => ar.roleID === existingRole.roleID,
+                )
+              ) {
+                this.availableRoles.push(existingRole);
+              }
+            }
+          } else if (this.edit_Details !== undefined) {
             if (this.RolesList) {
               const edit_role = this.RolesList.filter((mappedRole: any) => {
                 if (this.edit_Details.roleID === mappedRole.roleID) {
@@ -1569,7 +2392,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load roles', 'error');
         },
       );
   }
@@ -1597,10 +2420,11 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.worklocationmapping
       .getServices(this.userID)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => this.getServicesSuccessHandeler(response.data),
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load services', 'error');
         },
       );
   }
@@ -1616,6 +2440,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   getProviderStates_duringEdit(serviceID: any, isNational: any) {
     this.worklocationmapping
       .getStates(this.userID, serviceID, isNational)
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) =>
           this.getStatesSuccessHandeler_duringEdit(
@@ -1625,7 +2450,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             true,
           ),
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load states', 'error');
         },
       );
   }
@@ -1633,6 +2458,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   getProviderStates_duringPatchEdit(serviceID: any, isNational: any) {
     this.worklocationmapping
       .getStates(this.userID, serviceID, isNational)
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) =>
           this.getStatesSuccessHandeler_duringEdit(
@@ -1642,7 +2468,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             false,
           ),
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load states', 'error');
         },
       );
   }
@@ -1700,7 +2526,10 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   refresh1() {
     this.district_duringEdit = undefined;
 
-    this.workLocationID_duringEdit = undefined;
+    // HWC/FLW: workLocationID is not dependent — preserve DB value
+    if (!this.isFacilityServicelineEdit) {
+      this.workLocationID_duringEdit = undefined;
+    }
     this.roleID_duringEdit = undefined;
   }
 
@@ -1711,7 +2540,10 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   refresh3() {
     this.district_duringEdit = undefined;
 
-    this.workLocationID_duringEdit = undefined;
+    // HWC/FLW: workLocationID is not dependent — preserve DB value
+    if (!this.isFacilityServicelineEdit) {
+      this.workLocationID_duringEdit = undefined;
+    }
 
     this.roleID_duringEdit = undefined;
 
@@ -1719,7 +2551,10 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   }
 
   refresh5() {
-    this.workLocationID_duringEdit = undefined;
+    // HWC/FLW: workLocationID is not dependent — preserve DB value
+    if (!this.isFacilityServicelineEdit) {
+      this.workLocationID_duringEdit = undefined;
+    }
 
     this.roleID_duringEdit = undefined;
   }
@@ -1732,6 +2567,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.worklocationmapping
       .getAllDistricts(state)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1741,7 +2577,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load districts', 'error');
         },
       );
   }
@@ -1750,6 +2586,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.worklocationmapping
       .getAllDistricts(state)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1763,17 +2600,19 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
             );
 
             if (
-              this.edit_Details.serviceName === 'FLW' ||
-              this.edit_Details.serviceName === 'HWC' ||
-              this.edit_Details.serviceName === 'TM' ||
-              this.edit_Details.serviceName === 'MMU'
+              !isNaN(this.district_duringEdit) &&
+              this.district_duringEdit &&
+              (this.edit_Details.serviceName === 'FLW' ||
+                this.edit_Details.serviceName === 'HWC' ||
+                this.edit_Details.serviceName === 'TM' ||
+                this.edit_Details.serviceName === 'MMU')
             ) {
               this.getEditBlockPatchMaster(this.district_duringEdit);
             }
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load districts', 'error');
         },
       );
   }
@@ -1784,6 +2623,10 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     isNational_edit: any,
     districtID: any,
   ) {
+    // HWC/FLW: no workingLocationID dependency — skip API call
+    if (this.isFacilityServicelineEdit) {
+      return;
+    }
     this.worklocationmapping
       .getAllWorkLocations(
         this.serviceProviderID,
@@ -1793,6 +2636,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
         districtID,
       )
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1805,7 +2649,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load work locations', 'error');
         },
       );
   }
@@ -1814,6 +2658,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.worklocationmapping
       .getAllRoles(psmID)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
           if (response) {
@@ -1826,7 +2671,24 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
           //on edit - populate roles
 
-          if (this.edit_Details !== undefined) {
+          if (this.editGroupedElement) {
+            const groupRoleIDs = this.editGroupedElement.roles
+              .filter((r) => !r.userServciceRoleDeleted)
+              .map((r) => r.roleID);
+            for (const rid of groupRoleIDs) {
+              const existingRole = this.RolesList.find(
+                (r: any) => r.roleID === rid,
+              );
+              if (
+                existingRole &&
+                !this.availableRoles.some(
+                  (ar: any) => ar.roleID === existingRole.roleID,
+                )
+              ) {
+                this.availableRoles.push(existingRole);
+              }
+            }
+          } else if (this.edit_Details !== undefined) {
             if (this.RolesList) {
               const edit_role = this.RolesList.filter((mappedRole: any) => {
                 if (this.edit_Details.roleID === mappedRole.roleID) {
@@ -1841,12 +2703,41 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           }
         },
         (err: any) => {
-          console.log(err, 'error');
+          this.alertService.alert('Failed to load roles', 'error');
         },
       );
   }
 
   updateWorkLocation(workLocations: any) {
+    // Fix 15: warn if district or block changed
+    if (!this._fix15WarnConfirmed) {
+      const origDistrict = parseInt(this.edit_Details?.workingDistrictID, 10);
+      const origBlock = this.edit_Details?.blockID;
+      const districtChanged =
+        !isNaN(origDistrict) &&
+        this.district_duringEdit != null &&
+        this.district_duringEdit !== origDistrict;
+      const blockChanged =
+        origBlock != null &&
+        this.ServiceEditblock != null &&
+        this.ServiceEditblock !== origBlock;
+      if (districtChanged || blockChanged) {
+        this.alertService
+          .confirm(
+            'Warning',
+            'Changing the district or block will invalidate existing village mappings and ASHA supervisor assignments. Are you sure you want to continue?',
+          )
+          .subscribe((confirmed: any) => {
+            if (confirmed) {
+              this._fix15WarnConfirmed = true;
+              this.updateWorkLocation(workLocations);
+              this._fix15WarnConfirmed = false;
+            }
+          });
+        return;
+      }
+    }
+    this._fix15WarnConfirmed = false;
     const duplicate: boolean =
       this.checkHWCDuplicateMainArrayForEditScreen(workLocations);
     if (workLocations.serviceID === 1) {
@@ -1873,8 +2764,16 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
       this.alertService.alert('Same User already Mapped with different State');
     } else {
       const editVillageIdArray: any = [];
+      const editVillageNameArray: any = [];
 
-      if (
+      if (this.isFacilityServicelineEdit && this.editFacilityMappingData) {
+        editVillageIdArray.push(
+          ...(this.editFacilityMappingData.villageIDs || []),
+        );
+        editVillageNameArray.push(
+          ...(this.editFacilityMappingData.villageNames || []),
+        );
+      } else if (
         this.serviceEditvillage !== undefined &&
         this.serviceEditvillage !== null &&
         this.serviceEditvillage.length > 0
@@ -1883,60 +2782,639 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           this.editVillageArr.filter((itemValue: any) => {
             if (item === itemValue.villageName) {
               editVillageIdArray.push(itemValue.districtBranchID);
+              editVillageNameArray.push(itemValue.villageName);
             }
           });
         });
       }
 
-      const langObj = {
-        uSRMappingID: this.uSRMappingID,
+      // Detect if admin changed role away from ASHA Supervisor
+      const newRoleName = (
+        (this.RolesList.find((r: any) => r.roleID === workLocations.role) || {})
+          .roleName || ''
+      ).toLowerCase();
+      const isStillAshaSupervisor = newRoleName === 'asha supervisor';
 
-        userID: this.userID_duringEdit,
+      console.log(
+        '[DEBUG SAVE] editIsAshaSupervisor:',
+        this.editIsAshaSupervisor,
+        'editAshaMappingPairs.length:',
+        this.editAshaMappingPairs.length,
+        'isStillAshaSupervisor:',
+        isStillAshaSupervisor,
+        'editFacilityMappingData:',
+        JSON.stringify(this.editFacilityMappingData),
+      );
 
-        roleID: workLocations.role,
+      // Role changed from ASHA Supervisor → another role: keep 1 row, delete extras, clear ASHA mappings
+      if (
+        this.editIsAshaSupervisor &&
+        this.editAshaMappingPairs.length > 0 &&
+        !isStillAshaSupervisor
+      ) {
+        const oldPairs = this.editAshaMappingPairs;
+        const allOldFacilityIDs = oldPairs.map((p: any) => p.facilityID);
+        // Use the single facility the admin selected, fall back to first old facility
+        const chosenFacilityID =
+          this.editFacilityMappingData?.facilityID || oldPairs[0].facilityID;
 
-        teleConsultation: this.teleConsultationEdit,
+        // Step 1: Delete all ASHA supervisor mappings (no re-save)
+        this.facilityMasterService
+          .deleteAshaSupervisorMapping(
+            this.userID_duringEdit,
+            allOldFacilityIDs,
+          )
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(
+            () => {
+              // Step 2: Update first USR row with new role + chosen facility
+              const primaryLangObj: any = {
+                uSRMappingID: oldPairs[0].uSRMappingID,
+                userID: this.userID_duringEdit,
+                roleID: workLocations.role,
+                teleConsultation: this.teleConsultationEdit,
+                providerServiceMapID: this.providerServiceMapID_duringEdit,
+                blockID: this.ServiceEditblock,
+                blockName: this.blockname,
+                villageID: editVillageIdArray,
+                villageName:
+                  editVillageNameArray.length > 0 ? editVillageNameArray : null,
+                workingLocationID: this.isFacilityServicelineEdit
+                  ? null
+                  : this.workLocationID_duringEdit,
+                stateID: this.stateID_duringEdit,
+                districtID: this.district_duringEdit,
+                modifiedBy: this.createdBy,
+                facilityID: chosenFacilityID,
+              };
+              // Step 3: Soft-delete all extra USR rows (indices 1..n)
+              const deleteRequests = oldPairs.slice(1).map((p: any) =>
+                this.worklocationmapping.DeleteWorkLocationMapping({
+                  uSRMappingID: p.uSRMappingID,
+                  deleted: true,
+                }),
+              );
+              this.worklocationmapping
+                .UpdateWorkLocationMapping(primaryLangObj)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(
+                  () => {
+                    if (deleteRequests.length > 0) {
+                      forkJoin(deleteRequests)
+                        .pipe(takeUntil(this.destroy$))
+                        .subscribe(
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated successfully',
+                              'success',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                            this.bufferArray.data = [];
+                            this.bufferArray.paginator = this.paginatorSecond;
+                          },
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated but extra rows could not be removed. Contact admin.',
+                              'error',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                          },
+                        );
+                    } else {
+                      this.alertService.alert(
+                        'Mapping updated successfully',
+                        'success',
+                      );
+                      this.showTable();
+                      this.getAllMappedWorkLocations();
+                      this.bufferArray.data = [];
+                      this.bufferArray.paginator = this.paginatorSecond;
+                    }
+                  },
+                  () => {
+                    this.alertService.alert(
+                      'Failed to update mapping',
+                      'error',
+                    );
+                  },
+                );
+            },
+            () => {
+              this.alertService.alert(
+                'Failed to clear ASHA supervisor mappings. Work location not updated.',
+                'error',
+              );
+            },
+          );
+      }
+      // ASHA Supervisor: update existing rows, create new rows if facilities changed
+      else if (
+        this.editIsAshaSupervisor &&
+        this.editAshaMappingPairs.length > 0
+      ) {
+        const oldPairs = this.editAshaMappingPairs;
+        const oldFacilityIDs = oldPairs.map((p) => p.facilityID);
+        // Use new facility IDs from sub-component if available, else keep old ones
+        const newFacilityIDs =
+          this.editFacilityMappingData?.facilityIDs?.length > 0
+            ? this.editFacilityMappingData.facilityIDs
+            : oldFacilityIDs;
 
-        providerServiceMapID: this.providerServiceMapID_duringEdit,
+        const reusableCount = Math.min(oldPairs.length, newFacilityIDs.length);
+        const allRequests: any[] = [];
 
-        blockID: this.ServiceEditblock,
+        // Update existing rows — reuse uSRMappingIDs with new facilityIDs
+        for (let i = 0; i < reusableCount; i++) {
+          const langObj: any = {
+            uSRMappingID: oldPairs[i].uSRMappingID,
+            userID: this.userID_duringEdit,
+            roleID: workLocations.role,
+            teleConsultation: this.teleConsultationEdit,
+            providerServiceMapID: this.providerServiceMapID_duringEdit,
+            blockID: this.ServiceEditblock,
+            blockName: this.blockname,
+            villageID: editVillageIdArray,
+            villageName:
+              editVillageNameArray.length > 0 ? editVillageNameArray : null,
+            workingLocationID: this.isFacilityServicelineEdit
+              ? null
+              : this.workLocationID_duringEdit,
+            stateID: this.stateID_duringEdit,
+            districtID: this.district_duringEdit,
+            modifiedBy: this.createdBy,
+            facilityID: newFacilityIDs[i],
+          };
+          allRequests.push(
+            this.worklocationmapping.UpdateWorkLocationMapping(langObj),
+          );
+        }
 
-        blockName: this.blockname,
+        // Soft-delete extra old rows when facilities reduced (e.g., had [A,B], now [A])
+        for (let i = reusableCount; i < oldPairs.length; i++) {
+          const deleteObj = {
+            uSRMappingID: oldPairs[i].uSRMappingID,
+            deleted: true,
+          };
+          allRequests.push(
+            this.worklocationmapping.DeleteWorkLocationMapping(deleteObj),
+          );
+        }
 
-        villageID: editVillageIdArray,
+        // Only create new rows for facilities that have at least one ASHA worker assigned
+        const ashaMappedFacilitySet1 = new Set(
+          (this.editFacilityMappingData?.ashaSupervisorMappings || []).map(
+            (m: any) => m.facilityID,
+          ),
+        );
 
-        villageName: this.serviceEditvillage,
+        // Create new rows for extra facilities (admin added more)
+        for (let i = reusableCount; i < newFacilityIDs.length; i++) {
+          if (!ashaMappedFacilitySet1.has(newFacilityIDs[i])) continue;
+          const newObj: any = {
+            previleges: [
+              {
+                ID: [
+                  {
+                    roleID: workLocations.role,
+                    teleConsultation: this.teleConsultationEdit,
+                    inbound: null,
+                    outbound: null,
+                  },
+                ],
+                providerServiceMapID: this.providerServiceMapID_duringEdit,
+                workingLocationID: this.isFacilityServicelineEdit
+                  ? null
+                  : this.workLocationID_duringEdit,
+                stateID: this.stateID_duringEdit,
+                districtID: this.district_duringEdit,
+                blockID: this.ServiceEditblock,
+                blockName: this.blockname,
+                villageID: editVillageIdArray,
+                villageName:
+                  editVillageNameArray.length > 0 ? editVillageNameArray : null,
+                facilityID: newFacilityIDs[i],
+              },
+            ],
+            userID: this.userID_duringEdit,
+            createdBy: this.createdBy,
+            serviceProviderID: this.serviceProviderID,
+          };
+          allRequests.push(
+            this.worklocationmapping.SaveWorkLocationMapping([newObj]),
+          );
+        }
 
-        workingLocationID: workLocations.worklocation,
+        // Step 1: ASHA supervisor mapping FIRST
+        const allFacilityIDsForDelete = [
+          ...new Set([...oldFacilityIDs, ...newFacilityIDs]),
+        ].filter((id) => id != null);
 
-        modifiedBy: this.createdBy,
-      };
-
-      console.log('edited request object to be sent to API', langObj);
-
-      this.worklocationmapping
-        .UpdateWorkLocationMapping(langObj)
-
-        .subscribe(
-          (response: any) => {
-            console.log(
-              response,
-              'after successful mapping of work location to provider',
-            );
-
-            this.alertService.alert('Mapping updated successfully', 'success');
-
-            this.showTable();
-
-            this.getAllMappedWorkLocations();
-
-            this.bufferArray.data = [];
-            this.bufferArray.paginator = this.paginatorSecond;
-          },
-          (err: any) => {
-            console.log(err, 'ERROR');
+        this.updateAshaSupervisorMappings(
+          allFacilityIDsForDelete,
+          (oldMappings: any[]) => {
+            // Step 2: Work location rows AFTER ASHA mapping succeeds
+            forkJoin(allRequests)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe(
+                () => {
+                  this.alertService.alert(
+                    'Mapping updated successfully',
+                    'success',
+                  );
+                  this.showTable();
+                  this.getAllMappedWorkLocations();
+                  this.bufferArray.data = [];
+                  this.bufferArray.paginator = this.paginatorSecond;
+                },
+                () => {
+                  // Work location failed — rollback ASHA mapping and restore old ones
+                  this.rollbackAshaSupervisorMappingWithRestore(
+                    this.userID_duringEdit,
+                    allFacilityIDsForDelete,
+                    oldMappings,
+                  );
+                },
+              );
           },
         );
+      } else if (
+        this.editIsAshaSupervisor &&
+        this.editFacilityMappingData?.facilityIDs?.length > 0
+      ) {
+        // ASHA Supervisor without existing facilities (old user):
+        // Step 1: ASHA supervisor mapping FIRST
+        // Only use facilities that have at least one ASHA worker assigned
+        const ashaMappedFacilitySet2 = new Set(
+          (this.editFacilityMappingData?.ashaSupervisorMappings || []).map(
+            (m: any) => m.facilityID,
+          ),
+        );
+        const facilityIDs = (
+          this.editFacilityMappingData.facilityIDs as any[]
+        ).filter((id) => ashaMappedFacilitySet2.has(id));
+        if (facilityIDs.length === 0) {
+          this.alertService.alert(
+            'No ASHA workers assigned to the selected facilities. Please assign ASHA workers before saving.',
+            'error',
+          );
+          return;
+        }
+        const firstFacilityID = facilityIDs[0];
+
+        this.updateAshaSupervisorMappings(facilityIDs, (oldMappings: any[]) => {
+          // Step 2: Work location rows AFTER ASHA mapping succeeds
+          const langObj: any = {
+            uSRMappingID: this.uSRMappingID,
+            userID: this.userID_duringEdit,
+            roleID: workLocations.role,
+            teleConsultation: this.teleConsultationEdit,
+            providerServiceMapID: this.providerServiceMapID_duringEdit,
+            blockID: this.ServiceEditblock,
+            blockName: this.blockname,
+            villageID: editVillageIdArray,
+            villageName:
+              editVillageNameArray.length > 0 ? editVillageNameArray : null,
+            workingLocationID: this.isFacilityServicelineEdit
+              ? null
+              : this.workLocationID_duringEdit,
+            stateID: this.stateID_duringEdit,
+            districtID: this.district_duringEdit,
+            modifiedBy: this.createdBy,
+            facilityID: firstFacilityID,
+          };
+
+          this.worklocationmapping
+            .UpdateWorkLocationMapping(langObj)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(
+              () => {
+                // If multiple facilities, create new rows for the additional facilities
+                if (facilityIDs.length > 1) {
+                  const additionalRequests = facilityIDs
+                    .slice(1)
+                    .map((fID: any) => {
+                      const newObj: any = {
+                        previleges: [
+                          {
+                            ID: [
+                              {
+                                roleID: workLocations.role,
+                                teleConsultation: this.teleConsultationEdit,
+                                inbound: null,
+                                outbound: null,
+                              },
+                            ],
+                            providerServiceMapID:
+                              this.providerServiceMapID_duringEdit,
+                            workingLocationID: this.isFacilityServicelineEdit
+                              ? null
+                              : this.workLocationID_duringEdit,
+                            stateID: this.stateID_duringEdit,
+                            districtID: this.district_duringEdit,
+                            blockID: this.ServiceEditblock,
+                            blockName: this.blockname,
+                            villageID: editVillageIdArray,
+                            villageName:
+                              editVillageNameArray.length > 0
+                                ? editVillageNameArray
+                                : null,
+                            facilityID: fID,
+                          },
+                        ],
+                        userID: this.userID_duringEdit,
+                        createdBy: this.createdBy,
+                        serviceProviderID: this.serviceProviderID,
+                      };
+                      return this.worklocationmapping.SaveWorkLocationMapping([
+                        newObj,
+                      ]);
+                    });
+
+                  forkJoin(additionalRequests)
+                    .pipe(takeUntil(this.destroy$))
+                    .subscribe(
+                      () => {
+                        this.alertService.alert(
+                          'Mapping updated successfully',
+                          'success',
+                        );
+                        this.showTable();
+                        this.getAllMappedWorkLocations();
+                        this.bufferArray.data = [];
+                        this.bufferArray.paginator = this.paginatorSecond;
+                      },
+                      (err: any) => {
+                        // Additional rows failed — revert first row back to original state
+                        const revertObj: any = {
+                          uSRMappingID: this.uSRMappingID,
+                          userID: this.userID_duringEdit,
+                          roleID: workLocations.role,
+                          teleConsultation: this.teleConsultationEdit,
+                          providerServiceMapID:
+                            this.providerServiceMapID_duringEdit,
+                          blockID: this.edit_Details.blockID,
+                          blockName: this.edit_Details.blockName,
+                          villageID: this.edit_Details.villageID,
+                          villageName: this.edit_Details.villageName,
+                          workingLocationID: this.workLocationID_duringEdit,
+                          modifiedBy: this.createdBy,
+                          facilityID: this.edit_Details.facilityID || null,
+                        };
+                        this.worklocationmapping
+                          .UpdateWorkLocationMapping(revertObj)
+                          .pipe(takeUntil(this.destroy$))
+                          .subscribe(
+                            () => {
+                              // First row reverted — now rollback ASHA mapping and restore old
+                              this.rollbackAshaSupervisorMappingWithRestore(
+                                this.userID_duringEdit,
+                                facilityIDs,
+                                oldMappings,
+                              );
+                            },
+                            () => {
+                              // Revert also failed — still try ASHA rollback
+                              this.alertService.alert(
+                                'Additional rows failed. First row revert also failed — contact admin.',
+                                'error',
+                              );
+                              this.rollbackAshaSupervisorMappingWithRestore(
+                                this.userID_duringEdit,
+                                facilityIDs,
+                                oldMappings,
+                              );
+                            },
+                          );
+                      },
+                    );
+                } else {
+                  this.alertService.alert(
+                    'Mapping updated successfully',
+                    'success',
+                  );
+                  this.showTable();
+                  this.getAllMappedWorkLocations();
+                  this.bufferArray.data = [];
+                  this.bufferArray.paginator = this.paginatorSecond;
+                }
+              },
+              (err: any) => {
+                // Work location failed — rollback ASHA mapping and restore old
+                this.rollbackAshaSupervisorMappingWithRestore(
+                  this.userID_duringEdit,
+                  facilityIDs,
+                  oldMappings,
+                );
+              },
+            );
+        });
+      } else if (
+        isStillAshaSupervisor &&
+        this.editFacilityMappingData?.isAshaSupervisor
+      ) {
+        // Role changed TO ASHA Supervisor (e.g. ASHA → ASHA Sup, CHO → ASHA Sup)
+        // Only use facilities that have ASHA workers assigned
+        const ashaMappedSet = new Set(
+          (this.editFacilityMappingData?.ashaSupervisorMappings || []).map(
+            (m: any) => m.facilityID,
+          ),
+        );
+        const supFacilityIDs = (
+          (this.editFacilityMappingData.facilityIDs as any[]) || []
+        ).filter((id) => ashaMappedSet.has(id));
+
+        if (supFacilityIDs.length === 0) {
+          this.alertService.alert(
+            'No ASHA workers assigned to the selected facilities. Please assign ASHA workers before saving.',
+            'error',
+          );
+          return;
+        }
+
+        const firstFacilityID = supFacilityIDs[0];
+
+        // Step 1: Save ASHA supervisor mappings first
+        const newMappings =
+          this.editFacilityMappingData.ashaSupervisorMappings.map((m: any) => ({
+            supervisorUserID: this.userID_duringEdit,
+            ashaUserID: m.ashaUserID,
+            facilityID: m.facilityID,
+            createdBy: this.createdBy,
+          }));
+
+        this.facilityMasterService
+          .saveAshaSupervisorMapping(newMappings)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(
+            () => {
+              // Step 2: Update existing USR row with first facility
+              const primaryObj: any = {
+                uSRMappingID: this.uSRMappingID,
+                userID: this.userID_duringEdit,
+                roleID: workLocations.role,
+                teleConsultation: this.teleConsultationEdit,
+                providerServiceMapID: this.providerServiceMapID_duringEdit,
+                blockID: this.ServiceEditblock,
+                blockName: this.blockname,
+                villageID: editVillageIdArray,
+                villageName:
+                  editVillageNameArray.length > 0 ? editVillageNameArray : null,
+                workingLocationID: this.isFacilityServicelineEdit
+                  ? null
+                  : this.workLocationID_duringEdit,
+                stateID: this.stateID_duringEdit,
+                districtID: this.district_duringEdit,
+                modifiedBy: this.createdBy,
+                facilityID: firstFacilityID,
+              };
+
+              this.worklocationmapping
+                .UpdateWorkLocationMapping(primaryObj)
+                .pipe(takeUntil(this.destroy$))
+                .subscribe(
+                  () => {
+                    // Step 3: Create new USR rows for additional facilities
+                    if (supFacilityIDs.length > 1) {
+                      const additionalReqs = supFacilityIDs
+                        .slice(1)
+                        .map((fID: any) => {
+                          const newObj: any = {
+                            previleges: [
+                              {
+                                ID: [
+                                  {
+                                    roleID: workLocations.role,
+                                    teleConsultation: this.teleConsultationEdit,
+                                    inbound: null,
+                                    outbound: null,
+                                  },
+                                ],
+                                providerServiceMapID:
+                                  this.providerServiceMapID_duringEdit,
+                                workingLocationID: this
+                                  .isFacilityServicelineEdit
+                                  ? null
+                                  : this.workLocationID_duringEdit,
+                                stateID: this.stateID_duringEdit,
+                                districtID: this.district_duringEdit,
+                                blockID: this.ServiceEditblock,
+                                blockName: this.blockname,
+                                villageID: editVillageIdArray,
+                                villageName:
+                                  editVillageNameArray.length > 0
+                                    ? editVillageNameArray
+                                    : null,
+                                facilityID: fID,
+                              },
+                            ],
+                            userID: this.userID_duringEdit,
+                            createdBy: this.createdBy,
+                            serviceProviderID: this.serviceProviderID,
+                          };
+                          return this.worklocationmapping.SaveWorkLocationMapping(
+                            [newObj],
+                          );
+                        });
+
+                      forkJoin(additionalReqs)
+                        .pipe(takeUntil(this.destroy$))
+                        .subscribe(
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated successfully',
+                              'success',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                            this.bufferArray.data = [];
+                            this.bufferArray.paginator = this.paginatorSecond;
+                          },
+                          () => {
+                            this.alertService.alert(
+                              'Mapping updated but extra facility rows failed. Contact admin.',
+                              'error',
+                            );
+                            this.showTable();
+                            this.getAllMappedWorkLocations();
+                          },
+                        );
+                    } else {
+                      this.alertService.alert(
+                        'Mapping updated successfully',
+                        'success',
+                      );
+                      this.showTable();
+                      this.getAllMappedWorkLocations();
+                      this.bufferArray.data = [];
+                      this.bufferArray.paginator = this.paginatorSecond;
+                    }
+                  },
+                  () => {
+                    // USR update failed — rollback ASHA supervisor mappings
+                    this.rollbackAshaSupervisorMapping(
+                      this.userID_duringEdit,
+                      supFacilityIDs,
+                    );
+                  },
+                );
+            },
+            () => {
+              this.alertService.alert(
+                'Failed to save ASHA supervisor mapping. Work location not updated.',
+                'error',
+              );
+            },
+          );
+      } else {
+        // Single row update (FLW/HWC non-ASHA or standard)
+        const langObj: any = {
+          uSRMappingID: this.uSRMappingID,
+          userID: this.userID_duringEdit,
+          roleID: workLocations.role,
+          teleConsultation: this.teleConsultationEdit,
+          providerServiceMapID: this.providerServiceMapID_duringEdit,
+          blockID: this.ServiceEditblock,
+          blockName: this.blockname,
+          villageID: editVillageIdArray,
+          villageName:
+            editVillageNameArray.length > 0
+              ? editVillageNameArray
+              : this.isFacilityServicelineEdit
+                ? null
+                : this.serviceEditvillage,
+          workingLocationID: this.isFacilityServicelineEdit
+            ? null
+            : this.workLocationID_duringEdit,
+          stateID: this.stateID_duringEdit,
+          districtID: this.district_duringEdit,
+          modifiedBy: this.createdBy,
+        };
+
+        if (this.isFacilityServicelineEdit && this.editFacilityMappingData) {
+          langObj.facilityID = this.editFacilityMappingData.facilityID;
+        }
+
+        this.worklocationmapping
+          .UpdateWorkLocationMapping(langObj)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe(
+            (response: any) => {
+              this.alertService.alert(
+                'Mapping updated successfully',
+                'success',
+              );
+              this.showTable();
+              this.getAllMappedWorkLocations();
+              this.bufferArray.data = [];
+              this.bufferArray.paginator = this.paginatorSecond;
+            },
+            (err: any) => {
+              this.alertService.alert('Failed to update mapping', 'error');
+            },
+          );
+      }
     }
   }
 
@@ -1958,23 +3436,21 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
       providerServiceMapID: this.providerServiceMapID_duringEdit,
 
-      workingLocationID: workLocations.worklocation,
+      workingLocationID: this.workLocationID_duringEdit,
+
+      stateID: this.stateID_duringEdit,
+
+      districtID: this.district_duringEdit,
 
       modifiedBy: this.createdBy,
     };
 
-    console.log('edited request object to be sent to API', langObj);
-
     this.worklocationmapping
       .UpdateWorkLocationMapping(langObj)
 
+      .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
-          console.log(
-            response,
-            'after successful mapping of work location to provider',
-          );
-
           this.alertService.alert('Mapping updated successfully', 'success');
 
           this.showTable();
@@ -1985,7 +3461,7 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
           this.bufferArray.paginator = this.paginatorSecond;
         },
         (err: any) => {
-          console.log(err, 'ERROR');
+          this.alertService.alert('Failed to update mapping', 'error');
         },
       );
   }
@@ -2012,31 +3488,47 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
 
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
-      this.filteredmappedWorkLocationsList.data = this.mappedWorkLocationsList;
+      this.filteredmappedWorkLocationsList.data = this.groupedWorkLocationsList;
       this.filteredmappedWorkLocationsList.paginator = this.paginatorFirst;
+      this.filteredAshaSupervisorList.data = this.ashaSupervisorGroupedList;
+      this.filteredAshaSupervisorList.paginator = this.paginatorAsha;
     } else {
-      this.filteredmappedWorkLocationsList.data = [];
-      this.mappedWorkLocationsList.forEach((item: any) => {
-        for (const key in item) {
-          if (
-            key === 'userName' ||
-            key === 'serviceName' ||
-            key === 'stateName' ||
-            key === 'workingDistrictName' ||
-            key === 'blockName' ||
-            key === 'villageName' ||
-            key === 'locationName' ||
-            key === 'roleName'
-          ) {
-            const value: string = '' + item[key];
-            if (value.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
-              this.filteredmappedWorkLocationsList.data.push(item);
-              break;
-            }
-          }
+      const lowerSearch = searchTerm.toLowerCase();
+      const filtered: any[] = [];
+      const filteredAsha: any[] = [];
+      const filterFn = (group: any) => {
+        for (const key of [
+          'userName',
+          'serviceName',
+          'stateName',
+          'workingDistrictName',
+          'blockName',
+          'locationName',
+          'realName',
+        ]) {
+          const value: string = '' + (group[key] || '');
+          if (value.toLowerCase().indexOf(lowerSearch) >= 0) return true;
         }
+        if (
+          group.villageName?.some((vn: string) =>
+            ('' + vn).toLowerCase().includes(lowerSearch),
+          )
+        )
+          return true;
+        if (group.roleNamesDisplay?.toLowerCase().includes(lowerSearch))
+          return true;
+        return false;
+      };
+      this.groupedWorkLocationsList.forEach((group: any) => {
+        if (filterFn(group)) filtered.push(group);
       });
+      this.ashaSupervisorGroupedList.forEach((group: any) => {
+        if (filterFn(group)) filteredAsha.push(group);
+      });
+      this.filteredmappedWorkLocationsList.data = filtered;
       this.filteredmappedWorkLocationsList.paginator = this.paginatorFirst;
+      this.filteredAshaSupervisorList.data = filteredAsha;
+      this.filteredAshaSupervisorList.paginator = this.paginatorAsha;
     }
   }
 
@@ -2050,10 +3542,65 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     this.disableSelectRoles = false;
     this.blockFlag = false;
     this.villageFlag = false;
+    this.isFacilityServiceline = false;
     this.Serviceblock = undefined;
     this.Servicevillage = undefined;
     this.teleConsultation = null;
     this.teleConsultationFlag = false;
+    this.createUserVillageIDs = [];
+    this.createUserVillageNames = [];
+    this.collectUserExistingVillages();
+  }
+
+  get allEditVillagesSelected(): boolean {
+    if (!this.editVillageArr?.length) return false;
+    const selected = new Set(this.serviceEditvillage || []);
+    return this.editVillageArr.every((v: any) => selected.has(v.villageName));
+  }
+
+  toggleSelectAllEditVillages() {
+    if (this.allEditVillagesSelected) {
+      this.serviceEditvillage = [];
+    } else {
+      this.serviceEditvillage = this.editVillageArr.map(
+        (v: any) => v.villageName,
+      );
+    }
+  }
+
+  collectUserExistingVillages() {
+    if (!this.User?.userID) return;
+    const userID = this.User.userID;
+    const villageIDSet = new Set<number>();
+    const villageIDToName = new Map<number, string>();
+
+    // Use the grouped lists — villageID arrays are properly built there
+    const allGroups: GroupedWorkLocation[] = [
+      ...this.groupedWorkLocationsList,
+      ...this.ashaSupervisorGroupedList,
+    ];
+    for (const group of allGroups) {
+      if (group.userID !== userID) continue;
+      if (!group.anyActive) continue;
+      if (Array.isArray(group.villageID)) {
+        group.villageID.forEach((vid: any, idx: number) => {
+          const id = Number(vid);
+          if (!villageIDSet.has(id)) {
+            villageIDSet.add(id);
+            villageIDToName.set(
+              id,
+              Array.isArray(group.villageName)
+                ? group.villageName[idx] || ''
+                : '',
+            );
+          }
+        });
+      }
+    }
+    this.createUserVillageIDs = Array.from(villageIDSet);
+    this.createUserVillageNames = this.createUserVillageIDs.map(
+      (id) => villageIDToName.get(id) || '',
+    );
   }
 
   resetBlockVillageFields() {
@@ -2085,6 +3632,34 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     } else this.isOutbound = true;
   }
 
+  onEditRoleChange(roleID: any) {
+    const selected = this.RolesList.find((r: any) => r.roleID === roleID);
+    if (!selected) return;
+
+    const oldIsAshaSup = this.editIsAshaSupervisor;
+    const newIsAshaSup =
+      (selected.roleName || '').toLowerCase() === 'asha supervisor';
+
+    this.editRoleName = selected.roleName || '';
+
+    // If role crosses the ASHA Supervisor boundary (to or from), reset all
+    // facility/village inputs so the child starts fresh — correct single vs
+    // multi facility mode, no pre-populated data, no orphan red villages
+    if (oldIsAshaSup !== newIsAshaSup) {
+      this.editIsAshaSupervisor = newIsAshaSup;
+      this.editSupervisorUserID = newIsAshaSup ? this.userID_duringEdit : null;
+      this.editExistingFacilityID = null;
+      this.editExistingFacilityIDs = [];
+      this.editExistingFacilityNames = [];
+      this.editExistingFacilityName = '';
+      this.editExistingFacilityTypeID = null;
+      this.editExistingRuralUrban = '';
+      this.editExistingVillageIDs = [];
+      this.editExistingVillageNames = [];
+      this.editFacilityMappingData = null;
+    }
+  }
+
   showInboundOutboundEdit(value: any, role: any) {
     const editRoleName = this.RolesList.filter((response: any) => {
       if (role === response.roleID) {
@@ -2108,45 +3683,54 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     ) {
       this.blockFlag = true;
       this.villageFlag = true;
+      this.isFacilityServiceline =
+        serviceline === 'FLW' || serviceline === 'HWC';
       if (serviceline === 'TM' || serviceline === 'MMU') {
         this.isBlockRequired = false;
         this.isVillageRequired = false;
       } else {
         this.isBlockRequired = true;
-        this.isVillageRequired = true;
+        this.isVillageRequired = this.isFacilityServiceline ? false : true;
       }
     } else {
       this.blockFlag = false;
       this.villageFlag = false;
+      this.isFacilityServiceline = false;
     }
   }
 
-  showEditBlockDrop(serviceID_duringEdit: any) {
+  showEditBlockDrop(serviceName: any) {
     if (
-      serviceID_duringEdit !== 'FLW' ||
-      serviceID_duringEdit !== 'HWC' ||
-      serviceID_duringEdit !== 'TM' ||
-      serviceID_duringEdit !== 'MMU'
+      serviceName === 'FLW' ||
+      serviceName === 'HWC' ||
+      serviceName === 'TM' ||
+      serviceName === 'MMU'
     ) {
+      this.enableEditBlockFlag = true;
+      this.enableEditVillageFlag = true;
+      this.isFacilityServicelineEdit =
+        serviceName === 'FLW' || serviceName === 'HWC';
+    } else {
       this.enableEditBlockFlag = false;
       this.enableEditVillageFlag = false;
       this.ServiceEditblock = null;
       this.blockname = null;
       this.villageIdValue = null;
       this.serviceEditvillage = null;
-    } else {
-      this.enableEditBlockFlag = true;
-      this.enableEditVillageFlag = true;
+      this.isFacilityServicelineEdit = false;
     }
   }
 
   getBlockMaster(District: any) {
-    this.villagemasterService.getTaluks(District.districtID).subscribe(
-      (response: any) => this.getTalukSuccessHandeler(response.data),
-      (err: any) => {
-        console.log('Error', err);
-      },
-    );
+    this.villagemasterService
+      .getTaluks(District.districtID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => this.getTalukSuccessHandeler(response.data),
+        (err: any) => {
+          this.alertService.alert('Failed to load blocks', 'error');
+        },
+      );
   }
 
   getTalukSuccessHandeler(response: any) {
@@ -2160,12 +3744,15 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     const requestObject = {
       blockID: Serviceblock.blockID,
     };
-    this.villagemasterService.getVillage(requestObject).subscribe(
-      (response: any) => this.getVillageSuccessHandeler(response),
-      (err: any) => {
-        console.log('Error', err);
-      },
-    );
+    this.villagemasterService
+      .getVillage(requestObject)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => this.getVillageSuccessHandeler(response),
+        (err: any) => {
+          this.alertService.alert('Failed to load villages', 'error');
+        },
+      );
   }
 
   getVillageSuccessHandeler(response: any) {
@@ -2175,47 +3762,58 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
   }
 
   getEditBlockMaster(district_duringEdit: any) {
-    this.villagemasterService.getTaluks(district_duringEdit).subscribe(
-      (response: any) => {
-        if (response && response.data) {
-          // console.log('this.searchForm', this.searchForm.valid, this.searchForm.value);
-          this.editblocks = response.data;
-        }
-      },
-      (err: any) => {
-        console.log('Error', err);
-      },
-    );
+    this.villagemasterService
+      .getTaluks(district_duringEdit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          if (response && response.data) {
+            // console.log('this.searchForm', this.searchForm.valid, this.searchForm.value);
+            this.editblocks = response.data;
+          }
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to load blocks', 'error');
+        },
+      );
   }
 
   getEditBlockPatchMaster(district_duringEdit: any) {
-    this.villagemasterService.getTaluks(district_duringEdit).subscribe(
-      (response: any) => {
-        if (response && response.data) {
-          // console.log('this.searchForm', this.searchForm.valid, this.searchForm.value);
-          this.editblocks = response.data;
-          this.ServiceEditblock = this.edit_Details.blockID;
-          this.blockname = this.edit_Details.blockName;
-          this.enableEditBlockFlag = true;
-          this.getEditVillagePatchMaster(this.ServiceEditblock);
-        }
-      },
-      (err: any) => {
-        console.log('Error', err);
-      },
-    );
+    if (!district_duringEdit || isNaN(district_duringEdit)) return;
+    this.villagemasterService
+      .getTaluks(district_duringEdit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          if (response && response.data) {
+            this.editblocks = response.data;
+            this.ServiceEditblock = this.edit_Details.blockID;
+            this.blockname = this.edit_Details.blockName;
+            this.enableEditBlockFlag = true;
+            if (this.ServiceEditblock) {
+              this.getEditVillagePatchMaster(this.ServiceEditblock);
+            }
+          }
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to load blocks', 'error');
+        },
+      );
   }
 
   getEditVillageMaster(ServiceEditblock: any) {
     const requestObject = {
       blockID: ServiceEditblock,
     };
-    this.villagemasterService.getVillage(requestObject).subscribe(
-      (response: any) => this.getEditVillageSuccessHandeler(response),
-      (err: any) => {
-        console.log('Error', err);
-      },
-    );
+    this.villagemasterService
+      .getVillage(requestObject)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => this.getEditVillageSuccessHandeler(response),
+        (err: any) => {
+          this.alertService.alert('Failed to load villages', 'error');
+        },
+      );
   }
 
   getEditVillageSuccessHandeler(response: any) {
@@ -2228,12 +3826,15 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
     const requestObject = {
       blockID: ServiceEditblock,
     };
-    this.villagemasterService.getVillage(requestObject).subscribe(
-      (response: any) => this.getEditPatchVillageSuccessHandeler(response),
-      (err: any) => {
-        console.log('Error', err);
-      },
-    );
+    this.villagemasterService
+      .getVillage(requestObject)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => this.getEditPatchVillageSuccessHandeler(response),
+        (err: any) => {
+          this.alertService.alert('Failed to load villages', 'error');
+        },
+      );
   }
 
   getEditPatchVillageSuccessHandeler(response: any) {
@@ -2341,5 +3942,876 @@ export class WorkLocationMappingComponent implements OnInit, AfterViewInit {
       });
     }
     return result;
+  }
+
+  // --- Facility Mapping Integration ---
+  currentFacilityMappingData: any = null;
+
+  getSelectedRoleName(): string {
+    if (Array.isArray(this.Role) && this.Role.length > 0) {
+      return this.Role[0].roleName;
+    }
+    if (this.Role?.roleName) {
+      return this.Role.roleName;
+    }
+    return '';
+  }
+
+  noAshaWorkersCreate = false;
+  noAshaWorkersEdit = false;
+
+  onFacilityMappingDataReceived(data: any) {
+    this.currentFacilityMappingData = data;
+  }
+
+  onEditFacilityMappingDataReceived(data: any) {
+    console.log(
+      '[DEBUG] editFacilityMappingData received:',
+      JSON.stringify(data),
+    );
+    this.editFacilityMappingData = data;
+  }
+
+  onNoAshaWorkersCreate(flag: boolean) {
+    this.noAshaWorkersCreate = flag;
+  }
+
+  onNoAshaWorkersEdit(flag: boolean) {
+    this.noAshaWorkersEdit = flag;
+  }
+
+  // ── Grouped row helpers ──
+
+  getUniqueRoles(roles: RoleEntry[]): RoleEntry[] {
+    if (!roles) return [];
+    const seen = new Set<string>();
+    return roles.filter((r) => {
+      if (seen.has(r.roleName)) return false;
+      seen.add(r.roleName);
+      return true;
+    });
+  }
+
+  getGroupFacilityDisplay(group: any): string {
+    if (!group.roles) return 'N/A';
+    const activeRoles = group.roles.filter(
+      (r: any) => !r.userServciceRoleDeleted,
+    );
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (const r of activeRoles) {
+      const name = this.facilityNameMap.get(r.uSRMappingID);
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        names.push(name);
+      }
+    }
+    return names.length > 0 ? names.join(', ') : 'N/A';
+  }
+
+  loadFacilityNamesForGroups() {
+    // Build facilityNameMap from row data (facilityName now included in getMappedRole response)
+    this.facilityNameMap.clear();
+    for (const row of this.mappedWorkLocationsList) {
+      if (
+        (row.serviceName === 'FLW' || row.serviceName === 'HWC') &&
+        row.uSRMappingID &&
+        row.facilityName
+      ) {
+        this.facilityNameMap.set(row.uSRMappingID, row.facilityName);
+      }
+    }
+  }
+
+  getGroupInbound(group: any): string {
+    if (group.serviceName !== '1097') return 'N/A';
+    const activeRole = group.roles?.find(
+      (r: any) =>
+        !r.userServciceRoleDeleted &&
+        !r.userDeleted &&
+        !r.providerServiceMappingDeleted,
+    );
+    return activeRole?.inbound != null ? String(activeRole.inbound) : 'N/A';
+  }
+
+  getGroupOutbound(group: any): string {
+    if (group.serviceName !== '1097') return 'N/A';
+    const activeRole = group.roles?.find(
+      (r: any) =>
+        !r.userServciceRoleDeleted &&
+        !r.userDeleted &&
+        !r.providerServiceMappingDeleted,
+    );
+    return activeRole?.outbound != null ? String(activeRole.outbound) : 'N/A';
+  }
+
+  getRoleNameById(roleID: number): string {
+    const role = this.RolesList.find((r: any) => r.roleID === roleID);
+    return role ? role.roleName : '';
+  }
+
+  getEditVillageArrays(): {
+    editVillageIdArray: any[];
+    editVillageNameArray: string[];
+  } {
+    const editVillageIdArray: any[] = [];
+    const editVillageNameArray: string[] = [];
+    if (this.isFacilityServicelineEdit && this.editFacilityMappingData) {
+      editVillageIdArray.push(
+        ...(this.editFacilityMappingData.villageIDs || []),
+      );
+      editVillageNameArray.push(
+        ...(this.editFacilityMappingData.villageNames || []),
+      );
+    } else if (this.serviceEditvillage?.length > 0) {
+      this.serviceEditvillage.forEach((item: any) => {
+        this.editVillageArr.forEach((itemValue: any) => {
+          if (item === itemValue.villageName) {
+            editVillageIdArray.push(itemValue.districtBranchID);
+            editVillageNameArray.push(itemValue.villageName);
+          }
+        });
+      });
+    }
+    return { editVillageIdArray, editVillageNameArray };
+  }
+
+  // ── Edit grouped row ──
+
+  editGroupedRow(group: GroupedWorkLocation) {
+    this.editGroupedElement = group;
+    const firstRow = group.originalRows[0];
+
+    // Reset stale block so child component waits for getEditBlockPatchMaster
+    // before being created (prevents race condition with facility loading)
+    this.ServiceEditblock = undefined;
+
+    this.showEditForm();
+    this.edit = true;
+    this.disableUsername = true;
+    this.edit_Details = firstRow;
+    this.uSRMappingID = firstRow.uSRMappingID;
+    this.userID_duringEdit = firstRow.userID;
+    this.stateID_duringEdit = firstRow.stateID;
+    this.providerServiceMapID_duringEdit = firstRow.providerServiceMapID;
+    this.district_duringEdit = parseInt(firstRow.workingDistrictID, 10);
+    this.serviceID_duringEdit = firstRow.serviceID;
+    const parsedWLID = parseInt(firstRow.workingLocationID, 10);
+    this.workLocationID_duringEdit = isNaN(parsedWLID) ? null : parsedWLID;
+
+    // Multi-select: pre-check all active role IDs
+    this.roleIDs_duringEdit = [
+      ...new Set(
+        group.roles
+          .filter(
+            (r) =>
+              !r.userServciceRoleDeleted &&
+              !r.userDeleted &&
+              !r.providerServiceMappingDeleted,
+          )
+          .map((r) => r.roleID),
+      ),
+    ];
+    this.roleID_duringEdit =
+      this.roleIDs_duringEdit.length > 0 ? this.roleIDs_duringEdit[0] : null;
+
+    // Inbound/outbound from first active role
+    const firstActive = group.roles.find(
+      (r) =>
+        !r.userServciceRoleDeleted &&
+        !r.userDeleted &&
+        !r.providerServiceMappingDeleted,
+    );
+    this.isInboundEdit = firstActive?.inbound || false;
+    this.isOutboundEdit = firstActive?.outbound || false;
+
+    if (firstRow.serviceName === '1097') {
+      this.showInOutBoundEdit = group.roles.some(
+        (r) =>
+          r.roleName.toLowerCase() !== 'supervisor' &&
+          !r.userServciceRoleDeleted,
+      );
+    } else {
+      this.showInOutBoundEdit = false;
+    }
+
+    // Teleconsultation
+    if (
+      firstRow.serviceName === 'HWC' &&
+      group.roles.some(
+        (r) =>
+          (r.roleName.toLowerCase() === 'nurse' ||
+            r.roleName.toLowerCase() === 'doctor') &&
+          r.teleConsultation,
+      )
+    ) {
+      this.teleConsultationEditFlag = true;
+      this.teleConsultationEdit = firstActive?.teleConsultation || null;
+    } else {
+      this.teleConsultationEditFlag = false;
+      this.teleConsultationEdit = null;
+    }
+
+    // Facility serviceline detection
+    this.isFacilityServicelineEdit =
+      firstRow.serviceName === 'FLW' || firstRow.serviceName === 'HWC';
+    if (this.isFacilityServicelineEdit) {
+      // Use merged group villages (union of all roles) instead of firstRow only
+      this.editExistingVillageIDs = Array.isArray(group.villageID)
+        ? group.villageID.slice()
+        : [];
+      this.editExistingVillageNames = Array.isArray(group.villageName)
+        ? group.villageName.slice()
+        : [];
+      this.editServiceName = firstRow.serviceName || '';
+      this.editRoleName = firstActive?.roleName || firstRow.roleName || '';
+
+      // ASHA Supervisor detection (for update logic only)
+      const isAshaSup = group.roles.some(
+        (r) =>
+          (r.roleName || '').toLowerCase() === 'asha supervisor' &&
+          !r.userServciceRoleDeleted,
+      );
+      this.editIsAshaSupervisor = isAshaSup;
+      this.editSupervisorUserID = isAshaSup ? firstRow.userID : null;
+      this.editAshaMappingPairs = isAshaSup
+        ? group.roles
+            .filter(
+              (r) =>
+                (r.roleName || '').toLowerCase() === 'asha supervisor' &&
+                !r.userServciceRoleDeleted,
+            )
+            .map((r) => ({
+              uSRMappingID: r.uSRMappingID,
+              facilityID: r.facilityID,
+            }))
+        : [];
+
+      // Reset facility edit fields
+      this.editExistingFacilityID = null;
+      this.editExistingFacilityName = '';
+      this.editExistingFacilityNames = [];
+      this.editExistingFacilityIDs = [];
+      this.editExistingFacilityTypeID = null;
+      this.editExistingRuralUrban = '';
+      this.editFacilityMappingData = null;
+
+      // Read facility details directly from row data (populated by backend batch query)
+      if (isAshaSup) {
+        // ASHA Supervisor: collect facility info from all active ASHA Supervisor role rows
+        const ashaRoles = group.roles.filter(
+          (r) =>
+            (r.roleName || '').toLowerCase() === 'asha supervisor' &&
+            !r.userServciceRoleDeleted,
+        );
+        const facilityIDs: number[] = [];
+        const facilityNames: string[] = [];
+        const pairs: { uSRMappingID: any; facilityID: any }[] = [];
+        for (const r of ashaRoles) {
+          const origRow = group.originalRows.find(
+            (row: any) => row.uSRMappingID === r.uSRMappingID,
+          );
+          const fID =
+            origRow?.facilityID != null && origRow?.facilityID !== 0
+              ? origRow.facilityID
+              : null;
+          const fName = origRow?.facilityName || '';
+          if (fID) {
+            facilityIDs.push(fID);
+            facilityNames.push(fName || 'Facility ID ' + fID);
+          }
+          pairs.push({ uSRMappingID: r.uSRMappingID, facilityID: fID });
+        }
+        this.editExistingFacilityIDs = [...new Set(facilityIDs)];
+        this.editExistingFacilityNames = facilityNames;
+        this.editAshaMappingPairs = pairs;
+        this.editExistingFacilityID =
+          facilityIDs.length > 0 ? facilityIDs[0] : null;
+        this.editExistingFacilityName =
+          facilityNames.length > 0 ? facilityNames[0] : '';
+      } else {
+        // Non-ASHA: read facility from first active role's row data
+        for (const row of group.originalRows) {
+          const role = group.roles.find(
+            (r) =>
+              r.uSRMappingID === row.uSRMappingID && !r.userServciceRoleDeleted,
+          );
+          if (role && row.facilityID != null && row.facilityID !== 0) {
+            this.editExistingFacilityID = row.facilityID;
+            this.editExistingFacilityName = row.facilityName || '';
+            this.editExistingFacilityTypeID =
+              row.facilityTypeID != null && row.facilityTypeID !== 0
+                ? row.facilityTypeID
+                : null;
+            this.editExistingRuralUrban = row.ruralUrban || '';
+            this.editExistingFacilityIDs = [row.facilityID];
+            this.editExistingFacilityNames = [
+              row.facilityName || 'Facility ID ' + row.facilityID,
+            ];
+            break;
+          }
+        }
+      }
+    }
+
+    this.getProviderServices(this.userID);
+    this.checkService_forIsNational();
+
+    // Load states for dropdown WITHOUT clearing districts/roles/workLocations
+    this.worklocationmapping
+      .getStates(this.userID, this.serviceID_duringEdit, this.isNational_edit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        if (response && response.data) {
+          this.states_array = response.data;
+        }
+      });
+
+    if (
+      this.edit_Details.stateID === undefined ||
+      this.edit_Details.stateID === null
+    ) {
+      this.set_currentPSM_ID_duringEdit(firstRow.providerServiceMapID);
+      this.stateID_duringEdit = '';
+      this.district_duringEdit = null;
+
+      if (this.isFacilityServicelineEdit) {
+        // HWC/FLW with null workLocationID: derive state from providerServiceMapID,
+        // then load districts + blocks so dropdowns are pre-populated
+        this.worklocationmapping
+          .getStates(
+            this.userID,
+            this.serviceID_duringEdit,
+            this.isNational_edit,
+          )
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((response: any) => {
+            if (response && response.data) {
+              this.states_array = response.data;
+              const matchState = this.states_array.find(
+                (s: any) =>
+                  Number(s.providerServiceMapID) ===
+                  Number(firstRow.providerServiceMapID),
+              );
+              if (matchState) {
+                this.stateID_duringEdit = matchState.stateID;
+                this.providerServiceMapID_duringEdit =
+                  matchState.providerServiceMapID;
+                // Load districts for this state
+                this.worklocationmapping
+                  .getAllDistricts(matchState.stateID)
+                  .pipe(takeUntil(this.destroy$))
+                  .subscribe((distRes: any) => {
+                    if (distRes && distRes.data) {
+                      this.districts_array = distRes.data;
+                      // Set district from workingDistrictID if available
+                      const distID = parseInt(
+                        this.edit_Details.workingDistrictID,
+                        10,
+                      );
+                      if (!isNaN(distID) && distID) {
+                        this.district_duringEdit = distID;
+                        this.getEditBlockPatchMaster(distID);
+                      }
+                    }
+                  });
+              }
+            }
+          });
+        // Load roles immediately (doesn't depend on state/district)
+        this.getAllRoles_duringEdit2(
+          this.serviceID_duringEdit,
+          this.providerServiceMapID_duringEdit,
+          this.userID_duringEdit,
+        );
+      } else {
+        // Other services: chain via work locations
+        this.getAllWorkLocations_duringEdit2(
+          this.states_array[0]?.stateID,
+          this.serviceID_duringEdit,
+          this.isNational_edit,
+          this.district_duringEdit,
+          this.providerServiceMapID_duringEdit,
+          this.userID_duringEdit,
+        );
+      }
+    } else {
+      // Load districts, THEN set district value + load blocks + load roles
+      // (district_duringEdit must be set AFTER districts_array loads for mat-select to match)
+      this.worklocationmapping
+        .getAllDistricts(firstRow.stateID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(
+          (response: any) => {
+            if (response) {
+              this.districts_array = response.data;
+              // Set district value AFTER options are loaded
+              this.district_duringEdit = parseInt(
+                this.edit_Details.workingDistrictID,
+                10,
+              );
+              // Load blocks → set ServiceEditblock → load villages
+              if (
+                !isNaN(this.district_duringEdit) &&
+                this.district_duringEdit &&
+                (this.isFacilityServicelineEdit ||
+                  firstRow.serviceName === 'TM' ||
+                  firstRow.serviceName === 'MMU')
+              ) {
+                this.getEditBlockPatchMaster(this.district_duringEdit);
+              }
+              // HWC/FLW: no workingLocationID — load roles directly
+              // Other services: chain via work locations
+              if (this.isFacilityServicelineEdit) {
+                this.getAllRoles_duringEdit2(
+                  this.serviceID_duringEdit,
+                  this.providerServiceMapID_duringEdit,
+                  this.userID_duringEdit,
+                );
+              } else {
+                this.getAllWorkLocations_duringEdit2(
+                  this.stateID_duringEdit,
+                  this.serviceID_duringEdit,
+                  this.isNational_edit,
+                  this.district_duringEdit,
+                  this.providerServiceMapID_duringEdit,
+                  this.userID_duringEdit,
+                );
+              }
+            }
+          },
+          () => {
+            this.alertService.alert('Failed to load districts', 'error');
+          },
+        );
+    }
+  }
+
+  onEditRolesChanged(selectedRoleIDs: number[]) {
+    if (this.serviceID_duringEdit === 1) {
+      const hasSupervisorOnly = selectedRoleIDs.every((rid) => {
+        const role = this.RolesList.find((r: any) => r.roleID === rid);
+        return role?.roleName?.toLowerCase() === 'supervisor';
+      });
+      this.showInOutBoundEdit =
+        !hasSupervisorOnly && selectedRoleIDs.length > 0;
+    }
+    if (this.edit_Details?.serviceName === 'HWC') {
+      const hasNurseOrDoctor = selectedRoleIDs.some((rid) => {
+        const role = this.RolesList.find((r: any) => r.roleID === rid);
+        return (
+          role?.roleName?.toLowerCase() === 'nurse' ||
+          role?.roleName?.toLowerCase() === 'doctor'
+        );
+      });
+      this.teleConsultationEditFlag = hasNurseOrDoctor;
+      if (!hasNurseOrDoctor) this.teleConsultationEdit = null;
+    }
+  }
+
+  // ── Update grouped work location ──
+
+  updateGroupedWorkLocation(workLocations: any) {
+    if (!this.editGroupedElement) {
+      this.updateWorkLocation(workLocations);
+      return;
+    }
+
+    // ASHA Supervisor: has multi-facility logic (reuse/create/delete per facility)
+    // which is handled properly in updateWorkLocation(), not here.
+    // The rolesToKeep loop below uses find() which only gets the first ASHA entry,
+    // missing the other facility mappings.
+    if (this.editIsAshaSupervisor) {
+      // Multi-select dropdown sends role as array — normalize to single roleID
+      workLocations.role = this.roleID_duringEdit;
+      this.updateWorkLocation(workLocations);
+      return;
+    }
+
+    const group = this.editGroupedElement;
+    const existingRoleIDs = [
+      ...new Set(
+        group.roles
+          .filter((r) => !r.userServciceRoleDeleted)
+          .map((r) => r.roleID),
+      ),
+    ];
+    const newRoleIDs: number[] = this.roleIDs_duringEdit;
+
+    const rolesToAdd = newRoleIDs.filter(
+      (rid) => !existingRoleIDs.includes(rid),
+    );
+    const rolesToRemove = existingRoleIDs.filter(
+      (rid) => !newRoleIDs.includes(rid),
+    );
+    const rolesToKeep = newRoleIDs.filter((rid) =>
+      existingRoleIDs.includes(rid),
+    );
+
+    const allRequests: any[] = [];
+    const { editVillageIdArray, editVillageNameArray } =
+      this.getEditVillageArrays();
+
+    // UPDATE existing rows for kept roles
+    for (const rid of rolesToKeep) {
+      const existingEntry = group.roles.find(
+        (r) => r.roleID === rid && !r.userServciceRoleDeleted,
+      );
+      if (existingEntry) {
+        const roleName = this.getRoleNameById(rid);
+        const updateObj: any = {
+          uSRMappingID: existingEntry.uSRMappingID,
+          userID: this.userID_duringEdit,
+          roleID: rid,
+          providerServiceMapID: this.providerServiceMapID_duringEdit,
+          workingLocationID: this.isFacilityServicelineEdit
+            ? null
+            : this.workLocationID_duringEdit,
+          stateID: this.stateID_duringEdit,
+          districtID: this.district_duringEdit,
+          blockID: this.ServiceEditblock,
+          blockName: this.blockname,
+          villageID: editVillageIdArray,
+          villageName:
+            editVillageNameArray.length > 0 ? editVillageNameArray : null,
+          modifiedBy: this.createdBy,
+        };
+        if (group.serviceName === '1097') {
+          updateObj.inbound =
+            roleName?.toLowerCase() === 'supervisor'
+              ? false
+              : this.isInboundEdit;
+          updateObj.outbound =
+            roleName?.toLowerCase() === 'supervisor'
+              ? false
+              : this.isOutboundEdit;
+        }
+        if (group.serviceName === 'HWC') {
+          updateObj.teleConsultation = this.teleConsultationEdit;
+        }
+        if (this.isFacilityServicelineEdit && this.editFacilityMappingData) {
+          updateObj.facilityID = this.editFacilityMappingData.facilityID;
+        }
+        allRequests.push(
+          this.worklocationmapping.UpdateWorkLocationMapping(updateObj),
+        );
+      }
+    }
+
+    // SOFT-DELETE removed roles
+    for (const rid of rolesToRemove) {
+      const existingEntry = group.roles.find(
+        (r) => r.roleID === rid && !r.userServciceRoleDeleted,
+      );
+      if (existingEntry) {
+        const deleteObj = {
+          uSRMappingID: existingEntry.uSRMappingID,
+          deleted: true,
+        };
+        allRequests.push(
+          group.serviceID === 4
+            ? this.worklocationmapping.DeleteWorkLocationMappingForTM(deleteObj)
+            : this.worklocationmapping.DeleteWorkLocationMapping(deleteObj),
+        );
+      }
+    }
+
+    // CREATE new rows for added roles
+    for (const rid of rolesToAdd) {
+      const roleName = this.getRoleNameById(rid);
+      const newObj: any = {
+        previleges: [
+          {
+            ID: [
+              {
+                roleID: rid,
+                teleConsultation:
+                  group.serviceName === 'HWC' &&
+                  (roleName?.toLowerCase() === 'nurse' ||
+                    roleName?.toLowerCase() === 'doctor')
+                    ? this.teleConsultationEdit
+                    : null,
+                inbound:
+                  group.serviceName === '1097' &&
+                  roleName?.toLowerCase() !== 'supervisor'
+                    ? this.isInboundEdit
+                    : null,
+                outbound:
+                  group.serviceName === '1097' &&
+                  roleName?.toLowerCase() !== 'supervisor'
+                    ? this.isOutboundEdit
+                    : null,
+              },
+            ],
+            providerServiceMapID: this.providerServiceMapID_duringEdit,
+            workingLocationID: this.isFacilityServicelineEdit
+              ? null
+              : this.workLocationID_duringEdit,
+            stateID: this.stateID_duringEdit,
+            districtID: this.district_duringEdit,
+            blockID: this.ServiceEditblock,
+            blockName: this.blockname,
+            villageID: editVillageIdArray,
+            villageName:
+              editVillageNameArray.length > 0 ? editVillageNameArray : null,
+            facilityID:
+              this.isFacilityServicelineEdit && this.editFacilityMappingData
+                ? this.editFacilityMappingData.facilityID
+                : null,
+          },
+        ],
+        userID: this.userID_duringEdit,
+        createdBy: this.createdBy,
+        serviceProviderID: this.serviceProviderID,
+      };
+      allRequests.push(
+        this.worklocationmapping.SaveWorkLocationMapping(newObj),
+      );
+    }
+
+    if (allRequests.length === 0) {
+      this.alertService.alert('No changes to update');
+      return;
+    }
+
+    forkJoin(allRequests)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          this.alertService.alert('Mapping updated successfully', 'success');
+          this.showTable();
+          this.getAllMappedWorkLocations();
+          this.bufferArray.data = [];
+          this.bufferArray.paginator = this.paginatorSecond;
+        },
+        (err: any) => {
+          this.alertService.alert('Failed to update mapping', 'error');
+        },
+      );
+  }
+
+  // ── Activate/Deactivate grouped rows ──
+
+  activateGroup(group: GroupedWorkLocation) {
+    const anyUserDeleted = group.roles.some((r) => r.userDeleted);
+    if (anyUserDeleted) {
+      this.alertService.alert('User is inactive');
+      return;
+    }
+    const anyPSMDeleted = group.roles.some(
+      (r) => r.providerServiceMappingDeleted,
+    );
+    if (anyPSMDeleted) {
+      this.alertService.alert('State is inactive');
+      return;
+    }
+
+    if (group.serviceID === 9) {
+      this.foundDuplicate = false;
+      for (const role of group.roles) {
+        this.mappedWorkLocationsList.forEach((m: any) => {
+          if (
+            m.serviceID === 9 &&
+            (m.stateID !== group.stateID ||
+              m.workingDistrictID !== group.workingDistrictID ||
+              m.blockID !== group.blockID) &&
+            m.userID === group.userID &&
+            !group.roles.some((r) => r.uSRMappingID === m.uSRMappingID) &&
+            m.roleID === role.roleID &&
+            !m.userServciceRoleDeleted
+          ) {
+            this.foundDuplicate = true;
+          }
+        });
+      }
+      if (this.foundDuplicate) {
+        this.alertService.alert(
+          'Service Already Activated either with same demographic or with same role',
+        );
+        return;
+      }
+    }
+
+    this.alertService
+      .confirm('confirm', 'Are you sure you want to Activate?')
+      .subscribe((response: any) => {
+        if (response) {
+          const deletedRoles = group.roles.filter(
+            (r) => r.userServciceRoleDeleted,
+          );
+          const activateRequests = deletedRoles.map((r) => {
+            const obj = { uSRMappingID: r.uSRMappingID, deleted: false };
+            return group.serviceID === 4
+              ? this.worklocationmapping.DeleteWorkLocationMappingForTM(obj)
+              : this.worklocationmapping.DeleteWorkLocationMapping(obj);
+          });
+          if (activateRequests.length === 0) return;
+          forkJoin(activateRequests)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(
+              () => {
+                // After activation, copy villages from sibling roles if any role has empty villages
+                this.syncVillagesFromSiblings(group, deletedRoles);
+              },
+              (err: any) => {
+                this.alertService.alert('Failed to activate', 'error');
+              },
+            );
+        }
+      });
+  }
+
+  /**
+   * After activation: if any role has empty villages but sibling roles in the same group
+   * have villages, copy the merged group villages to those roles.
+   * Also copies facilityID from sibling if missing.
+   */
+  private syncVillagesFromSiblings(
+    group: GroupedWorkLocation,
+    activatedRoles: RoleEntry[],
+  ) {
+    const siblingVillageIDs = group.villageID || [];
+    const siblingVillageNames = group.villageName || [];
+
+    // No sibling has villages either — nothing to copy
+    if (siblingVillageIDs.length === 0) {
+      this.alertService.alert('Activated successfully', 'success');
+      this.searchTerm = null;
+      this.getAllMappedWorkLocations();
+      return;
+    }
+
+    // Find activated roles that have empty villages and need syncing
+    const updateRequests: any[] = [];
+    for (const r of activatedRoles) {
+      const originalRow = group.originalRows.find(
+        (row: any) => row.uSRMappingID === r.uSRMappingID,
+      );
+      const hasEmptyVillages =
+        !originalRow?.villageID || originalRow.villageID.length === 0;
+
+      if (hasEmptyVillages) {
+        const updateObj: any = {
+          uSRMappingID: r.uSRMappingID,
+          userID: group.userID,
+          roleID: r.roleID,
+          providerServiceMapID: group.providerServiceMapID,
+          workingLocationID: group.workingLocationID,
+          blockID: group.blockID,
+          blockName: group.blockName,
+          villageID: siblingVillageIDs,
+          villageName:
+            siblingVillageNames.length > 0 ? siblingVillageNames : null,
+          modifiedBy: this.createdBy,
+        };
+        // Copy facilityID from sibling if this role has no facility
+        if (!r.facilityID) {
+          const siblingWithFacility = group.roles.find(
+            (sr) => sr.facilityID && sr.uSRMappingID !== r.uSRMappingID,
+          );
+          if (siblingWithFacility) {
+            updateObj.facilityID = siblingWithFacility.facilityID;
+          }
+        }
+        updateRequests.push(
+          this.worklocationmapping.UpdateWorkLocationMapping(updateObj),
+        );
+      }
+    }
+
+    // No roles need village syncing
+    if (updateRequests.length === 0) {
+      this.alertService.alert('Activated successfully', 'success');
+      this.searchTerm = null;
+      this.getAllMappedWorkLocations();
+      return;
+    }
+
+    // Sync villages for roles that had empty villages
+    forkJoin(updateRequests)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        () => {
+          this.alertService.alert('Activated successfully', 'success');
+          this.searchTerm = null;
+          this.getAllMappedWorkLocations();
+        },
+        () => {
+          this.alertService.alert(
+            'Activated but failed to sync villages for some roles',
+            'error',
+          );
+          this.searchTerm = null;
+          this.getAllMappedWorkLocations();
+        },
+      );
+  }
+
+  deactivateGroup(group: GroupedWorkLocation) {
+    this.alertService
+      .confirm('confirm', 'Are you sure you want to Deactivate?')
+      .subscribe((response: any) => {
+        if (response) {
+          const activeRoles = group.roles.filter(
+            (r) =>
+              !r.userServciceRoleDeleted &&
+              !r.userDeleted &&
+              !r.providerServiceMappingDeleted,
+          );
+          const requests = activeRoles.map((r) => {
+            const obj = { uSRMappingID: r.uSRMappingID, deleted: true };
+            return group.serviceID === 4
+              ? this.worklocationmapping.DeleteWorkLocationMappingForTM(obj)
+              : this.worklocationmapping.DeleteWorkLocationMapping(obj);
+          });
+          if (requests.length === 0) return;
+          forkJoin(requests)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe(
+              () => {
+                this.alertService.alert('Deactivated successfully', 'success');
+                this.searchTerm = null;
+                this.getAllMappedWorkLocations();
+              },
+              (err: any) => {
+                this.alertService.alert('Failed to deactivate', 'error');
+              },
+            );
+        }
+      });
+  }
+
+  // ── Buffer table grouping ──
+
+  rebuildGroupedBuffer() {
+    const groupMap = new Map<string, any>();
+    for (const row of this.bufferArray.data) {
+      const key = [
+        row.userID,
+        row.serviceID,
+        row.stateName || '',
+        row.district || '',
+        row.blockID || '',
+      ].join('|');
+
+      if (!groupMap.has(key)) {
+        groupMap.set(key, {
+          ...row,
+          allRoles: [...(row.roleID1 || [])],
+          originalBufferRows: [row],
+        });
+      } else {
+        const group = groupMap.get(key)!;
+        group.allRoles.push(...(row.roleID1 || []));
+        group.originalBufferRows.push(row);
+      }
+    }
+    this.groupedBufferArray.data = Array.from(groupMap.values());
+    if (this.paginatorSecond) {
+      this.groupedBufferArray.paginator = this.paginatorSecond;
+    }
+    if (this.sortSecond) {
+      this.groupedBufferArray.sort = this.sortSecond;
+    }
   }
 }

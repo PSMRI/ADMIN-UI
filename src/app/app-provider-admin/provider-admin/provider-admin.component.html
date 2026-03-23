@@ -5,6 +5,7 @@
       <span class="caret"></span>
     </button>
     <mat-menu #Activities="matMenu">
+      <button mat-menu-item [matMenuTriggerFor]="facilityHierarchyMenu">Facility Hierarchy</button>
       <button mat-menu-item (click)="show('1')">
         Job Location-ServiceLine Mapping Master
       </button>
@@ -183,6 +184,10 @@
         Van/Parking Place to Store Mapping
       </button>
     </mat-menu>
+    <mat-menu #facilityHierarchyMenu="matMenu">
+      <button mat-menu-item (click)="show('78')">Facility Type Master</button>
+      <button mat-menu-item (click)="show('79')">Facility Master</button>
+    </mat-menu>
 
     <div
       [ngSwitch]="Activity_Number"
@@ -281,6 +286,8 @@
         <app-component-master *ngSwitchCase="30"></app-component-master>
         <app-item-master *ngSwitchCase="38"></app-item-master>
         <app-facility-type-master *ngSwitchCase="39"></app-facility-type-master>
+        <app-master-type-creation *ngSwitchCase="78"></app-master-type-creation>
+        <app-facility-creation *ngSwitchCase="79"></app-facility-creation>
         <app-main-store-and-sub-store
           *ngSwitchCase="40"
         ></app-main-store-and-sub-store>
@@ -335,6 +342,7 @@
         <app-add-questionnaire *ngSwitchCase="64"></app-add-questionnaire>
         <app-map-snommed-ctcode *ngSwitchCase="65"></app-map-snommed-ctcode>
         <app-email-configuration *ngSwitchCase="53"></app-email-configuration>
+
       </div>
     </div>
     <footer class="footer" style="left: 0px">
