@@ -611,6 +611,7 @@ export class FacilityCreationComponent implements OnInit {
       providerServiceMapID:
         this.commonDataService.provider_serviceMapID || null,
       isMainFacility: true,
+      storeType: 'MAIN',
       createdBy: this.createdBy,
     };
 

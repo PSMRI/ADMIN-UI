@@ -25,6 +25,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { ItemFacilityMappingService } from 'src/app/core/services/inventory-services/item-facility-mapping.service';
 import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
 import { ItemService } from '../services/item.service';
@@ -51,6 +52,11 @@ export class ItemToFacilityMappingComponent implements OnInit {
 
   providerServiceMapID: any;
   createdBy: any;
+  userID: any;
+
+  // Service line
+  services: any = [];
+  service: any;
 
   // Location dropdowns
   state: any;
@@ -92,27 +98,40 @@ export class ItemToFacilityMappingComponent implements OnInit {
     public dialogService: ConfirmationDialogsService,
     public itemFacilityMappingService: ItemFacilityMappingService,
     public facilityService: FacilityMasterService,
+    public commonServices: CommonServices,
     readonly sessionstorage: SessionStorageService,
   ) {}
 
   ngOnInit() {
     this.createdBy = this.commonDataService.uname;
-    this.providerServiceMapID =
-      this.sessionstorage.getItem('providerServiceMapID') ||
-      this.commonDataService.provider_serviceMapID ||
-      null;
-    this.getAllStates();
-    if (this.providerServiceMapID) {
-      this.setItemCat(this.providerServiceMapID);
-    }
+    this.userID = this.commonDataService.uid;
+    this.getAllServices();
   }
 
-  getAllStates() {
-    this.facilityService.getAllStates(1).subscribe((response: any) => {
-      if (response && response.data) {
+  getAllServices() {
+    this.commonServices
+      .getServiceLines(this.userID)
+      .subscribe((response: any) => {
+        this.services = response.data.filter((item: any) => {
+          return (
+            item.serviceID === 4 || item.serviceID === 9 || item.serviceID === 2
+          );
+        });
+      });
+  }
+
+  getStates(service: any) {
+    this.commonServices
+      .getStatesOnServices(this.userID, service.serviceID, false)
+      .subscribe((response: any) => {
         this.states_array = response.data;
-      }
-    });
+      });
+  }
+
+  onStateSelect(state: any) {
+    this.providerServiceMapID = state.providerServiceMapID;
+    this.setItemCat(this.providerServiceMapID);
+    this.getDistricts(state.stateID);
   }
 
   getDistricts(stateId: number) {

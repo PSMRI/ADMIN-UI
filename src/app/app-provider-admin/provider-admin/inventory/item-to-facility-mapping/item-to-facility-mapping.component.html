@@ -5,8 +5,24 @@
     </div>
   </div>
 
-  <!-- Location Selection: State → District → Taluk -->
+  <!-- Service Line + Location Selection -->
   <div class="row">
+    <div class="col-3">
+      <mat-form-field [style.width]="'100%'" class="hide_underline">
+        <mat-label>Serviceline</mat-label>
+        <mat-select
+          required
+          name="service"
+          [(ngModel)]="service"
+          [disabled]="showFormFlag"
+          (selectionChange)="getStates(service)"
+        >
+          <mat-option *ngFor="let item of services" [value]="item">
+            {{ item.serviceName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
     <div class="col-3">
       <mat-form-field [style.width]="'100%'" class="hide_underline">
         <mat-label>State</mat-label>
@@ -14,7 +30,8 @@
           required
           name="state"
           [(ngModel)]="state"
-          (selectionChange)="getDistricts(state.stateID)"
+          [disabled]="showFormFlag"
+          (selectionChange)="onStateSelect(state)"
         >
           <mat-option *ngFor="let item of states_array" [value]="item">
             {{ item.stateName }}
