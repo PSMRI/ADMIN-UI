@@ -146,13 +146,16 @@ export class FacilityMasterService {
   getFacilitiesByBlockAndLevel(
     blockID: number,
     levelValue: number,
-    ruralUrban: string,
+    ruralUrban: string | null,
   ) {
-    return this.http.post(environment.get_FacilitiesByBlockAndLevel_Url, {
+    const body: any = {
       blockID: blockID,
       levelValue: levelValue,
-      ruralUrban: ruralUrban,
-    });
+    };
+    if (ruralUrban) {
+      body.ruralUrban = ruralUrban;
+    }
+    return this.http.post(environment.get_FacilitiesByBlockAndLevel_Url, body);
   }
 
   createFacilityWithHierarchy(requestObj: any) {

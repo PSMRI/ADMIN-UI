@@ -1,0 +1,19 @@
+.select-search-box {
+  padding: 8px;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.select-search-box input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.select-all-option {
+  padding: 4px 16px;
+  border-bottom: 1px solid #eee;
+}

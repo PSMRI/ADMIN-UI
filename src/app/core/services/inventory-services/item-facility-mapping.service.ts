@@ -54,8 +54,12 @@ export class ItemFacilityMappingService {
     return this.http.post(this.getAllFacilityItemMappingUrl, {
       providerServiceMapID: serviceMapId,
     });
-    // .map(this.extractData)
-    // .catch(this.handleError)
+  }
+
+  getItemMappingsByFacilityID(facilityID: any) {
+    return this.http.post(this.adminBaseUrl + 'getItemMappingsByFacility', {
+      facilityID: facilityID,
+    });
   }
 
   getItemsOnCategory(serviceMapId: any, category: any) {

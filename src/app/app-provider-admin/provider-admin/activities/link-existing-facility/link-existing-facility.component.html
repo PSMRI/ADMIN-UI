@@ -1,0 +1,408 @@
+<div class="container-fluid">
+  <!-- TABLE MODE: Show unmapped facilities -->
+  <div class="row" *ngIf="tableMode">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Link Existing Facility to Hierarchy</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="searchForm"
+        autocomplete="off"
+        #searchForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Service Line</mat-label>
+            <mat-select
+              required
+              name="service"
+              [(ngModel)]="service"
+              (selectionChange)="getStates(service)"
+            >
+              <mat-option *ngFor="let item of services_array" [value]="item">
+                {{ item.serviceName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>State</mat-label>
+            <mat-select
+              required
+              name="state"
+              [(ngModel)]="state"
+              (selectionChange)="onStateSelect(state)"
+            >
+              <mat-option *ngFor="let item of states_array" [value]="item">
+                {{ item.stateName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+    <div
+      class=""
+      style="text-align: end"
+      *ngIf="unmappedFacilityList && unmappedFacilityList.data.length > 0 && tableMode"
+    >
+      <mat-form-field id="filterbox">
+        <mat-label>In-Table Search</mat-label>
+        <input
+          matInput
+          name="filterTerm"
+          [(ngModel)]="create_filterTerm"
+          #filterTerm
+          (keyup)="filterList(filterTerm.value)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+    <div class="col-xs-12 col-sm-12">
+      <div class="table-responsive">
+        <table
+          mat-table
+          [dataSource]="unmappedFacilityList"
+          *ngIf="showTableFlag"
+          class="table table-striped table-hover"
+        >
+          <!-- S.No. Column -->
+          <ng-container matColumnDef="sno">
+            <th mat-header-cell *matHeaderCellDef>S.No.</th>
+            <td mat-cell *matCellDef="let item; let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <!-- Facility Name Column -->
+          <ng-container matColumnDef="facilityName">
+            <th mat-header-cell *matHeaderCellDef>Facility Name</th>
+            <td mat-cell *matCellDef="let item">{{ item.facilityName }}</td>
+          </ng-container>
+
+          <!-- Govt Facility Code Column -->
+          <ng-container matColumnDef="facilityCode">
+            <th mat-header-cell *matHeaderCellDef>Govt Facility Code</th>
+            <td mat-cell *matCellDef="let item">{{ item.facilityCode }}</td>
+          </ng-container>
+
+          <!-- Store Type Column -->
+          <ng-container matColumnDef="storeType">
+            <th mat-header-cell *matHeaderCellDef>Current Type</th>
+            <td mat-cell *matCellDef="let item">{{ item.isMainFacility ? 'Main Store' : 'Sub Store' }}</td>
+          </ng-container>
+
+          <!-- Action Column -->
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef>Action</th>
+            <td mat-cell *matCellDef="let item">
+              <button
+                md-raised-button
+                color="primary"
+                class="m-r-10 mat_blue"
+                (click)="linkFacility(item)"
+              >
+                Link to Hierarchy
+              </button>
+            </td>
+          </ng-container>
+
+          <!-- Header and Row Definitions -->
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <div
+          *ngIf="
+            unmappedFacilityList &&
+            unmappedFacilityList.data.length === 0 &&
+            showTableFlag
+          "
+          style="text-align: center; font-size: 16px"
+        >
+          <strong>No unmapped facilities found</strong>
+        </div>
+        <mat-paginator
+          #tablePaginator
+          [hidden]="unmappedFacilityList.data.length === 0"
+          [pageSizeOptions]="[5, 10, 25]"
+          [pageSize]="5"
+          showFirstLastButtons
+        ></mat-paginator>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM MODE: Link facility to hierarchy -->
+  <div class="row" *ngIf="formMode && selectedFacility">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Link "{{ selectedFacility.facilityName }}" to Hierarchy</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="linkForm"
+        #linkForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <!-- Row 1: Facility Name (disabled), Facility Code (disabled) -->
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Facility Name</mat-label>
+            <input
+              matInput
+              [value]="selectedFacility.facilityName"
+              [disabled]="true"
+              name="displayFacilityName"
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Govt Facility Code</mat-label>
+            <input
+              matInput
+              [value]="selectedFacility.facilityCode || ''"
+              [disabled]="true"
+              name="displayFacilityCode"
+            />
+          </mat-form-field>
+        </div>
+
+        <!-- Row 2: State (disabled), District, Taluk -->
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>State</mat-label>
+            <input
+              matInput
+              [value]="state?.stateName || ''"
+              [disabled]="true"
+              name="displayState"
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>District</mat-label>
+            <mat-select
+              required
+              name="formDistrict"
+              [(ngModel)]="district"
+              (selectionChange)="onDistrictChange(district.districtID)"
+            >
+              <mat-option *ngFor="let item of districts_array" [value]="item">
+                {{ item.districtName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Taluk</mat-label>
+            <mat-select
+              required
+              name="formTaluk"
+              [(ngModel)]="taluk"
+              (selectionChange)="onTalukChange()"
+            >
+              <mat-option *ngFor="let item of taluks_array" [value]="item">
+                {{ item.blockName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Row 3: Rural/Urban, Facility Type -->
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Rural / Urban</mat-label>
+            <mat-select
+              required
+              name="formRuralUrban"
+              [(ngModel)]="formRuralUrban"
+              (selectionChange)="onRuralUrbanChange()"
+            >
+              <mat-option value="Rural">Rural</mat-option>
+              <mat-option value="Urban">Urban</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Facility Type</mat-label>
+            <mat-select
+              required
+              name="facilityTypeID"
+              [(ngModel)]="facilityTypeID"
+              [disabled]="!formRuralUrban"
+              (selectionChange)="onFacilityTypeChange()"
+            >
+              <mat-option
+                *ngFor="let ft of filteredFacilityTypes"
+                [value]="ft.facilityTypeID"
+              >
+                {{ ft.facilityTypeName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Dynamic: Villages multi-select (for lowest level / SC) -->
+        <div class="col-6" *ngIf="selectedLevel && isLowestLevel(selectedLevel.levelValue)">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Select Villages</mat-label>
+            <mat-select
+              multiple
+              required
+              name="selectedVillages"
+              [(ngModel)]="selectedVillages"
+              (selectionChange)="onVillageSelectionChange()"
+            >
+              <div class="select-search-box">
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyVillageFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="villageSearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allVillagesSelected"
+                  (change)="toggleSelectAllVillages()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
+              <mat-option
+                *ngFor="let v of filteredVillages"
+                [value]="v"
+              >
+                {{ v.villageName }} [{{ v.districtBranchID }}]
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Main Village (single-select from selected villages, for lowest level / SC) -->
+        <div class="col-3" *ngIf="selectedLevel && isLowestLevel(selectedLevel.levelValue) && selectedVillages.length > 0">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Main Village (SC Location)</mat-label>
+            <mat-select
+              required
+              name="mainVillageID"
+              [(ngModel)]="mainVillageID"
+            >
+              <mat-option *ngFor="let v of selectedVillages" [value]="v.districtBranchID">
+                {{ v.villageName }} [{{ v.districtBranchID }}]
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Dynamic: Child Facilities multi-select (for non-lowest levels / PHC, CHC, etc.) -->
+        <div class="col-6" *ngIf="selectedLevel && !isLowestLevel(selectedLevel.levelValue)">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Select {{ getChildLevelName() }}</mat-label>
+            <mat-select
+              multiple
+              required
+              name="selectedChildFacilities"
+              [(ngModel)]="selectedChildFacilities"
+              (selectionChange)="initDrillDown()"
+            >
+              <div class="select-search-box">
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyChildFacilityFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="childFacilitySearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allChildFacilitiesSelected"
+                  (change)="toggleSelectAllChildFacilities()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
+              <mat-option
+                *ngFor="let c of filteredChildFacilities"
+                [value]="c"
+              >
+                {{ c.facilityName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- For higher levels: cascading drill-down to reach village -->
+        <ng-container *ngIf="selectedLevel && isHigherLevel(selectedLevel.levelValue)">
+          <div class="col-3" *ngFor="let step of drillDownSteps; let i = index">
+            <mat-form-field [style.width]="'100%'" *ngIf="step.facilities.length > 0">
+              <mat-label>Select {{ step.levelName }}</mat-label>
+              <mat-select
+                [name]="'drillDown_' + i"
+                [(ngModel)]="step.selectedFacilityID"
+                (selectionChange)="onDrillDownSelect(i, $event.value)"
+              >
+                <mat-option *ngFor="let f of step.facilities" [value]="f.facilityID">
+                  {{ f.facilityName }} [{{ f.facilityID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="drillDownVillages.length > 0">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Main Village</mat-label>
+              <mat-select
+                name="mainVillageID"
+                [(ngModel)]="mainVillageID"
+              >
+                <mat-option *ngFor="let v of drillDownVillages" [value]="v.districtBranchID">
+                  {{ v.villageName }} [{{ v.districtBranchID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </ng-container>
+      </form>
+    </div>
+
+    <div class="col-xs-12 col-sm-12 m-t-15" style="padding-bottom: 40px">
+      <button
+        mat-raised-button
+        color="primary"
+        class="pull-left mat_blue"
+        (click)="showTable()"
+      >
+        Back
+      </button>
+      <button
+        mat-raised-button
+        color="accent"
+        class="pull-right mat_green"
+        [disabled]="linkForm.invalid"
+        (click)="saveLinkFacility()"
+      >
+        Link to Hierarchy
+      </button>
+    </div>
+  </div>
+</div>

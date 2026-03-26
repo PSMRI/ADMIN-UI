@@ -1,0 +1,377 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-12">
+      <h4><strong>Item to Facility Mapping</strong></h4>
+    </div>
+  </div>
+
+  <!-- Service Line + Location Selection -->
+  <div class="row">
+    <div class="col-3">
+      <mat-form-field [style.width]="'100%'" class="hide_underline">
+        <mat-label>Serviceline</mat-label>
+        <mat-select
+          required
+          name="service"
+          [(ngModel)]="service"
+          [disabled]="showFormFlag"
+          (selectionChange)="getStates(service)"
+        >
+          <mat-option *ngFor="let item of services" [value]="item">
+            {{ item.serviceName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="col-3">
+      <mat-form-field [style.width]="'100%'" class="hide_underline">
+        <mat-label>State</mat-label>
+        <mat-select
+          required
+          name="state"
+          [(ngModel)]="state"
+          [disabled]="showFormFlag"
+          (selectionChange)="onStateSelect(state)"
+        >
+          <mat-option *ngFor="let item of states_array" [value]="item">
+            {{ item.stateName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="col-3">
+      <mat-form-field [style.width]="'100%'" class="hide_underline">
+        <mat-label>District</mat-label>
+        <mat-select
+          required
+          name="district"
+          [(ngModel)]="district"
+          (selectionChange)="getTaluks(district.districtID)"
+        >
+          <mat-option *ngFor="let item of districts_array" [value]="item">
+            {{ item.districtName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <div class="col-3">
+      <mat-form-field [style.width]="'100%'" class="hide_underline">
+        <mat-label>Taluk</mat-label>
+        <mat-select
+          required
+          name="taluk"
+          [(ngModel)]="taluk"
+          (selectionChange)="loadFacilitiesByBlock(taluk.blockID)"
+        >
+          <mat-option *ngFor="let item of taluks_array" [value]="item">
+            {{ item.blockName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <!-- TABLE MODE: Select facility and show existing mappings -->
+  <div *ngIf="showTableFlag && !showFormFlag">
+    <div
+      *ngIf="facilities.length === 0"
+      style="text-align: center; font-size: 16px"
+    >
+      <strong>No facilities found in this Taluk</strong>
+    </div>
+    <div class="row" *ngIf="facilities.length > 0">
+      <div class="col-3">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Select Facility</mat-label>
+          <mat-select
+            name="viewFacility"
+            [(ngModel)]="selectedViewFacility"
+            (selectionChange)="onViewFacilitySelect(selectedViewFacility)"
+          >
+            <mat-option *ngFor="let f of facilities" [value]="f">
+              {{ f.facilityName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-3" *ngIf="selectedViewFacility">
+        <button
+          mat-raised-button
+          color="primary"
+          class="mat_blue m-t-10"
+          (click)="showForm()"
+        >
+          Add Mapping
+        </button>
+      </div>
+      <div
+        class="col-6"
+        *ngIf="itemFacilityMapList?.length > 0"
+      >
+        <div style="text-align: end">
+          <mat-form-field id="filterbox">
+            <mat-label> In-Table Search </mat-label>
+            <input
+              matInput
+              name="filterTerm"
+              [(ngModel)]="create_filterTerm"
+              #filterTerm
+              (keyup)="filterItemFromList(filterTerm.value)"
+            />
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+    </div>
+
+    <!-- Existing Mappings Table -->
+    <div *ngIf="selectedViewFacility" class="col-12">
+      <div class="table-responsive">
+        <table
+          mat-table
+          [dataSource]="itemFacilityMapView"
+          class="table table-striped table-hover"
+        >
+          <ng-container matColumnDef="sno">
+            <th mat-header-cell *matHeaderCellDef>S.No.</th>
+            <td mat-cell *matCellDef="let item; let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="facilityName">
+            <th mat-header-cell *matHeaderCellDef>Facility Name</th>
+            <td mat-cell *matCellDef="let item">{{ item.facilityName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="itemName">
+            <th mat-header-cell *matHeaderCellDef>Item Name</th>
+            <td mat-cell *matCellDef="let item">{{ item.itemName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="itemCategoryName">
+            <th mat-header-cell *matHeaderCellDef>Item Category</th>
+            <td mat-cell *matCellDef="let item">{{ item.itemCategoryName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef>Action</th>
+            <td mat-cell *matCellDef="let item">
+              <button
+                mat-raised-button
+                color="accent"
+                *ngIf="item.itemFacilityMappingDeleted || item.facilityDeleted || item.itemDeleted"
+                class="mat_green"
+                (click)="activate(item.itemFacilityMapID, item.facilityDeleted, item.itemDeleted)"
+              >
+                Activate
+              </button>
+              <button
+                mat-raised-button
+                color="primary"
+                *ngIf="!(item.itemFacilityMappingDeleted || item.facilityDeleted || item.itemDeleted)"
+                class="mat_blue"
+                (click)="deactivate(item.itemFacilityMapID, item.facilityDeleted, item.itemDeleted)"
+              >
+                Deactivate
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+        <div
+          *ngIf="itemFacilityMapView.data.length === 0"
+          style="text-align: center; font-size: 16px"
+        >
+          <strong>No items mapped to this facility</strong>
+        </div>
+        <mat-paginator
+          [hidden]="itemFacilityMapView.data.length === 0"
+          [pageSizeOptions]="[5, 10, 25]"
+          [pageSize]="5"
+          showFirstLastButtons
+        ></mat-paginator>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM MODE -->
+  <div *ngIf="showFormFlag">
+    <form #mappingFieldsForm="ngForm" class="row" style="width: 100%; margin-left: 0px">
+      <!-- Facility Selection (by location) -->
+      <div class="col-3">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Select Facility</mat-label>
+          <mat-select
+            required
+            name="facility"
+            [(ngModel)]="selectedFacility"
+          >
+            <mat-option
+              *ngFor="let f of facilities"
+              [value]="f"
+            >
+              {{ f.facilityName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Item Category -->
+      <div class="col-3">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Item Category</mat-label>
+          <mat-select
+            required
+            name="itemCategory"
+            [(ngModel)]="itemCategoryselected"
+            [disabled]="!selectedFacility"
+            (selectionChange)="onCategorySelected(itemCategoryselected.itemCategoryID)"
+          >
+            <mat-option
+              *ngFor="let cat of itemCategory"
+              [value]="cat"
+            >
+              {{ cat.itemCategoryName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Map Type: Individual / Bulk -->
+      <div class="col-4">
+        <span class="f-s-n-b">Map Type</span>
+        <mat-radio-group [(ngModel)]="mapType" name="mapType">
+          <mat-radio-button color="primary" class="p-l-10" [value]="false"
+            >Individual Mapping</mat-radio-button>
+          <mat-radio-button
+            (click)="itemselected = []"
+            color="primary"
+            class="p-l-10"
+            [value]="true"
+            >Bulk Mapping</mat-radio-button>
+        </mat-radio-group>
+      </div>
+
+      <!-- Item Selection (Individual only) -->
+      <div class="col-3" *ngIf="itemsList.length > 0">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Item Name</mat-label>
+          <mat-select
+            [disabled]="mapType || !(itemCategoryselected?.itemCategoryID > 0)"
+            [(ngModel)]="itemselected"
+            name="itemName"
+            [multiple]="true"
+          >
+            <mat-option
+              *ngFor="let item of itemsList"
+              [value]="item"
+            >
+              {{ item.itemName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Add button -->
+      <div class="col-2 m-t-10">
+        <button
+          mat-mini-fab
+          class="mat_icon_white"
+          *ngIf="
+            selectedFacility?.facilityID > 0 &&
+            ((mapType && itemCategoryselected?.itemCategoryID > 0) ||
+              (!mapType && itemselected?.length > 0))
+          "
+          color="primary"
+          (click)="
+            addtoBufferArray({
+              facility: selectedFacility,
+              itemCategory: itemCategoryselected,
+              mapType: mapType,
+              itemName: itemselected
+            });
+            itemCategoryselected = {};
+            itemselected = []
+          "
+        >
+          <mat-icon>add</mat-icon>
+        </button>
+      </div>
+    </form>
+
+    <!-- Buffer Table -->
+    <div class="row m-t-15" *ngIf="bufferarray.data.length > 0">
+      <div class="col-12">
+        <table
+          mat-table
+          [dataSource]="bufferarray"
+          class="table table-striped table-hover"
+        >
+          <ng-container matColumnDef="sno">
+            <th mat-header-cell *matHeaderCellDef>S.No.</th>
+            <td mat-cell *matCellDef="let item; let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="facilityName">
+            <th mat-header-cell *matHeaderCellDef>Facility</th>
+            <td mat-cell *matCellDef="let item">{{ item.facilityName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="items">
+            <th mat-header-cell *matHeaderCellDef>Items</th>
+            <td mat-cell *matCellDef="let item; let rowIndex = index">
+              <span *ngFor="let itm of item.item; let itemIndex = index">
+                {{ itm.itemName }}
+                <mat-icon
+                  style="cursor: pointer; font-size: 14px; color: red"
+                  (click)="removeItem(rowIndex, itemIndex)"
+                >close</mat-icon>
+                <span *ngIf="itemIndex < item.item.length - 1">, </span>
+              </span>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="remove">
+            <th mat-header-cell *matHeaderCellDef>Remove</th>
+            <td mat-cell *matCellDef="let item; let i = index">
+              <button
+                mat-icon-button
+                (click)="removeRow(i)"
+                style="border: unset; background-color: unset"
+              >
+                <mat-icon style="color: red">delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="bufferColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: bufferColumns"></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Back & Save -->
+    <div class="row m-t-15" style="padding-bottom: 40px">
+      <div class="col-12">
+        <button
+          mat-raised-button
+          color="primary"
+          class="pull-left mat_blue"
+          (click)="back()"
+        >
+          Back
+        </button>
+        <button
+          mat-raised-button
+          color="accent"
+          class="pull-right mat_green"
+          [disabled]="bufferarray.data.length === 0"
+          (click)="submitMapping()"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
