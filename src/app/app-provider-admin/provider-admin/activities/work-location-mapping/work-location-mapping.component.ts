@@ -134,40 +134,52 @@ export class WorkLocationMappingComponent
   get filteredUsers(): any[] {
     if (!this.userSearch) return this.unmappedUserNamesList;
     const s = this.userSearch.toLowerCase();
-    return this.unmappedUserNamesList.filter((u: any) =>
-      (
-        (u.firstName || '') +
-        ' ' +
-        (u.lastName || '') +
-        ' ' +
-        (u.userName || '')
-      )
-        .toLowerCase()
-        .includes(s),
+    const selectedID = this.User?.userID;
+    return this.unmappedUserNamesList.filter(
+      (u: any) =>
+        u.userID === selectedID ||
+        (
+          (u.firstName || '') +
+          ' ' +
+          (u.lastName || '') +
+          ' ' +
+          (u.userName || '')
+        )
+          .toLowerCase()
+          .includes(s),
     );
   }
 
   get filteredStatesList(): any[] {
     if (!this.stateSearch) return this.states_array;
     const s = this.stateSearch.toLowerCase();
-    return this.states_array.filter((st: any) =>
-      (st.stateName || '').toLowerCase().includes(s),
+    const selectedID = this.State?.stateID;
+    return this.states_array.filter(
+      (st: any) =>
+        st.stateID === selectedID ||
+        (st.stateName || '').toLowerCase().includes(s),
     );
   }
 
   get filteredDistrictsList(): any[] {
     if (!this.districtSearch) return this.districts_array;
     const s = this.districtSearch.toLowerCase();
-    return this.districts_array.filter((d: any) =>
-      (d.districtName || '').toLowerCase().includes(s),
+    const selectedID = this.District?.districtID;
+    return this.districts_array.filter(
+      (d: any) =>
+        d.districtID === selectedID ||
+        (d.districtName || '').toLowerCase().includes(s),
     );
   }
 
   get filteredBlocksList(): any[] {
     if (!this.blockSearch) return this.blocks;
     const s = this.blockSearch.toLowerCase();
-    return this.blocks.filter((b: any) =>
-      (b.blockName || '').toLowerCase().includes(s),
+    const selectedID = this.Serviceblock?.blockID;
+    return this.blocks.filter(
+      (b: any) =>
+        b.blockID === selectedID ||
+        (b.blockName || '').toLowerCase().includes(s),
     );
   }
 

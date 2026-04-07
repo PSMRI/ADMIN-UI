@@ -1081,8 +1081,15 @@ export class UserFacilityMappingComponent
       this.filteredFacilities = this.facilities.slice();
     } else {
       const s = this.facilitySearch.toLowerCase();
-      this.filteredFacilities = this.facilities.filter((f: any) =>
-        (f.facilityName || '').toLowerCase().includes(s),
+      const selectedIDs = new Set(
+        (this.selectedFacilities || []).map((f: any) => f.facilityID),
+      );
+      const singleID = this.selectedFacility?.facilityID;
+      this.filteredFacilities = this.facilities.filter(
+        (f: any) =>
+          selectedIDs.has(f.facilityID) ||
+          f.facilityID === singleID ||
+          (f.facilityName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -1100,8 +1107,11 @@ export class UserFacilityMappingComponent
       this.filteredDisplayVillages = this.displayVillages.slice();
     } else {
       const s = this.villageSearch.toLowerCase();
-      this.filteredDisplayVillages = this.displayVillages.filter((v: any) =>
-        (v.villageName || '').toLowerCase().includes(s),
+      const selectedIDs = new Set(this.selectedVillageIDs || []);
+      this.filteredDisplayVillages = this.displayVillages.filter(
+        (v: any) =>
+          selectedIDs.has(v.districtBranchID) ||
+          (v.villageName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -1116,7 +1126,9 @@ export class UserFacilityMappingComponent
       this.filteredAshaUsers = this.ashaUsers.slice();
     } else {
       const s = this.ashaSearch.toLowerCase();
+      const selectedIDs = new Set(this.selectedAshaUserIDs || []);
       this.filteredAshaUsers = this.ashaUsers.filter((u: any) => {
+        if (selectedIDs.has(u.userID)) return true;
         const name =
           u.EmployeeName ||
           (u.employeeMaster?.firstName || '') +
