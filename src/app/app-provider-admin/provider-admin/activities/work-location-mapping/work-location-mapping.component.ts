@@ -4565,7 +4565,7 @@ export class WorkLocationMappingComponent
         serviceProviderID: this.serviceProviderID,
       };
       allRequests.push(
-        this.worklocationmapping.SaveWorkLocationMapping(newObj),
+        this.worklocationmapping.SaveWorkLocationMapping([newObj]),
       );
     }
 
