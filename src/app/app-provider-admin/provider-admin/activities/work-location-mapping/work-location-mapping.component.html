@@ -399,23 +399,6 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="villageFlag && (!isFacilityServiceline || isVolunteerSelected())">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Village</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [multiple]="true"
-                [(ngModel)]="Servicevillage"
-                name="Servicevillage"
-                [required]="isVillageRequired"
-              >
-                <mat-option *ngFor="let item of village" [value]="item">
-                  {{ item.villageName }} [{{ item.districtBranchID }}]
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
           <div *ngIf="singleSelectForEcd" class="col-3">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
@@ -450,6 +433,23 @@
               >
                 <mat-option *ngFor="let item of availableRoles" [value]="item">
                   {{ item.roleName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="villageFlag && (!isFacilityServiceline || isVolunteerSelected())">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Village</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="Servicevillage"
+                name="Servicevillage"
+                [required]="isVillageRequired"
+              >
+                <mat-option *ngFor="let item of village" [value]="item">
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -814,34 +814,6 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag && (!isFacilityServicelineEdit || isVolunteerSelectedEdit())">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Village</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [multiple]="true"
-                [(ngModel)]="serviceEditvillage"
-                name="serviceEditvillage"
-                required
-              >
-                <div class="select-all-option" (click)="$event.stopPropagation()">
-                  <mat-checkbox
-                    [checked]="allEditVillagesSelected"
-                    (change)="toggleSelectAllEditVillages()"
-                    (click)="$event.stopPropagation()"
-                    color="warn"
-                  >Select All</mat-checkbox>
-                </div>
-                <mat-option
-                  *ngFor="let item of editVillageArr"
-                  [value]="item.villageName"
-                >
-                  {{ item.villageName }} [{{ item.districtBranchID }}]
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
           <div class="col-3" *ngIf="editGroupedElement && editServiceName !== 'FLW'">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
@@ -887,6 +859,34 @@
                   [value]="item.roleID"
                 >
                   {{ item.roleName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="enableEditVillageFlag && (!isFacilityServicelineEdit || isVolunteerSelectedEdit())">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Village</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="serviceEditvillage"
+                name="serviceEditvillage"
+                required
+              >
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allEditVillagesSelected"
+                    (change)="toggleSelectAllEditVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
+                <mat-option
+                  *ngFor="let item of editVillageArr"
+                  [value]="item.villageName"
+                >
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>

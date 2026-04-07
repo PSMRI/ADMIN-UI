@@ -1133,17 +1133,36 @@ export class UserFacilityMappingComponent
   // --- Select All / Deselect All toggle methods ---
 
   get allFacilitiesSelected(): boolean {
-    return (
-      this.filteredFacilities.length > 0 &&
-      this.selectedFacilities.length === this.filteredFacilities.length
+    if (this.filteredFacilities.length === 0) return false;
+    const selectedIDs = new Set(
+      this.selectedFacilities.map((f: any) => f.facilityID),
+    );
+    return this.filteredFacilities.every((f: any) =>
+      selectedIDs.has(f.facilityID),
     );
   }
 
   toggleSelectAllFacilities() {
+    const selectedIDs = new Set(
+      this.selectedFacilities.map((f: any) => f.facilityID),
+    );
     if (this.allFacilitiesSelected) {
-      this.selectedFacilities = [];
+      // Remove only filtered facilities, keep others
+      const removeIDs = new Set(
+        this.filteredFacilities.map((f: any) => f.facilityID),
+      );
+      this.selectedFacilities = this.selectedFacilities.filter(
+        (f: any) => !removeIDs.has(f.facilityID),
+      );
     } else {
-      this.selectedFacilities = this.filteredFacilities.slice();
+      // Add filtered facilities that aren't already selected
+      const newSelections = [...this.selectedFacilities];
+      for (const f of this.filteredFacilities) {
+        if (!selectedIDs.has(f.facilityID)) {
+          newSelections.push(f);
+        }
+      }
+      this.selectedFacilities = newSelections;
     }
     this.onFacilitiesSelected();
   }
