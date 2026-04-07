@@ -125,6 +125,52 @@ export class WorkLocationMappingComponent
   editVillageArr: any = [];
   villageEditNameArr: any = [];
 
+  // Search filters for dropdowns
+  userSearch = '';
+  stateSearch = '';
+  districtSearch = '';
+  blockSearch = '';
+
+  get filteredUsers(): any[] {
+    if (!this.userSearch) return this.unmappedUserNamesList;
+    const s = this.userSearch.toLowerCase();
+    return this.unmappedUserNamesList.filter((u: any) =>
+      (
+        (u.firstName || '') +
+        ' ' +
+        (u.lastName || '') +
+        ' ' +
+        (u.userName || '')
+      )
+        .toLowerCase()
+        .includes(s),
+    );
+  }
+
+  get filteredStatesList(): any[] {
+    if (!this.stateSearch) return this.states_array;
+    const s = this.stateSearch.toLowerCase();
+    return this.states_array.filter((st: any) =>
+      (st.stateName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get filteredDistrictsList(): any[] {
+    if (!this.districtSearch) return this.districts_array;
+    const s = this.districtSearch.toLowerCase();
+    return this.districts_array.filter((d: any) =>
+      (d.districtName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get filteredBlocksList(): any[] {
+    if (!this.blockSearch) return this.blocks;
+    const s = this.blockSearch.toLowerCase();
+    return this.blocks.filter((b: any) =>
+      (b.blockName || '').toLowerCase().includes(s),
+    );
+  }
+
   //  flag values
   formMode = false;
   tableMode = true;
@@ -1522,7 +1568,7 @@ export class WorkLocationMappingComponent
   ) {
     const villageIDArr: any = [];
     const villageNameArr: any = [];
-    if (this.isFacilityServiceline) {
+    if (this.isFacilityServiceline && !this.isVolunteerSelected()) {
       const fmVillageIDs = this.currentFacilityMappingData?.villageIDs || [];
       const fmVillageNames =
         this.currentFacilityMappingData?.villageNames || [];
@@ -3955,6 +4001,25 @@ export class WorkLocationMappingComponent
       return this.Role.roleName;
     }
     return '';
+  }
+
+  isVolunteerSelected(): boolean {
+    if (Array.isArray(this.Role)) {
+      return this.Role.some(
+        (r: any) => (r.roleName || '').toLowerCase() === 'volunteer',
+      );
+    }
+    return (this.Role?.roleName || '').toLowerCase() === 'volunteer';
+  }
+
+  isVolunteerSelectedEdit(): boolean {
+    if (Array.isArray(this.roleIDs_duringEdit) && this.RolesList) {
+      return this.roleIDs_duringEdit.some((rid: any) => {
+        const role = this.RolesList.find((r: any) => r.roleID === rid);
+        return role && (role.roleName || '').toLowerCase() === 'volunteer';
+      });
+    }
+    return false;
   }
 
   noAshaWorkersCreate = false;

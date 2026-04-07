@@ -1169,11 +1169,13 @@ export class UserFacilityMappingComponent
       );
     } else {
       const existing = new Set(this.selectedVillageIDs);
+      const newIDs = [...this.selectedVillageIDs];
       for (const id of selectableIDs) {
         if (!existing.has(id)) {
-          this.selectedVillageIDs.push(id);
+          newIDs.push(id);
         }
       }
+      this.selectedVillageIDs = newIDs;
     }
     this.onVillageSelectionChange();
   }

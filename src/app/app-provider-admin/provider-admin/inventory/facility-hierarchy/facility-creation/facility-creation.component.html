@@ -333,9 +333,11 @@
               name="selectedVillages"
               [(ngModel)]="selectedVillages"
               #villagesField="ngModel"
+              [compareWith]="compareVillages"
               (selectionChange)="onVillageSelectionChange()"
             >
               <div class="select-search-box">
+                <mat-icon>search</mat-icon>
                 <input
                   matInput
                   placeholder="Search..."
@@ -401,6 +403,7 @@
               #childFacilitiesField="ngModel"
             >
               <div class="select-search-box">
+                <mat-icon>search</mat-icon>
                 <input
                   matInput
                   placeholder="Search..."
@@ -619,6 +622,7 @@
               (selectionChange)="onEditVillageSelectionChange()"
             >
               <div class="select-search-box">
+                <mat-icon>search</mat-icon>
                 <input
                   matInput
                   placeholder="Search..."
@@ -685,6 +689,7 @@
               (selectionChange)="initEditDrillDown()"
             >
               <div class="select-search-box">
+                <mat-icon>search</mat-icon>
                 <input
                   matInput
                   placeholder="Search..."
