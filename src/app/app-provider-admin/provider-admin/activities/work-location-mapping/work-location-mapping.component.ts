@@ -3737,7 +3737,8 @@ export class WorkLocationMappingComponent
       serviceline === 'FLW' ||
       serviceline === 'HWC' ||
       serviceline === 'TM' ||
-      serviceline === 'MMU'
+      serviceline === 'MMU' ||
+      serviceline === 'Stop TB'
     ) {
       this.blockFlag = true;
       this.villageFlag = true;
@@ -3762,7 +3763,8 @@ export class WorkLocationMappingComponent
       serviceName === 'FLW' ||
       serviceName === 'HWC' ||
       serviceName === 'TM' ||
-      serviceName === 'MMU'
+      serviceName === 'MMU' ||
+      serviceName === 'Stop TB'
     ) {
       this.enableEditBlockFlag = true;
       this.enableEditVillageFlag = true;
