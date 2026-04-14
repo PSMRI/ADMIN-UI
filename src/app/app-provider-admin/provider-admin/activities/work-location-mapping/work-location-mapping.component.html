@@ -470,8 +470,22 @@
                 [(ngModel)]="Servicevillage"
                 name="Servicevillage"
                 [required]="isVillageRequired"
+                (openedChange)="$event ? null : villageSearch = ''"
               >
-                <mat-option *ngFor="let item of village" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="villageSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allVillagesSelected"
+                    (change)="toggleSelectAllVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
+                <mat-option *ngFor="let item of filteredVillagesList" [value]="item">
                   {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>

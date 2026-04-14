@@ -183,6 +183,37 @@ export class WorkLocationMappingComponent
     );
   }
 
+  villageSearch = '';
+
+  get filteredVillagesList(): any[] {
+    if (!this.villageSearch) return this.village;
+    const s = this.villageSearch.toLowerCase();
+    const selectedNames = new Set(
+      (this.Servicevillage || []).map((v: any) => v?.villageName),
+    );
+    return this.village.filter(
+      (v: any) =>
+        selectedNames.has(v.villageName) ||
+        (v.villageName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get allVillagesSelected(): boolean {
+    if (!this.village?.length) return false;
+    const selectedNames = new Set(
+      (this.Servicevillage || []).map((v: any) => v?.villageName),
+    );
+    return this.village.every((v: any) => selectedNames.has(v.villageName));
+  }
+
+  toggleSelectAllVillages() {
+    if (this.allVillagesSelected) {
+      this.Servicevillage = [];
+    } else {
+      this.Servicevillage = [...this.village];
+    }
+  }
+
   //  flag values
   formMode = false;
   tableMode = true;
