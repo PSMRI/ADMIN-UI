@@ -1580,7 +1580,7 @@ export class WorkLocationMappingComponent
   ) {
     const villageIDArr: any = [];
     const villageNameArr: any = [];
-    if (this.isFacilityServiceline && !this.isVolunteerSelected()) {
+    if (this.isFacilityServiceline) {
       const fmVillageIDs = this.currentFacilityMappingData?.villageIDs || [];
       const fmVillageNames =
         this.currentFacilityMappingData?.villageNames || [];

@@ -461,7 +461,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="villageFlag && (!isFacilityServiceline || isVolunteerSelected())">
+          <div class="col-3" *ngIf="villageFlag && !isFacilityServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
@@ -479,9 +479,9 @@
           </div>
         </div>
 
-        <!-- Facility Mapping Sub-component (FLW/HWC only, not for Volunteer) -->
+        <!-- Facility Mapping Sub-component (FLW/HWC only) -->
         <app-user-facility-mapping
-          *ngIf="isFacilityServiceline && Serviceblock && !isVolunteerSelected()"
+          *ngIf="isFacilityServiceline && Serviceblock"
           [blockID]="Serviceblock?.blockID"
           [stateID]="State?.stateID"
           [providerServiceMapID]="State?.providerServiceMapID"
@@ -546,7 +546,7 @@
         <div
           class="col-3"
           style="text-align: center; float: right"
-          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles && !noAshaWorkersCreate && (!isFacilityServiceline || isVolunteerSelected() || currentFacilityMappingData?.villageIDs?.length > 0)"
+          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles && !noAshaWorkersCreate && (!isFacilityServiceline || currentFacilityMappingData?.villageIDs?.length > 0)"
         >
           <button
             md-mini-fab
@@ -903,7 +903,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag && (!isFacilityServicelineEdit || isVolunteerSelectedEdit())">
+          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
@@ -932,9 +932,9 @@
           </div>
         </div>
 
-        <!-- Facility Mapping Sub-component for EDIT mode (FLW/HWC only, not for Volunteer) — after Role -->
+        <!-- Facility Mapping Sub-component for EDIT mode (FLW/HWC only) — after Role -->
         <app-user-facility-mapping
-          *ngIf="isFacilityServicelineEdit && ServiceEditblock && !isVolunteerSelectedEdit()"
+          *ngIf="isFacilityServicelineEdit && ServiceEditblock"
           [blockID]="ServiceEditblock"
           [stateID]="stateID_duringEdit"
           [providerServiceMapID]="providerServiceMapID_duringEdit"
@@ -1018,7 +1018,7 @@
           mat-raised-button
           color="accent"
           class="pull-right mat_green"
-          [disabled]="workplaceeform.invalid || (isFacilityServicelineEdit && !isVolunteerSelectedEdit() && (!editFacilityMappingData || !editFacilityMappingData.villageIDs?.length)) || noAshaWorkersEdit"
+          [disabled]="workplaceeform.invalid || (isFacilityServicelineEdit && (!editFacilityMappingData || !editFacilityMappingData.villageIDs?.length)) || noAshaWorkersEdit"
           (click)="(editGroupedElement && editServiceName !== 'FLW') ? updateGroupedWorkLocation(workplaceeform.value) : updateWorkLocation(workplaceeform.value)"
         >
           Update
