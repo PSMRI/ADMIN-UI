@@ -399,6 +399,29 @@
             </mat-form-field>
           </div>
 
+          <div class="col-3" *ngIf="!isFacilityServiceline">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Work Location</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [(ngModel)]="WorkLocation"
+                name="worklocation"
+                (selectionChange)="
+                  getAllRoles(
+                    Serviceline.serviceID,
+                    State.providerServiceMapID,
+                    User.userID
+                  )
+                "
+                required
+              >
+                <mat-option *ngFor="let item of workLocationsList" [value]="item">
+                  {{ item.locationName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
           <div *ngIf="singleSelectForEcd" class="col-3">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
@@ -809,6 +832,22 @@
                   "
                 >
                   {{ item.blockName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="!isFacilityServicelineEdit">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Work Location</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [(ngModel)]="workLocationID_duringEdit"
+                name="workLocationEdit"
+                required
+              >
+                <mat-option *ngFor="let item of workLocationsList" [value]="item.pSAddMapID">
+                  {{ item.locationName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
