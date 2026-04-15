@@ -59,6 +59,8 @@ export class EmployeeMasterNewComponent implements OnInit {
     'EmailID',
     'DOJ',
     'Designation',
+    'LockStatus',
+    'LockAction',
     'edit',
     'action',
   ];
@@ -1629,6 +1631,89 @@ export class EmployeeMasterNewComponent implements OnInit {
         },
       );
   }
+
+  unlockUserAccount(userID: number, userName: string) {
+    this.dialogService
+      .confirm(
+        'Confirm Unlock',
+        `Are you sure you want to unlock the account for user "${userName}"? This will reset their failed login attempts and allow them to log in again.`,
+      )
+      .subscribe(
+        (res) => {
+          if (res) {
+            this.employeeMasterNewService.unlockUserAccount(userID).subscribe(
+              (response: any) => {
+                if (response && response.statusCode === 200) {
+                  this.dialogService.alert(
+                    'User account unlocked successfully. The user can now log in.',
+                    'success',
+                  );
+                  this.getAllUserDetails();
+                  this.searchTerm = null;
+                } else {
+                  this.dialogService.alert(
+                    response?.errorMessage || 'Failed to unlock user account',
+                    'error',
+                  );
+                }
+              },
+              (err) => {
+                console.log('error', err);
+                this.dialogService.alert(
+                  'Error unlocking user account. Please try again.',
+                  'error',
+                );
+              },
+            );
+          }
+        },
+        (err) => {
+          console.log(err);
+        },
+      );
+  }
+
+  lockUserAccount(userID: number, userName: string) {
+    this.dialogService
+      .confirm(
+        'Confirm Lock',
+        `Are you sure you want to lock the account for user "${userName}"? The user will not be able to log in until the account is unlocked or the lock period expires.`,
+      )
+      .subscribe(
+        (res) => {
+          if (res) {
+            this.employeeMasterNewService.lockUserAccount(userID).subscribe(
+              (response: any) => {
+                if (response && response.statusCode === 200) {
+                  this.dialogService.alert(
+                    'User account locked successfully.',
+                    'success',
+                  );
+                  this.getAllUserDetails();
+                  this.searchTerm = null;
+                } else {
+                  this.dialogService.alert(
+                    response?.errorMessage || 'Failed to lock user account',
+                    'error',
+                  );
+                }
+              },
+              (err) => {
+                console.log('error', err);
+                this.dialogService.alert(
+                  'Error locking user account. Please try again.',
+                  'error',
+                );
+              },
+            );
+          }
+        },
+        (err) => {
+          console.log(err);
+        },
+      );
+  }
+
   filterComponentList(searchTerm?: string) {
     if (!searchTerm) {
       this.refreshFilteredData(this.searchResult);
