@@ -55,7 +55,7 @@ export class EmployeeMasterNewComponent implements OnInit {
     'activePage',
     'Title',
     'Username',
-    'contactNo'
+    'contactNo',
     'EmergencyContact',
     'EmailID',
     'DOJ',
