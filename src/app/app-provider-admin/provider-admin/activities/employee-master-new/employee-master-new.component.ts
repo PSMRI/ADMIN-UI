@@ -1640,7 +1640,7 @@ export class EmployeeMasterNewComponent implements OnInit {
 
     const normalizedTerm = searchTerm.trim().toLowerCase();
     const filtered = this.searchResult.filter((item: any) =>
-      ['userName', 'emergencyContactNo', 'emailID', 'designationName'].some(
+      ['userName', 'emergencyContactNo', 'emailID', 'designationName','contactNo'].some(
         (key) => {
           const value = item[key];
           return (
