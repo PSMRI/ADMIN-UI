@@ -3634,6 +3634,8 @@ export class WorkLocationMappingComponent
     this.blockFlag = false;
     this.villageFlag = false;
     this.isFacilityServiceline = false;
+    this.isBlockRequired = false;
+    this.isVillageRequired = false;
     this.Serviceblock = undefined;
     this.Servicevillage = undefined;
     this.teleConsultation = null;
@@ -3788,6 +3790,8 @@ export class WorkLocationMappingComponent
       this.blockFlag = false;
       this.villageFlag = false;
       this.isFacilityServiceline = false;
+      this.isBlockRequired = false;
+      this.isVillageRequired = false;
     }
   }
 

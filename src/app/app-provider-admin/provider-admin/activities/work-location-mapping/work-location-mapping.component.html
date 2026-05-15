@@ -461,7 +461,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="villageFlag && !isFacilityServiceline">
+          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
