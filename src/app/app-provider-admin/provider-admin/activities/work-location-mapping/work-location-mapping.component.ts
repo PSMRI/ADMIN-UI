@@ -335,6 +335,7 @@ export class WorkLocationMappingComponent
   workplaceform: any;
   isVillageRequired = false;
   isBlockRequired = false;
+  isBlockRequiredEdit = false;
 
   constructor(
     private alertService: ConfirmationDialogsService,
@@ -2168,6 +2169,7 @@ export class WorkLocationMappingComponent
     this.isFacilityServicelineEdit =
       this.edit_Details.serviceName === 'FLW' ||
       this.edit_Details.serviceName === 'HWC';
+    this.isBlockRequiredEdit = this.edit_Details.serviceName === 'Stop TB';
 
     if (this.isFacilityServicelineEdit) {
       this.editExistingVillageIDs = Array.isArray(this.edit_Details.villageID)

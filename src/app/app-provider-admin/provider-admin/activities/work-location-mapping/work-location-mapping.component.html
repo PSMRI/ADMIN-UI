@@ -399,7 +399,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="!isFacilityServiceline">
+          <div class="col-3" *ngIf="!isFacilityServiceline && !isBlockRequired">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Work Location</mat-label>
               <mat-select
@@ -851,7 +851,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="!isFacilityServicelineEdit">
+          <div class="col-3" *ngIf="!isFacilityServicelineEdit && !isBlockRequiredEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Work Location</mat-label>
               <mat-select
