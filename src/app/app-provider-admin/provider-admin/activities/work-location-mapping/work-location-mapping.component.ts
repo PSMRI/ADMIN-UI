@@ -2696,7 +2696,8 @@ export class WorkLocationMappingComponent
               (this.edit_Details.serviceName === 'FLW' ||
                 this.edit_Details.serviceName === 'HWC' ||
                 this.edit_Details.serviceName === 'TM' ||
-                this.edit_Details.serviceName === 'MMU')
+                this.edit_Details.serviceName === 'MMU' ||
+                this.edit_Details.serviceName === 'Stop TB')
             ) {
               this.getEditBlockPatchMaster(this.district_duringEdit);
             }
