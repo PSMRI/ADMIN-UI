@@ -1081,8 +1081,15 @@ export class UserFacilityMappingComponent
       this.filteredFacilities = this.facilities.slice();
     } else {
       const s = this.facilitySearch.toLowerCase();
-      this.filteredFacilities = this.facilities.filter((f: any) =>
-        (f.facilityName || '').toLowerCase().includes(s),
+      const selectedIDs = new Set(
+        (this.selectedFacilities || []).map((f: any) => f.facilityID),
+      );
+      const singleID = this.selectedFacility?.facilityID;
+      this.filteredFacilities = this.facilities.filter(
+        (f: any) =>
+          selectedIDs.has(f.facilityID) ||
+          f.facilityID === singleID ||
+          (f.facilityName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -1100,8 +1107,11 @@ export class UserFacilityMappingComponent
       this.filteredDisplayVillages = this.displayVillages.slice();
     } else {
       const s = this.villageSearch.toLowerCase();
-      this.filteredDisplayVillages = this.displayVillages.filter((v: any) =>
-        (v.villageName || '').toLowerCase().includes(s),
+      const selectedIDs = new Set(this.selectedVillageIDs || []);
+      this.filteredDisplayVillages = this.displayVillages.filter(
+        (v: any) =>
+          selectedIDs.has(v.districtBranchID) ||
+          (v.villageName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -1116,7 +1126,9 @@ export class UserFacilityMappingComponent
       this.filteredAshaUsers = this.ashaUsers.slice();
     } else {
       const s = this.ashaSearch.toLowerCase();
+      const selectedIDs = new Set(this.selectedAshaUserIDs || []);
       this.filteredAshaUsers = this.ashaUsers.filter((u: any) => {
+        if (selectedIDs.has(u.userID)) return true;
         const name =
           u.EmployeeName ||
           (u.employeeMaster?.firstName || '') +
@@ -1133,17 +1145,36 @@ export class UserFacilityMappingComponent
   // --- Select All / Deselect All toggle methods ---
 
   get allFacilitiesSelected(): boolean {
-    return (
-      this.filteredFacilities.length > 0 &&
-      this.selectedFacilities.length === this.filteredFacilities.length
+    if (this.filteredFacilities.length === 0) return false;
+    const selectedIDs = new Set(
+      this.selectedFacilities.map((f: any) => f.facilityID),
+    );
+    return this.filteredFacilities.every((f: any) =>
+      selectedIDs.has(f.facilityID),
     );
   }
 
   toggleSelectAllFacilities() {
+    const selectedIDs = new Set(
+      this.selectedFacilities.map((f: any) => f.facilityID),
+    );
     if (this.allFacilitiesSelected) {
-      this.selectedFacilities = [];
+      // Remove only filtered facilities, keep others
+      const removeIDs = new Set(
+        this.filteredFacilities.map((f: any) => f.facilityID),
+      );
+      this.selectedFacilities = this.selectedFacilities.filter(
+        (f: any) => !removeIDs.has(f.facilityID),
+      );
     } else {
-      this.selectedFacilities = this.filteredFacilities.slice();
+      // Add filtered facilities that aren't already selected
+      const newSelections = [...this.selectedFacilities];
+      for (const f of this.filteredFacilities) {
+        if (!selectedIDs.has(f.facilityID)) {
+          newSelections.push(f);
+        }
+      }
+      this.selectedFacilities = newSelections;
     }
     this.onFacilitiesSelected();
   }
@@ -1169,11 +1200,13 @@ export class UserFacilityMappingComponent
       );
     } else {
       const existing = new Set(this.selectedVillageIDs);
+      const newIDs = [...this.selectedVillageIDs];
       for (const id of selectableIDs) {
         if (!existing.has(id)) {
-          this.selectedVillageIDs.push(id);
+          newIDs.push(id);
         }
       }
+      this.selectedVillageIDs = newIDs;
     }
     this.onVillageSelectionChange();
   }

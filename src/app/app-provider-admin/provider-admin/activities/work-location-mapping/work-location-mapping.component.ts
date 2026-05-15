@@ -125,6 +125,95 @@ export class WorkLocationMappingComponent
   editVillageArr: any = [];
   villageEditNameArr: any = [];
 
+  // Search filters for dropdowns
+  userSearch = '';
+  stateSearch = '';
+  districtSearch = '';
+  blockSearch = '';
+
+  get filteredUsers(): any[] {
+    if (!this.userSearch) return this.unmappedUserNamesList;
+    const s = this.userSearch.toLowerCase();
+    const selectedID = this.User?.userID;
+    return this.unmappedUserNamesList.filter(
+      (u: any) =>
+        u.userID === selectedID ||
+        (
+          (u.firstName || '') +
+          ' ' +
+          (u.lastName || '') +
+          ' ' +
+          (u.userName || '')
+        )
+          .toLowerCase()
+          .includes(s),
+    );
+  }
+
+  get filteredStatesList(): any[] {
+    if (!this.stateSearch) return this.states_array;
+    const s = this.stateSearch.toLowerCase();
+    const selectedID = this.State?.stateID;
+    return this.states_array.filter(
+      (st: any) =>
+        st.stateID === selectedID ||
+        (st.stateName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get filteredDistrictsList(): any[] {
+    if (!this.districtSearch) return this.districts_array;
+    const s = this.districtSearch.toLowerCase();
+    const selectedID = this.District?.districtID;
+    return this.districts_array.filter(
+      (d: any) =>
+        d.districtID === selectedID ||
+        (d.districtName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get filteredBlocksList(): any[] {
+    if (!this.blockSearch) return this.blocks;
+    const s = this.blockSearch.toLowerCase();
+    const selectedID = this.Serviceblock?.blockID;
+    return this.blocks.filter(
+      (b: any) =>
+        b.blockID === selectedID ||
+        (b.blockName || '').toLowerCase().includes(s),
+    );
+  }
+
+  villageSearch = '';
+
+  get filteredVillagesList(): any[] {
+    if (!this.villageSearch) return this.village;
+    const s = this.villageSearch.toLowerCase();
+    const selectedNames = new Set(
+      (this.Servicevillage || []).map((v: any) => v?.villageName),
+    );
+    return this.village.filter(
+      (v: any) =>
+        selectedNames.has(v.villageName) ||
+        (v.villageName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get allVillagesSelected(): boolean {
+    if (!this.village?.length) return false;
+    const selectedNames = new Set(
+      (this.Servicevillage || []).map((v: any) => v?.villageName),
+    );
+    return this.village.every((v: any) => selectedNames.has(v.villageName));
+  }
+
+  toggleSelectAllVillages() {
+    if (this.allVillagesSelected) {
+      this.Servicevillage = [];
+    } else {
+      this.Servicevillage = [...this.village];
+    }
+  }
+
   //  flag values
   formMode = false;
   tableMode = true;
@@ -246,6 +335,7 @@ export class WorkLocationMappingComponent
   workplaceform: any;
   isVillageRequired = false;
   isBlockRequired = false;
+  isBlockRequiredEdit = false;
 
   constructor(
     private alertService: ConfirmationDialogsService,
@@ -2079,6 +2169,7 @@ export class WorkLocationMappingComponent
     this.isFacilityServicelineEdit =
       this.edit_Details.serviceName === 'FLW' ||
       this.edit_Details.serviceName === 'HWC';
+    this.isBlockRequiredEdit = this.edit_Details.serviceName === 'Stop TB';
 
     if (this.isFacilityServicelineEdit) {
       this.editExistingVillageIDs = Array.isArray(this.edit_Details.villageID)
@@ -2605,7 +2696,8 @@ export class WorkLocationMappingComponent
               (this.edit_Details.serviceName === 'FLW' ||
                 this.edit_Details.serviceName === 'HWC' ||
                 this.edit_Details.serviceName === 'TM' ||
-                this.edit_Details.serviceName === 'MMU')
+                this.edit_Details.serviceName === 'MMU' ||
+                this.edit_Details.serviceName === 'Stop TB')
             ) {
               this.getEditBlockPatchMaster(this.district_duringEdit);
             }
@@ -3543,6 +3635,8 @@ export class WorkLocationMappingComponent
     this.blockFlag = false;
     this.villageFlag = false;
     this.isFacilityServiceline = false;
+    this.isBlockRequired = false;
+    this.isVillageRequired = false;
     this.Serviceblock = undefined;
     this.Servicevillage = undefined;
     this.teleConsultation = null;
@@ -3679,7 +3773,8 @@ export class WorkLocationMappingComponent
       serviceline === 'FLW' ||
       serviceline === 'HWC' ||
       serviceline === 'TM' ||
-      serviceline === 'MMU'
+      serviceline === 'MMU' ||
+      serviceline === 'Stop TB'
     ) {
       this.blockFlag = true;
       this.villageFlag = true;
@@ -3696,6 +3791,8 @@ export class WorkLocationMappingComponent
       this.blockFlag = false;
       this.villageFlag = false;
       this.isFacilityServiceline = false;
+      this.isBlockRequired = false;
+      this.isVillageRequired = false;
     }
   }
 
@@ -3704,7 +3801,8 @@ export class WorkLocationMappingComponent
       serviceName === 'FLW' ||
       serviceName === 'HWC' ||
       serviceName === 'TM' ||
-      serviceName === 'MMU'
+      serviceName === 'MMU' ||
+      serviceName === 'Stop TB'
     ) {
       this.enableEditBlockFlag = true;
       this.enableEditVillageFlag = true;
@@ -3955,6 +4053,25 @@ export class WorkLocationMappingComponent
       return this.Role.roleName;
     }
     return '';
+  }
+
+  isVolunteerSelected(): boolean {
+    if (Array.isArray(this.Role)) {
+      return this.Role.some(
+        (r: any) => (r.roleName || '').toLowerCase() === 'volunteer',
+      );
+    }
+    return (this.Role?.roleName || '').toLowerCase() === 'volunteer';
+  }
+
+  isVolunteerSelectedEdit(): boolean {
+    if (Array.isArray(this.roleIDs_duringEdit) && this.RolesList) {
+      return this.roleIDs_duringEdit.some((rid: any) => {
+        const role = this.RolesList.find((r: any) => r.roleID === rid);
+        return role && (role.roleName || '').toLowerCase() === 'volunteer';
+      });
+    }
+    return false;
   }
 
   noAshaWorkersCreate = false;
@@ -4565,7 +4682,7 @@ export class WorkLocationMappingComponent
         serviceProviderID: this.serviceProviderID,
       };
       allRequests.push(
-        this.worklocationmapping.SaveWorkLocationMapping(newObj),
+        this.worklocationmapping.SaveWorkLocationMapping([newObj]),
       );
     }
 

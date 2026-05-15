@@ -985,8 +985,13 @@ export class FacilityCreationComponent implements OnInit {
       this.filteredVillages = this.villages_array.slice();
     } else {
       const s = this.villageSearch.toLowerCase();
-      this.filteredVillages = this.villages_array.filter((v: any) =>
-        (v.villageName || '').toLowerCase().includes(s),
+      const selectedIDs = new Set(
+        (this.selectedVillages || []).map((v: any) => v.districtBranchID),
+      );
+      this.filteredVillages = this.villages_array.filter(
+        (v: any) =>
+          selectedIDs.has(v.districtBranchID) ||
+          (v.villageName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -997,8 +1002,13 @@ export class FacilityCreationComponent implements OnInit {
       this.filteredChildFacilities = this.childFacilities_array.slice();
     } else {
       const s = this.childFacilitySearch.toLowerCase();
+      const selectedIDs = new Set(
+        (this.selectedChildFacilities || []).map((c: any) => c.facilityID),
+      );
       this.filteredChildFacilities = this.childFacilities_array.filter(
-        (c: any) => (c.facilityName || '').toLowerCase().includes(s),
+        (c: any) =>
+          selectedIDs.has(c.facilityID) ||
+          (c.facilityName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -1009,8 +1019,13 @@ export class FacilityCreationComponent implements OnInit {
       this.edit_filteredVillages = this.edit_villages_array.slice();
     } else {
       const s = this.edit_villageSearch.toLowerCase();
-      this.edit_filteredVillages = this.edit_villages_array.filter((v: any) =>
-        (v.villageName || '').toLowerCase().includes(s),
+      const selectedIDs = new Set(
+        (this.edit_selectedVillages || []).map((v: any) => v.districtBranchID),
+      );
+      this.edit_filteredVillages = this.edit_villages_array.filter(
+        (v: any) =>
+          selectedIDs.has(v.districtBranchID) ||
+          (v.villageName || '').toLowerCase().includes(s),
       );
     }
   }
@@ -1022,9 +1037,14 @@ export class FacilityCreationComponent implements OnInit {
         this.edit_childFacilities_array.slice();
     } else {
       const s = this.edit_childFacilitySearch.toLowerCase();
+      const selectedIDs = new Set(
+        (this.edit_selectedChildFacilities || []).map((c: any) => c.facilityID),
+      );
       this.edit_filteredChildFacilities =
-        this.edit_childFacilities_array.filter((c: any) =>
-          (c.facilityName || '').toLowerCase().includes(s),
+        this.edit_childFacilities_array.filter(
+          (c: any) =>
+            selectedIDs.has(c.facilityID) ||
+            (c.facilityName || '').toLowerCase().includes(s),
         );
     }
   }

@@ -88,6 +88,15 @@
   background: #fff;
   padding: 8px 12px;
   border-bottom: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+}
+
+::ng-deep .select-search-box mat-icon {
+  color: #999;
+  font-size: 18px;
+  margin-right: 6px;
+  flex-shrink: 0;
 }
 
 ::ng-deep .select-search-box input {

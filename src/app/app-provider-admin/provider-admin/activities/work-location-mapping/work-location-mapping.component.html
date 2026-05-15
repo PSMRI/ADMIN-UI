@@ -275,9 +275,15 @@
                 [(ngModel)]="User"
                 name="user"
                 (selectionChange)="resetAllFields()"
+                (openedChange)="$event ? null : userSearch = ''"
                 required
               >
-                <mat-option *ngFor="let user of unmappedUserNamesList" [value]="user">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="userSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let user of filteredUsers" [value]="user">
                   {{ (user.firstName || '') + ' ' + (user.lastName || '') }} [{{ user.userName }}]
                 </mat-option>
               </mat-select>
@@ -322,9 +328,15 @@
                   getAllDistricts(Serviceline.serviceID, User, State);
                   resetBlockVillageFields()
                 "
+                (openedChange)="$event ? null : stateSearch = ''"
                 required
               >
-                <mat-option *ngFor="let item of states_array" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="stateSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let item of filteredStatesList" [value]="item">
                   {{ item.stateName }}
                 </mat-option>
               </mat-select>
@@ -348,9 +360,15 @@
                   )
                 "
                 name="district"
+                (openedChange)="$event ? null : districtSearch = ''"
                 required
               >
-                <mat-option *ngFor="let item of districts_array" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="districtSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let item of filteredDistrictsList" [value]="item">
                   {{ item.districtName }}
                 </mat-option>
               </mat-select>
@@ -367,26 +385,38 @@
                 (selectionChange)="getVillageMaster(Serviceblock)"
                 name="Serviceblock"
                 [required]="isBlockRequired"
+                (openedChange)="$event ? null : blockSearch = ''"
               >
-                <mat-option *ngFor="let item of blocks" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="blockSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let item of filteredBlocksList" [value]="item">
                   {{ item.blockName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="villageFlag && !isFacilityServiceline">
+          <div class="col-3" *ngIf="!isFacilityServiceline && !isBlockRequired">
             <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Village</mat-label>
+              <mat-label>Select Work Location</mat-label>
               <mat-select
                 [style.width]="'100%'"
-                [multiple]="true"
-                [(ngModel)]="Servicevillage"
-                name="Servicevillage"
-                [required]="isVillageRequired"
+                [(ngModel)]="WorkLocation"
+                name="worklocation"
+                (selectionChange)="
+                  getAllRoles(
+                    Serviceline.serviceID,
+                    State.providerServiceMapID,
+                    User.userID
+                  )
+                "
+                required
               >
-                <mat-option *ngFor="let item of village" [value]="item">
-                  {{ item.villageName }} [{{ item.districtBranchID }}]
+                <mat-option *ngFor="let item of workLocationsList" [value]="item">
+                  {{ item.locationName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -426,6 +456,37 @@
               >
                 <mat-option *ngFor="let item of availableRoles" [value]="item">
                   {{ item.roleName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Village</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="Servicevillage"
+                name="Servicevillage"
+                [required]="isVillageRequired"
+                (openedChange)="$event ? null : villageSearch = ''"
+              >
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="villageSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allVillagesSelected"
+                    (change)="toggleSelectAllVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
+                <mat-option *ngFor="let item of filteredVillagesList" [value]="item">
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -790,29 +851,17 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
+          <div class="col-3" *ngIf="!isFacilityServicelineEdit && !isBlockRequiredEdit">
             <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Village</mat-label>
+              <mat-label>Select Work Location</mat-label>
               <mat-select
                 [style.width]="'100%'"
-                [multiple]="true"
-                [(ngModel)]="serviceEditvillage"
-                name="serviceEditvillage"
+                [(ngModel)]="workLocationID_duringEdit"
+                name="workLocationEdit"
                 required
               >
-                <div class="select-all-option" (click)="$event.stopPropagation()">
-                  <mat-checkbox
-                    [checked]="allEditVillagesSelected"
-                    (change)="toggleSelectAllEditVillages()"
-                    (click)="$event.stopPropagation()"
-                    color="warn"
-                  >Select All</mat-checkbox>
-                </div>
-                <mat-option
-                  *ngFor="let item of editVillageArr"
-                  [value]="item.villageName"
-                >
-                  {{ item.villageName }} [{{ item.districtBranchID }}]
+                <mat-option *ngFor="let item of workLocationsList" [value]="item.pSAddMapID">
+                  {{ item.locationName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -863,6 +912,34 @@
                   [value]="item.roleID"
                 >
                   {{ item.roleName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Village</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="serviceEditvillage"
+                name="serviceEditvillage"
+                required
+              >
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allEditVillagesSelected"
+                    (change)="toggleSelectAllEditVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
+                <mat-option
+                  *ngFor="let item of editVillageArr"
+                  [value]="item.villageName"
+                >
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
