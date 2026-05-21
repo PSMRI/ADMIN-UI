@@ -212,6 +212,8 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                       this.loginservice.dologoutUsrFromPreSession(true);
                     }
                   });
+              } else {
+                this.alertMessage.alert(response.errorMessage, 'error');
               }
             }
           },
@@ -282,6 +284,8 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                       this.loginservice.dologoutUsrFromPreSession(true);
                     }
                   });
+              } else {
+                this.alertMessage.alert(response.errorMessage, 'error');
               }
             }
           },
