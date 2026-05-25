@@ -98,4 +98,155 @@ export class FacilityMasterService {
     // .map(this.handleSuccess)
     // .catch(this.handleError);
   }
+
+  getAllStates(countryId: number) {
+    return this.http.get(environment.getAll_State_Url + countryId);
+  }
+
+  getDistricts(stateId: number) {
+    return this.http.get(environment.get_District_Url + stateId);
+  }
+
+  getTaluks(districtId: number) {
+    return this.http.get(environment.get_Taluk_Url + districtId);
+  }
+
+  getVillages(blockId: number) {
+    return this.http.get(environment.get_Village_Url + blockId);
+  }
+
+  getFacilityLevels() {
+    return this.http.get(environment.get_FacilityLevels_Url);
+  }
+
+  getFacilitiesByBlock(blockID: number) {
+    return this.http.post(environment.get_FacilitiesByBlock_Url, {
+      blockID: blockID,
+    });
+  }
+
+  getAllFacilitiesByBlock(blockID: number) {
+    return this.http.post(environment.get_AllFacilitiesByBlock_Url, {
+      blockID: blockID,
+    });
+  }
+
+  createFacilities(obj: any) {
+    return this.http.post(environment.save_stores_Url, obj);
+  }
+
+  editFacilityStore(editObj: any) {
+    return this.http.post(environment.update_stores_Url, editObj);
+  }
+
+  deleteFacilityStore(deleteObj: any) {
+    return this.http.post(environment.delete_stores_Url, deleteObj);
+  }
+
+  getFacilitiesByBlockAndLevel(
+    blockID: number,
+    levelValue: number,
+    ruralUrban: string | null,
+  ) {
+    const body: any = {
+      blockID: blockID,
+      levelValue: levelValue,
+    };
+    if (ruralUrban) {
+      body.ruralUrban = ruralUrban;
+    }
+    return this.http.post(environment.get_FacilitiesByBlockAndLevel_Url, body);
+  }
+
+  createFacilityWithHierarchy(requestObj: any) {
+    return this.http.post(
+      environment.create_FacilityWithHierarchy_Url,
+      requestObj,
+    );
+  }
+
+  getMappedVillageIDs(blockID: number) {
+    return this.http.post(environment.get_MappedVillageIDs_Url, {
+      blockID: blockID,
+    });
+  }
+
+  getFacilityTypesByState(stateID: number) {
+    return this.http.post(environment.get_FacilityTypesByState_Url, {
+      stateID: stateID,
+    });
+  }
+
+  getVillageMappingsByFacility(facilityID: number) {
+    return this.http.post(environment.get_VillageMappingsByFacility_Url, {
+      facilityID: facilityID,
+    });
+  }
+
+  getChildFacilitiesByParent(facilityID: number) {
+    return this.http.post(environment.get_ChildFacilitiesByParent_Url, {
+      facilityID: facilityID,
+    });
+  }
+
+  updateFacilityWithHierarchy(requestObj: any) {
+    return this.http.post(
+      environment.update_FacilityWithHierarchy_Url,
+      requestObj,
+    );
+  }
+
+  deleteFacilityWithHierarchy(facilityID: number, modifiedBy: string) {
+    return this.http.post(environment.delete_FacilityWithHierarchy_Url, {
+      facilityID: facilityID,
+      modifiedBy: modifiedBy,
+    });
+  }
+
+  getAshasByFacility(facilityIDs: number[]) {
+    return this.http.post(environment.getAshasByFacility_Url, {
+      facilityIDs: facilityIDs,
+    });
+  }
+
+  saveAshaSupervisorMapping(data: any) {
+    return this.http.post(environment.saveAshaSupervisorMapping_Url, data);
+  }
+
+  getSupervisorMappingByFacility(facilityID: number) {
+    return this.http.post(environment.getSupervisorMappingByFacility_Url, {
+      facilityID: facilityID,
+    });
+  }
+
+  updateAshaSupervisorMappingAtomically(
+    supervisorUserID: number,
+    facilityIDs: number[],
+    newMappings: any[],
+    modifiedBy: string,
+  ) {
+    return this.http.post(
+      environment.updateAshaSupervisorMappingAtomically_Url,
+      { supervisorUserID, facilityIDs, newMappings, modifiedBy },
+    );
+  }
+
+  getFacilityByMappingID(uSRMappingID: number) {
+    return this.http.post(environment.getFacilityByMappingID_Url, {
+      uSRMappingID: uSRMappingID,
+    });
+  }
+
+  deleteAshaSupervisorMapping(supervisorUserID: number, facilityIDs: number[]) {
+    return this.http.post(environment.deleteAshaSupervisorMapping_Url, {
+      supervisorUserID: supervisorUserID,
+      facilityIDs: facilityIDs,
+    });
+  }
+
+  restoreAshaSupervisorMapping(ids: number[]) {
+    return this.http.post(environment.restoreAshaSupervisorMapping_Url, {
+      ids: ids,
+    });
+  }
 }
