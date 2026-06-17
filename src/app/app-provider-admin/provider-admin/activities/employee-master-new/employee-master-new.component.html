@@ -647,12 +647,12 @@
                     >
                     <span
                       class="error_text"
-                      *ngIf="uname.errors?.minlength"
+                      *ngIf="uname.errors?.['minlength']"
                       >Min 2 characters required</span
                     >
                     <span
                       class="error_text"
-                      *ngIf="!uname.errors?.minlength && uname.errors?.pattern"
+                      *ngIf="!uname.errors?.['minlength'] && uname.errors?.['pattern']"
                       >Only letters, numbers and '_' or '-' between characters are allowed</span
                     >
                   </mat-hint>
