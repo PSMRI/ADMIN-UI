@@ -1,4 +1,6 @@
 # AdminUI
+[![DeepWiki](https://img.shields.io/badge/DeepWiki-PSMRI%2FADMIN--UI-blue)](https://deepwiki.com/PSMRI/ADMIN-UI)
+
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.10.
 

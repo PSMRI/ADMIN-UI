@@ -41,7 +41,7 @@
           </ng-container>
           <ng-container matColumnDef="UserName">
             <th mat-header-cell *matHeaderCellDef>User Name</th>
-            <td mat-cell *matCellDef="let element">{{ element.userName }}</td>
+            <td mat-cell *matCellDef="let element">{{ element.userName }}<span *ngIf="element.realName"> [{{ element.realName }}]</span></td>
           </ng-container>
           <ng-container matColumnDef="Serviceline">
             <th mat-header-cell *matHeaderCellDef>Serviceline</th>
@@ -75,26 +75,31 @@
               {{ element.villageName }}
             </td>
           </ng-container>
-          <ng-container matColumnDef="WorkLocation">
-            <th mat-header-cell *matHeaderCellDef>Work Location</th>
+          <ng-container matColumnDef="FacilityID">
+            <th mat-header-cell *matHeaderCellDef>Facility</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.locationName }}
+              {{ getGroupFacilityDisplay(element) }}
             </td>
           </ng-container>
           <ng-container matColumnDef="Role">
             <th mat-header-cell *matHeaderCellDef>Role</th>
-            <td mat-cell *matCellDef="let element">{{ element.roleName }}</td>
+            <td mat-cell *matCellDef="let element">
+              <span *ngFor="let role of getUniqueRoles(element.roles)" class="role-chip"
+                [class.role-chip-deleted]="role.userServciceRoleDeleted">
+                {{ role.roleName }}
+              </span>
+            </td>
           </ng-container>
           <ng-container matColumnDef="Inbound">
             <th mat-header-cell *matHeaderCellDef>Inbound</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.inbound === undefined ? "N/A" : element.inbound }}
+              {{ getGroupInbound(element) }}
             </td>
           </ng-container>
           <ng-container matColumnDef="Outbound">
             <th mat-header-cell *matHeaderCellDef>Outbound</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.outbound === undefined ? "N/A" : element.outbound }}
+              {{ getGroupOutbound(element) }}
             </td>
           </ng-container>
           <ng-container matColumnDef="edit">
@@ -105,12 +110,8 @@
                 class="mat-icon material-icons"
                 aria-hidden="true"
                 style="cursor: pointer"
-                *ngIf="
-                  !element.userServciceRoleDeleted &&
-                  !element.userDeleted &&
-                  !element.providerServiceMappingDeleted
-                "
-                (click)="editRow(element)"
+                *ngIf="element.anyActive"
+                (click)="editGroupedRow(element)"
               >edit</mat-icon
               >
             </td>
@@ -121,25 +122,9 @@
               <button
                 mat-raised-button
                 color="accent"
-                *ngIf="
-                  element.userServciceRoleDeleted ||
-                  element.userDeleted ||
-                  element.providerServiceMappingDeleted
-                "
+                *ngIf="element.allDeleted"
                 class="m-r-10 mat_green"
-                (click)="
-                  activate(
-                    element.userID,
-                    element.serviceID,
-                    element.uSRMappingID,
-                    element.userDeleted,
-                    element.providerServiceMappingDeleted,
-                    element.stateID,
-                    element.workingDistrictID,
-                    element.blockID,
-                    element.roleID
-                  )
-                "
+                (click)="activateGroup(element)"
               >
                 Activate
               </button>
@@ -147,13 +132,9 @@
               <button
                 mat-raised-button
                 color="primary"
-                *ngIf="
-                  !element.userServciceRoleDeleted &&
-                  !element.userDeleted &&
-                  !element.providerServiceMappingDeleted
-                "
+                *ngIf="element.anyActive"
                 class="m-r-10 mat_blue"
-                (click)="deactivate(element.serviceID, element.uSRMappingID)"
+                (click)="deactivateGroup(element)"
               >
                 Deactivate
               </button>
@@ -177,6 +158,90 @@
           showFirstLastButtons
         >
         </mat-paginator>
+
+        <!-- ASHA Supervisor Mapping Table (separate section) -->
+        <div *ngIf="filteredAshaSupervisorList.data.length > 0" style="margin-top: 20px">
+          <h5><strong>ASHA Supervisor Mapping</strong></h5>
+          <table
+            mat-table
+            matSort
+            #sortAsha="matSort"
+            [dataSource]="filteredAshaSupervisorList"
+            class="table table-striped table-hover"
+          >
+            <ng-container matColumnDef="SNo">
+              <th mat-header-cell *matHeaderCellDef>S.No.</th>
+              <td mat-cell *matCellDef="let element; let i = index">
+                {{ i + 1 }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="UserName">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>User Name</th>
+              <td mat-cell *matCellDef="let element">{{ element.userName }}<span *ngIf="element.realName"> [{{ element.realName }}]</span></td>
+            </ng-container>
+            <ng-container matColumnDef="State">
+              <th mat-header-cell *matHeaderCellDef>State</th>
+              <td mat-cell *matCellDef="let element">{{ element.stateName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="District">
+              <th mat-header-cell *matHeaderCellDef>District</th>
+              <td mat-cell *matCellDef="let element">{{ element.workingDistrictName }}</td>
+            </ng-container>
+            <ng-container matColumnDef="Facilities">
+              <th mat-header-cell *matHeaderCellDef>Facilities</th>
+              <td mat-cell *matCellDef="let element">
+                {{ getGroupFacilityDisplay(element) }}
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="edit">
+              <th mat-header-cell *matHeaderCellDef>Edit</th>
+              <td mat-cell *matCellDef="let element">
+                <mat-icon
+                  matTooltip="Edit"
+                  class="mat-icon material-icons"
+                  aria-hidden="true"
+                  style="cursor: pointer"
+                  *ngIf="element.anyActive"
+                  (click)="editGroupedRow(element)"
+                >edit</mat-icon>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="action">
+              <th mat-header-cell *matHeaderCellDef>Action</th>
+              <td mat-cell *matCellDef="let element">
+                <button
+                  mat-raised-button
+                  color="accent"
+                  *ngIf="element.allDeleted"
+                  class="m-r-10 mat_green"
+                  (click)="activateGroup(element)"
+                >
+                  Activate
+                </button>
+                <button
+                  mat-raised-button
+                  color="primary"
+                  *ngIf="element.anyActive"
+                  class="m-r-10 mat_blue"
+                  (click)="deactivateGroup(element)"
+                >
+                  Deactivate
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="ashaSupervisorColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: ashaSupervisorColumns"></tr>
+          </table>
+          <mat-paginator
+            #paginatorAsha
+            [hidden]="filteredAshaSupervisorList.data.length === 0"
+            [pageSizeOptions]="[5, 10, 20]"
+            [pageSize]="5"
+            showFirstLastButtons
+          >
+          </mat-paginator>
+        </div>
+
         <div>
           <button
             mat-raised-button
@@ -210,10 +275,16 @@
                 [(ngModel)]="User"
                 name="user"
                 (selectionChange)="resetAllFields()"
+                (openedChange)="$event ? null : userSearch = ''"
                 required
               >
-                <mat-option *ngFor="let user of userNamesList" [value]="user">
-                  {{ user.userName }}
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="userSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let user of filteredUsers" [value]="user">
+                  {{ (user.firstName || '') + ' ' + (user.lastName || '') }} [{{ user.userName }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -254,12 +325,18 @@
                 [(ngModel)]="State"
                 name="state"
                 (selectionChange)="
-                  getAllDistricts(Serviceline.serviceID, User, State)
+                  getAllDistricts(Serviceline.serviceID, User, State);
+                  resetBlockVillageFields()
                 "
+                (openedChange)="$event ? null : stateSearch = ''"
                 required
-                (selectionChange)="resetBlockVillageFields()"
               >
-                <mat-option *ngFor="let item of states_array" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="stateSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let item of filteredStatesList" [value]="item">
                   {{ item.stateName }}
                 </mat-option>
               </mat-select>
@@ -274,13 +351,24 @@
                 [style.width]="'100%'"
                 [(ngModel)]="District"
                 (selectionChange)="
-                  getAllWorkLocations(State, Serviceline, isNational)
+                  getAllWorkLocations(State, Serviceline, isNational);
+                  getBlockMaster(District);
+                  getAllRoles(
+                    Serviceline.serviceID,
+                    State.providerServiceMapID,
+                    User.userID
+                  )
                 "
                 name="district"
+                (openedChange)="$event ? null : districtSearch = ''"
                 required
-                (selectionChange)="getBlockMaster(District)"
               >
-                <mat-option *ngFor="let item of districts_array" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="districtSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let item of filteredDistrictsList" [value]="item">
                   {{ item.districtName }}
                 </mat-option>
               </mat-select>
@@ -288,7 +376,7 @@
           </div>
         </div>
         <div class="col-12 row">
-          <div class="col-3" *ngIf="blockFlag">
+          <div class="col-3">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Block</mat-label>
               <mat-select
@@ -297,37 +385,27 @@
                 (selectionChange)="getVillageMaster(Serviceblock)"
                 name="Serviceblock"
                 [required]="isBlockRequired"
+                (openedChange)="$event ? null : blockSearch = ''"
               >
-                <mat-option *ngFor="let item of blocks" [value]="item">
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="blockSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <mat-option *ngFor="let item of filteredBlocksList" [value]="item">
                   {{ item.blockName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="villageFlag">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Village</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [multiple]="true"
-                [(ngModel)]="Servicevillage"
-                name="Servicevillage"
-                [required]="isVillageRequired"
-              >
-                <mat-option *ngFor="let item of village" [value]="item">
-                  {{ item.villageName }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="col-3">
+          <div class="col-3" *ngIf="!isFacilityServiceline && !isBlockRequired">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Work Location</mat-label>
               <mat-select
                 [style.width]="'100%'"
                 [(ngModel)]="WorkLocation"
+                name="worklocation"
                 (selectionChange)="
                   getAllRoles(
                     Serviceline.serviceID,
@@ -335,18 +413,15 @@
                     User.userID
                   )
                 "
-                name="worklocation"
                 required
               >
-                <mat-option
-                  *ngFor="let item of workLocationsList"
-                  [value]="item"
-                >
+                <mat-option *ngFor="let item of workLocationsList" [value]="item">
                   {{ item.locationName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
           </div>
+
           <div *ngIf="singleSelectForEcd" class="col-3">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
@@ -385,7 +460,54 @@
               </mat-select>
             </mat-form-field>
           </div>
+
+          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Village</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="Servicevillage"
+                name="Servicevillage"
+                [required]="isVillageRequired"
+                (openedChange)="$event ? null : villageSearch = ''"
+              >
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="villageSearch"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allVillagesSelected"
+                    (change)="toggleSelectAllVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
+                <mat-option *ngFor="let item of filteredVillagesList" [value]="item">
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
         </div>
+
+        <!-- Facility Mapping Sub-component (FLW/HWC only) -->
+        <app-user-facility-mapping
+          *ngIf="isFacilityServiceline && Serviceblock"
+          [blockID]="Serviceblock?.blockID"
+          [stateID]="State?.stateID"
+          [providerServiceMapID]="State?.providerServiceMapID"
+          [roleName]="getSelectedRoleName()"
+          [serviceName]="Serviceline?.serviceName"
+          [existingVillageIDs]="[]"
+          [supervisorUserID]="User?.userID"
+          [userOtherVillageIDs]="createUserVillageIDs"
+          [userOtherVillageNames]="createUserVillageNames"
+          (facilityMappingData)="onFacilityMappingDataReceived($event)"
+          (noAshaWorkersFlag)="onNoAshaWorkersCreate($event)"
+        ></app-user-facility-mapping>
 
         <div
           *ngIf="teleConsultationFlag"
@@ -438,7 +560,7 @@
         <div
           class="col-3"
           style="text-align: center; float: right"
-          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles"
+          *ngIf="!editMode && !workplaceform.invalid && !disableSelectRoles && !noAshaWorkersCreate && (!isFacilityServiceline || currentFacilityMappingData?.villageIDs?.length > 0)"
         >
           <button
             md-mini-fab
@@ -475,7 +597,7 @@
           </ng-container>
           <ng-container matColumnDef="UserName">
             <th mat-header-cell *matHeaderCellDef>User Name</th>
-            <td mat-cell *matCellDef="let element">{{ element.userName }}</td>
+            <td mat-cell *matCellDef="let element">{{ element.userName }}<span *ngIf="element.realName"> [{{ element.realName }}]</span></td>
           </ng-container>
           <ng-container matColumnDef="Serviceline">
             <th mat-header-cell *matHeaderCellDef>Serviceline</th>
@@ -509,16 +631,18 @@
               {{ element.villageName }}
             </td>
           </ng-container>
-          <ng-container matColumnDef="WorkLocation">
-            <th mat-header-cell *matHeaderCellDef>Work Location</th>
+          <ng-container matColumnDef="FacilityID">
+            <th mat-header-cell *matHeaderCellDef>Facility</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.workingLocation }}
+              {{ element.facilityID || 'N/A' }}
             </td>
           </ng-container>
           <ng-container matColumnDef="Role">
             <th mat-header-cell *matHeaderCellDef>Role</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.roleID1[0].roleName }}
+              <span *ngFor="let role of (element.allRoles || element.roleID1)" class="role-chip">
+                {{ role.roleName }}
+              </span>
             </td>
           </ng-container>
           <ng-container matColumnDef="Inbound">
@@ -618,7 +742,7 @@
                   *ngFor="let user of userNamesList"
                   [value]="user.userID"
                 >
-                  {{ user.userName }}
+                  {{ (user.firstName || '') + ' ' + (user.lastName || '') }} [{{ user.userName }}]
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -631,7 +755,7 @@
                 [style.width]="'100%'"
                 [(ngModel)]="serviceID_duringEdit"
                 name="serviceID"
-                (selectionChange)="refresh2()"
+                [disabled]="true"
                 required
               >
                 <mat-option
@@ -664,15 +788,10 @@
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select State</mat-label>
               <mat-select
-                [disabled]="isNational_edit"
+                [disabled]="true"
                 [style.width]="'100%'"
                 [(ngModel)]="stateID_duringEdit"
                 name="state"
-                (selectionChange)="
-                  refresh1();
-                  getAllDistricts_duringEdit(stateID_duringEdit);
-                  resetEditBlockVillageFields()
-                "
                 required
               >
                 <mat-option
@@ -692,21 +811,10 @@
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select District</mat-label>
               <mat-select
-                [disabled]="isNational_edit"
+                [disabled]="true"
                 [style.width]="'100%'"
                 [(ngModel)]="district_duringEdit"
                 name="district"
-                (selectionChange)="
-                  refresh5();
-                  getAllWorkLocations_duringEdit(
-                    stateID_duringEdit,
-                    serviceID_duringEdit,
-                    isNational_edit,
-                    district_duringEdit
-                  );
-                  getEditBlockMaster(district_duringEdit);
-                  resetEditBlockVillageFields()
-                "
                 required
               >
                 <mat-option
@@ -726,7 +834,7 @@
               <mat-select
                 [style.width]="'100%'"
                 [(ngModel)]="ServiceEditblock"
-                (selectionChange)="getEditVillageMaster(ServiceEditblock)"
+                [disabled]="true"
                 name="ServiceEditblock"
                 required
               >
@@ -743,53 +851,43 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select Village</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [multiple]="true"
-                [(ngModel)]="serviceEditvillage"
-                name="serviceEditvillage"
-                required
-              >
-                <mat-option
-                  *ngFor="let item of editVillageArr"
-                  [value]="item.villageName"
-                >
-                  {{ item.villageName }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="col-3">
+          <div class="col-3" *ngIf="!isFacilityServicelineEdit && !isBlockRequiredEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Work Location</mat-label>
               <mat-select
                 [style.width]="'100%'"
                 [(ngModel)]="workLocationID_duringEdit"
-                (selectionChange)="
-                  refresh4();
-                  getAllRoles_duringEdit(
-                    serviceID_duringEdit,
-                    providerServiceMapID_duringEdit,
-                    userID_duringEdit
-                  )
-                "
-                name="worklocation"
+                name="workLocationEdit"
                 required
               >
-                <mat-option
-                  *ngFor="let item of workLocationsList"
-                  [value]="item.pSAddMapID"
-                >
+                <mat-option *ngFor="let item of workLocationsList" [value]="item.pSAddMapID">
                   {{ item.locationName }}
                 </mat-option>
               </mat-select>
             </mat-form-field>
           </div>
-          <div class="col-3">
+
+          <div class="col-3" *ngIf="editGroupedElement && editServiceName !== 'FLW'">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Role</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="roleIDs_duringEdit"
+                name="role"
+                (selectionChange)="onEditRolesChanged(roleIDs_duringEdit)"
+                required
+              >
+                <mat-option
+                  *ngFor="let item of availableRoles"
+                  [value]="item.roleID"
+                >
+                  {{ item.roleName }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <div class="col-3" *ngIf="!editGroupedElement || editServiceName === 'FLW'">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Role</mat-label>
               <mat-select
@@ -804,7 +902,8 @@
                   teleConsultationEditSaveFunction(
                     serviceID_duringEdit,
                     roleID_duringEdit
-                  )
+                  );
+                  onEditRoleChange(roleID_duringEdit)
                 "
                 required
               >
@@ -817,7 +916,56 @@
               </mat-select>
             </mat-form-field>
           </div>
+
+          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
+            <mat-form-field [style.width]="'100%'">
+              <mat-label>Select Village</mat-label>
+              <mat-select
+                [style.width]="'100%'"
+                [multiple]="true"
+                [(ngModel)]="serviceEditvillage"
+                name="serviceEditvillage"
+                required
+              >
+                <div class="select-all-option" (click)="$event.stopPropagation()">
+                  <mat-checkbox
+                    [checked]="allEditVillagesSelected"
+                    (change)="toggleSelectAllEditVillages()"
+                    (click)="$event.stopPropagation()"
+                    color="warn"
+                  >Select All</mat-checkbox>
+                </div>
+                <mat-option
+                  *ngFor="let item of editVillageArr"
+                  [value]="item.villageName"
+                >
+                  {{ item.villageName }} [{{ item.districtBranchID }}]
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
         </div>
+
+        <!-- Facility Mapping Sub-component for EDIT mode (FLW/HWC only) — after Role -->
+        <app-user-facility-mapping
+          *ngIf="isFacilityServicelineEdit && ServiceEditblock"
+          [blockID]="ServiceEditblock"
+          [stateID]="stateID_duringEdit"
+          [providerServiceMapID]="providerServiceMapID_duringEdit"
+          [roleName]="editRoleName"
+          [serviceName]="editServiceName"
+          [existingVillageIDs]="editExistingVillageIDs"
+          [existingVillageNames]="editExistingVillageNames"
+          [existingFacilityID]="editExistingFacilityID"
+          [existingFacilityIDs]="editExistingFacilityIDs"
+          [existingFacilityNames]="editExistingFacilityNames"
+          [existingFacilityName]="editExistingFacilityName"
+          [existingFacilityTypeID]="editExistingFacilityTypeID"
+          [existingRuralUrban]="editExistingRuralUrban"
+          [supervisorUserID]="editSupervisorUserID"
+          (facilityMappingData)="onEditFacilityMappingDataReceived($event)"
+          (noAshaWorkersFlag)="onNoAshaWorkersEdit($event)"
+        ></app-user-facility-mapping>
 
         <div
           *ngIf="teleConsultationEditFlag"
@@ -884,8 +1032,8 @@
           mat-raised-button
           color="accent"
           class="pull-right mat_green"
-          [disabled]="workplaceeform.invalid"
-          (click)="updateWorkLocation(workplaceeform.value)"
+          [disabled]="workplaceeform.invalid || (isFacilityServicelineEdit && (!editFacilityMappingData || !editFacilityMappingData.villageIDs?.length)) || noAshaWorkersEdit"
+          (click)="(editGroupedElement && editServiceName !== 'FLW') ? updateGroupedWorkLocation(workplaceeform.value) : updateWorkLocation(workplaceeform.value)"
         >
           Update
         </button>
