@@ -362,7 +362,9 @@ export class ItemToStoreMappingComponent implements OnInit {
     }
     if (obj.itemID1.length > 0) {
       if (this.checkinBuffer(obj)) {
-        this.bufferarray.data.push(obj);
+        this.bufferarray.data = [...this.bufferarray.data, obj];
+      } else {
+        this.bufferarray.data = [...this.bufferarray.data];
       }
     } else {
       this.dialogService.alert('No Items to add');
@@ -372,16 +374,20 @@ export class ItemToStoreMappingComponent implements OnInit {
   }
 
   removeRow(index: any) {
-    this.bufferarray.data.splice(index, 1);
+    const data = [...this.bufferarray.data];
+    data.splice(index, 1);
+    this.bufferarray.data = data;
   }
 
   removeItem(rowIndex: any, stateIndex: any) {
-    this.bufferarray.data[rowIndex].itemID1.splice(stateIndex, 1);
-    this.bufferarray.data[rowIndex].item.splice(stateIndex, 1);
+    const data = [...this.bufferarray.data];
+    data[rowIndex].itemID1.splice(stateIndex, 1);
+    data[rowIndex].item.splice(stateIndex, 1);
 
-    if (this.bufferarray.data[rowIndex].itemID1.length === 0) {
-      this.bufferarray.data.splice(rowIndex, 1);
+    if (data[rowIndex].itemID1.length === 0) {
+      data.splice(rowIndex, 1);
     }
+    this.bufferarray.data = data;
   }
 
   checkinBuffer(obj: any) {
