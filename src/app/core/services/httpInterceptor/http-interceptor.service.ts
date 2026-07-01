@@ -82,29 +82,24 @@ export class HttpInterceptorService implements HttpInterceptor {
       }),
       catchError((error: HttpErrorResponse) => {
         console.error(error);
-        if(error.status === 401){
+        if (error.status === 401) {
           this.sessionstorage.clear();
-          this.confirmationService.alert('Session expired. Please login again.', 'error');
-          
+          sessionStorage.clear();
+          this.confirmationService.alert(
+            'Session expired. Please login again.',
+            'error',
+          );
+          this.router.navigate(['/login']);
         } else if (error.status === 403) {
-          this.confirmationService.alert(
-           'Access Denied',
-            'error',
-          );
+          this.confirmationService.alert('Access Denied', 'error');
         } else if (error.status === 500) {
-          this.confirmationService.alert(
-           'Internal Server Error',
-            'error',
-          );
+          this.confirmationService.alert('Internal Server Error', 'error');
         } else {
           this.confirmationService.alert(
             error.message || 'Something went wrong',
             'error',
           );
         }
-        this.router.navigate(['/login']);
-        sessionStorage.clear();
-        this.sessionstorage.clear();
         this.spinnerService.setLoading(false);
         return throwError(error.error);
       }),
@@ -131,9 +126,7 @@ export class HttpInterceptorService implements HttpInterceptor {
       () => {
         console.log('there', Date());
 
-        if (
-          sessionStorage.getItem('isAuthenticated')
-        ) {
+        if (sessionStorage.getItem('isAuthenticated')) {
           this.confirmationService
             .alert(
               'Your session is about to Expire. Do you need more time ? ',
@@ -151,7 +144,8 @@ export class HttpInterceptorService implements HttpInterceptor {
                 this.sessionstorage.clear();
                 localStorage.clear();
                 this.confirmationService.alert(
-                  this.currentLanguageSet.sessionExpired || 'Your session has expired. Please login again.',
+                  this.currentLanguageSet.sessionExpired ||
+                    'Your session has expired. Please login again.',
                   'error',
                 );
                 this.router.navigate(['/login']);
@@ -161,7 +155,8 @@ export class HttpInterceptorService implements HttpInterceptor {
                   this.sessionstorage.clear();
                   localStorage.clear();
                   this.confirmationService.alert(
-                    this.currentLanguageSet.sessionExpired || 'Your session has expired. Please login again.',
+                    this.currentLanguageSet.sessionExpired ||
+                      'Your session has expired. Please login again.',
                     'error',
                   );
                   this.router.navigate(['/login']);
