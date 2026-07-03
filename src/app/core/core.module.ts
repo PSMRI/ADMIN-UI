@@ -55,6 +55,7 @@ import {
   MyProviderNameWithCopyPasteDirective,
   NameWithSpecialCharCopyPasteDirective,
   PanWithCopyPasteDirective,
+  UserNameWithCopyPasteDirective,
   VehicleNoWithCopyPasteDirective,
   VehicleNoWithSpecialCharCopyPasteDirective,
 } from './directives/name/myNameWithCopyPaste.directive';
@@ -99,6 +100,7 @@ import { SpinnerComponent } from './components/spinner/spinner.component';
     VehicleNoWithCopyPasteDirective,
     VehicleNoWithSpecialCharCopyPasteDirective,
     PanWithCopyPasteDirective,
+    UserNameWithCopyPasteDirective,
     TextAreaWithCopyPasteDirective,
     DrugStrengthWithCopyPasteDirective,
     SpinnerComponent,
@@ -146,6 +148,7 @@ import { SpinnerComponent } from './components/spinner/spinner.component';
     VehicleNoWithCopyPasteDirective,
     VehicleNoWithSpecialCharCopyPasteDirective,
     PanWithCopyPasteDirective,
+    UserNameWithCopyPasteDirective,
     TextAreaWithCopyPasteDirective,
     myMobileNumberDirective,
     DrugStrengthWithCopyPasteDirective,

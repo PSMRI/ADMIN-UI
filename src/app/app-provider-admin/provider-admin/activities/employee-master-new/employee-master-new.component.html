@@ -625,7 +625,7 @@
             </div>
             <div class="col-12 row">
               <div class="col-3 m-t-20" *ngIf="!editMode">
-                <mat-form-field class="width100" appPanWithCopyPaste>
+                <mat-form-field class="width100" appUserNameWithCopyPaste>
                   <mat-label>User Name</mat-label>
                   <input
                     matInput
@@ -634,6 +634,7 @@
                     [(ngModel)]="username"
                     minlength="2"
                     maxlength="20"
+                    pattern="^[a-zA-Z0-9]+([_-][a-zA-Z0-9]+)*$"
                     #uname="ngModel"
                     (keyup)="checkUserNameAvailability(username)"
                     required
@@ -644,8 +645,15 @@
                       *ngIf="showHint && !uname.errors"
                       >{{ username_status }}</span
                     >
-                    <span class="error_text" [hidden]="!uname.errors"
+                    <span
+                      class="error_text"
+                      *ngIf="uname.errors?.['minlength']"
                       >Min 2 characters required</span
+                    >
+                    <span
+                      class="error_text"
+                      *ngIf="!uname.errors?.['minlength'] && uname.errors?.['pattern']"
+                      >Only letters, numbers and '_' or '-' between characters are allowed</span
                     >
                   </mat-hint>
                 </mat-form-field>
