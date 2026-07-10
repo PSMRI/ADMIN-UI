@@ -1927,6 +1927,19 @@ export class WorkLocationMappingComponent
             stateName: objectToBeAdded.state?.stateName || 'All States',
             districtID: objectToBeAdded.district?.districtID || null,
             district: objectToBeAdded.district?.districtName || null,
+            blockID:
+              objectToBeAdded.Serviceblock !== undefined &&
+              objectToBeAdded.Serviceblock.blockID !== undefined &&
+              objectToBeAdded.Serviceblock.blockID !== null
+                ? objectToBeAdded.Serviceblock.blockID
+                : null,
+            blockName:
+              objectToBeAdded.Serviceblock !== undefined &&
+              objectToBeAdded.Serviceblock.blockName !== undefined &&
+              objectToBeAdded.Serviceblock.blockName !== '' &&
+              objectToBeAdded.Serviceblock.blockName !== null
+                ? objectToBeAdded.Serviceblock.blockName
+                : null,
             nikshayTUID: tu?.nikshayTUID || null,
             nikshayTUName: tu?.tUName || null,
             nikshayFacilityID: facility?.nikshayFacilityID || null,
