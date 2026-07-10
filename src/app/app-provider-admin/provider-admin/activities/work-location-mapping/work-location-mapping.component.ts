@@ -214,6 +214,266 @@ export class WorkLocationMappingComponent
     }
   }
 
+  // --- Nikshay location master (Stop TB) — TU / Facility / Village cascade ---
+  isStopTBServiceline = false;
+  nikshayTUList: any[] = [];
+  nikshayFacilityList: any[] = [];
+  nikshayVillageList: any[] = [];
+  selectedNikshayTUs: any[] = [];
+  selectedNikshayFacilities: any[] = [];
+  selectedNikshayVillages: any[] = [];
+
+  nikshayTUSearch = '';
+  nikshayFacilitySearch = '';
+  nikshayVillageSearch = '';
+
+  get filteredNikshayTUList(): any[] {
+    if (!this.nikshayTUSearch) return this.nikshayTUList;
+    const s = this.nikshayTUSearch.toLowerCase();
+    const selectedIDs = new Set(
+      (this.selectedNikshayTUs || []).map((t: any) => t.nikshayTUID),
+    );
+    return this.nikshayTUList.filter(
+      (t: any) =>
+        selectedIDs.has(t.nikshayTUID) ||
+        (t.tUName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get filteredNikshayFacilityList(): any[] {
+    if (!this.nikshayFacilitySearch) return this.nikshayFacilityList;
+    const s = this.nikshayFacilitySearch.toLowerCase();
+    const selectedIDs = new Set(
+      (this.selectedNikshayFacilities || []).map(
+        (f: any) => f.nikshayFacilityID,
+      ),
+    );
+    return this.nikshayFacilityList.filter(
+      (f: any) =>
+        selectedIDs.has(f.nikshayFacilityID) ||
+        (f.facilityName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get filteredNikshayVillageList(): any[] {
+    if (!this.nikshayVillageSearch) return this.nikshayVillageList;
+    const s = this.nikshayVillageSearch.toLowerCase();
+    const selectedIDs = new Set(
+      (this.selectedNikshayVillages || []).map((v: any) => v.districtBranchID),
+    );
+    return this.nikshayVillageList.filter(
+      (v: any) =>
+        selectedIDs.has(v.districtBranchID) ||
+        (v.villageName || '').toLowerCase().includes(s),
+    );
+  }
+
+  get allNikshayTUsSelected(): boolean {
+    if (!this.nikshayTUList?.length) return false;
+    const selectedIDs = new Set(
+      (this.selectedNikshayTUs || []).map((t: any) => t.nikshayTUID),
+    );
+    return this.nikshayTUList.every((t: any) => selectedIDs.has(t.nikshayTUID));
+  }
+
+  toggleSelectAllNikshayTUs() {
+    this.selectedNikshayTUs = this.allNikshayTUsSelected
+      ? []
+      : [...this.nikshayTUList];
+    this.onNikshayTUChange();
+  }
+
+  get allNikshayFacilitiesSelected(): boolean {
+    if (!this.nikshayFacilityList?.length) return false;
+    const selectedIDs = new Set(
+      (this.selectedNikshayFacilities || []).map(
+        (f: any) => f.nikshayFacilityID,
+      ),
+    );
+    return this.nikshayFacilityList.every((f: any) =>
+      selectedIDs.has(f.nikshayFacilityID),
+    );
+  }
+
+  toggleSelectAllNikshayFacilities() {
+    this.selectedNikshayFacilities = this.allNikshayFacilitiesSelected
+      ? []
+      : [...this.nikshayFacilityList];
+    this.onNikshayFacilityChange();
+  }
+
+  get allNikshayVillagesSelected(): boolean {
+    if (!this.nikshayVillageList?.length) return false;
+    const selectedIDs = new Set(
+      (this.selectedNikshayVillages || []).map((v: any) => v.districtBranchID),
+    );
+    return this.nikshayVillageList.every((v: any) =>
+      selectedIDs.has(v.districtBranchID),
+    );
+  }
+
+  toggleSelectAllNikshayVillages() {
+    this.selectedNikshayVillages = this.allNikshayVillagesSelected
+      ? []
+      : [...this.nikshayVillageList];
+  }
+
+  // Called when District is selected and serviceline = Stop TB
+  loadNikshayTUs(districtID: any) {
+    this.nikshayTUList = [];
+    this.nikshayFacilityList = [];
+    this.nikshayVillageList = [];
+    this.selectedNikshayTUs = [];
+    this.selectedNikshayFacilities = [];
+    this.selectedNikshayVillages = [];
+    if (!districtID) return;
+    this.worklocationmapping
+      .getNikshayTUs(districtID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          this.nikshayTUList = response.data || [];
+        },
+        () => {
+          this.alertService.alert('Failed to load Nikshay TUs', 'error');
+        },
+      );
+  }
+
+  // Called whenever the TU multi-select changes
+  onNikshayTUChange() {
+    this.nikshayFacilityList = [];
+    this.nikshayVillageList = [];
+    this.selectedNikshayFacilities = [];
+    this.selectedNikshayVillages = [];
+    const tuIDs = (this.selectedNikshayTUs || []).map(
+      (t: any) => t.nikshayTUID,
+    );
+    if (!tuIDs.length) return;
+    this.worklocationmapping
+      .getNikshayFacilities(tuIDs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          this.nikshayFacilityList = response.data || [];
+        },
+        () => {
+          this.alertService.alert('Failed to load Nikshay facilities', 'error');
+        },
+      );
+  }
+
+  // Called whenever the Facility multi-select changes
+  onNikshayFacilityChange() {
+    this.nikshayVillageList = [];
+    this.selectedNikshayVillages = [];
+    const facilityIDs = (this.selectedNikshayFacilities || []).map(
+      (f: any) => f.nikshayFacilityID,
+    );
+    if (!facilityIDs.length) return;
+    this.worklocationmapping
+      .getNikshayVillages(facilityIDs)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          this.nikshayVillageList = response.data || [];
+        },
+        () => {
+          this.alertService.alert('Failed to load Nikshay villages', 'error');
+        },
+      );
+  }
+
+  resetNikshaySelection() {
+    this.nikshayTUList = [];
+    this.nikshayFacilityList = [];
+    this.nikshayVillageList = [];
+    this.selectedNikshayTUs = [];
+    this.selectedNikshayFacilities = [];
+    this.selectedNikshayVillages = [];
+    this.nikshayTUSearch = '';
+    this.nikshayFacilitySearch = '';
+    this.nikshayVillageSearch = '';
+  }
+
+  /**
+   * Edit mode: Stop TB spreads one worker's mapping across multiple rows
+   * (one per TU x Facility combination, same pattern as ASHA Supervisor).
+   * Find all of this worker's rows, pull out the distinct TU/Facility/Village
+   * IDs they're currently mapped to, then load each dropdown's option list
+   * and pre-select the matching entries.
+   */
+  loadNikshayEditSelections() {
+    this.resetNikshaySelection();
+
+    const userRows = (this.mappedWorkLocationsList || []).filter(
+      (row: any) =>
+        row.userID === this.edit_Details.userID &&
+        row.providerServiceMapID === this.edit_Details.providerServiceMapID &&
+        row.roleName === this.edit_Details.roleName &&
+        !row.userServciceRoleDeleted,
+    );
+
+    const existingTUIDs = [
+      ...new Set(
+        userRows.map((r: any) => r.nikshayTUID).filter((id: any) => !!id),
+      ),
+    ];
+    const existingFacilityIDs = [
+      ...new Set(
+        userRows.map((r: any) => r.nikshayFacilityID).filter((id: any) => !!id),
+      ),
+    ];
+    const existingVillageIDs: any[] = [];
+    userRows.forEach((r: any) => {
+      if (Array.isArray(r.villageID)) existingVillageIDs.push(...r.villageID);
+    });
+    const uniqueVillageIDs = [...new Set(existingVillageIDs)];
+
+    // The dropdown OPTIONS always load (old-style users need to be able to pick
+    // Nikshay values for the first time too) — only the pre-selected values
+    // depend on whether this user already has any existing Nikshay mapping.
+    if (!this.district_duringEdit) {
+      return;
+    }
+
+    this.worklocationmapping
+      .getNikshayTUs(this.district_duringEdit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((tuResponse: any) => {
+        this.nikshayTUList = tuResponse.data || [];
+        this.selectedNikshayTUs = this.nikshayTUList.filter((t: any) =>
+          existingTUIDs.includes(t.nikshayTUID),
+        );
+        if (!this.selectedNikshayTUs.length) return; // old user: nothing to pre-select, but list is loaded and usable
+
+        const tuIDs = this.selectedNikshayTUs.map((t: any) => t.nikshayTUID);
+        this.worklocationmapping
+          .getNikshayFacilities(tuIDs)
+          .pipe(takeUntil(this.destroy$))
+          .subscribe((facResponse: any) => {
+            this.nikshayFacilityList = facResponse.data || [];
+            this.selectedNikshayFacilities = this.nikshayFacilityList.filter(
+              (f: any) => existingFacilityIDs.includes(f.nikshayFacilityID),
+            );
+            if (!this.selectedNikshayFacilities.length) return;
+
+            const facilityIDs = this.selectedNikshayFacilities.map(
+              (f: any) => f.nikshayFacilityID,
+            );
+            this.worklocationmapping
+              .getNikshayVillages(facilityIDs)
+              .pipe(takeUntil(this.destroy$))
+              .subscribe((villResponse: any) => {
+                this.nikshayVillageList = villResponse.data || [];
+                this.selectedNikshayVillages = this.nikshayVillageList.filter(
+                  (v: any) => uniqueVillageIDs.includes(v.districtBranchID),
+                );
+              });
+          });
+      });
+  }
+
   //  flag values
   formMode = false;
   tableMode = true;
@@ -229,6 +489,7 @@ export class WorkLocationMappingComponent
 
   // Edit-mode facility integration
   isFacilityServicelineEdit = false;
+  isStopTBServicelineEdit = false;
   editExistingVillageIDs: number[] = [];
   editExistingVillageNames: string[] = [];
   editExistingFacilityID: any = null;
@@ -533,14 +794,14 @@ export class WorkLocationMappingComponent
       const group = groupMap.get(key)!;
       group.originalRows.push(row);
 
-      if (Array.isArray(row.villageID)) {
+      if (Array.isArray(row.villageID) && !row.userServciceRoleDeleted) {
         for (const vid of row.villageID) {
           if (!group.villageID.includes(vid)) {
             group.villageID.push(vid);
           }
         }
       }
-      if (Array.isArray(row.villageName)) {
+      if (Array.isArray(row.villageName) && !row.userServciceRoleDeleted) {
         for (const vn of row.villageName) {
           if (!group.villageName.includes(vn)) {
             group.villageName.push(vn);
@@ -929,10 +1190,23 @@ export class WorkLocationMappingComponent
     });
     this.availableRoles = this.RolesList.slice();
 
+    // Also collect existing role NAMES to block duplicate-named roles (e.g. two "Asha" with different roleIDs)
+    const existingRoleNames = this.mappedWorkLocationsList
+      .filter(
+        (m: any) =>
+          m.userID === userID &&
+          m.providerServiceMapID === providerServiceMapID &&
+          !m.userServciceRoleDeleted,
+      )
+      .map((m: any) => (m.roleName || '').toLowerCase());
+
     const temp: any = [];
     this.availableRoles.forEach((roles: any) => {
-      const index = this.existingRoles.indexOf(roles.roleID);
-      if (index < 0) {
+      const idBlocked = this.existingRoles.indexOf(roles.roleID) >= 0;
+      const nameBlocked = existingRoleNames.includes(
+        (roles.roleName || '').toLowerCase(),
+      );
+      if (!idBlocked && !nameBlocked) {
         temp.push(roles);
       }
     });
@@ -1610,6 +1884,72 @@ export class WorkLocationMappingComponent
     InboundValue: any,
     OnboundValue: any,
   ) {
+    // Stop TB — Nikshay TU/Facility/Village: one row per TU x Facility
+    // combination selected, each carrying that facility's selected villages.
+    // Handled separately from the generic flow below since it needs its own
+    // multi-level (TU + Facility), not just a single facility list.
+    if (this.isStopTBServiceline) {
+      const roleObjStopTB = [obj];
+      const providerServiceMapID =
+        objectToBeAdded.serviceline.isNational === false
+          ? objectToBeAdded.state.providerServiceMapID
+          : this.states_array[0].providerServiceMapID;
+
+      const tus = this.selectedNikshayTUs?.length
+        ? this.selectedNikshayTUs
+        : [null];
+      for (const tu of tus) {
+        const facilitiesUnderThisTU = (
+          this.selectedNikshayFacilities || []
+        ).filter((f: any) => !tu || f.nikshayTUID === tu.nikshayTUID);
+        const facilities = facilitiesUnderThisTU.length
+          ? facilitiesUnderThisTU
+          : [null];
+
+        for (const facility of facilities) {
+          const villageIDArrTB: any[] = [];
+          const villageNameArrTB: any[] = [];
+          (this.selectedNikshayVillages || []).forEach((v: any) => {
+            villageIDArrTB.push(v.districtBranchID);
+            villageNameArrTB.push(v.villageName);
+          });
+
+          const stopTBWorkLocationObj: any = {
+            previleges: [],
+            userID: objectToBeAdded.user.userID,
+            userName: objectToBeAdded.user.userName,
+            serviceID: objectToBeAdded.serviceline.serviceID,
+            serviceName: objectToBeAdded.serviceline.serviceName,
+            roleID1: roleObjStopTB,
+            providerServiceMapID: providerServiceMapID,
+            createdBy: this.createdBy,
+            stateID: objectToBeAdded.state?.stateID || null,
+            stateName: objectToBeAdded.state?.stateName || 'All States',
+            districtID: objectToBeAdded.district?.districtID || null,
+            district: objectToBeAdded.district?.districtName || null,
+            nikshayTUID: tu?.nikshayTUID || null,
+            nikshayTUName: tu?.tUName || null,
+            nikshayFacilityID: facility?.nikshayFacilityID || null,
+            nikshayFacilityName: facility?.facilityName || null,
+            villageID: villageIDArrTB.length ? villageIDArrTB : null,
+            villageName: villageNameArrTB.length ? villageNameArrTB : null,
+            Inbound: 'N/A',
+            Outbound: 'N/A',
+            teleConsultation: [null],
+          };
+          this.bufferArray.data.push(stopTBWorkLocationObj);
+        }
+      }
+      if (this.paginatorSecond) {
+        this.bufferArray.paginator = this.paginatorSecond;
+      }
+      if (this.sortSecond) {
+        this.bufferArray.sort = this.sortSecond;
+      }
+      this.rebuildGroupedBuffer();
+      return;
+    }
+
     const villageIDArr: any = [];
     const villageNameArr: any = [];
     if (this.isFacilityServiceline) {
@@ -2170,6 +2510,13 @@ export class WorkLocationMappingComponent
       this.edit_Details.serviceName === 'FLW' ||
       this.edit_Details.serviceName === 'HWC';
     this.isBlockRequiredEdit = this.edit_Details.serviceName === 'Stop TB';
+    this.isStopTBServicelineEdit = this.edit_Details.serviceName === 'Stop TB';
+
+    if (this.isStopTBServicelineEdit) {
+      this.loadNikshayEditSelections();
+    } else {
+      this.resetNikshaySelection();
+    }
 
     if (this.isFacilityServicelineEdit) {
       this.editExistingVillageIDs = Array.isArray(this.edit_Details.villageID)
@@ -2800,7 +3147,118 @@ export class WorkLocationMappingComponent
       );
   }
 
+  /**
+   * Stop TB update: deactivate all existing rows for this user/role/service,
+   * then create fresh rows for the currently-selected TU x Facility x Village
+   * combinations. Simpler than row-by-row add/remove reconciliation, and safe
+   * here since (unlike ASHA Supervisor) nothing else depends on a Stop TB
+   * row's USRMappingID staying the same across an edit.
+   */
+  updateStopTBWorkLocation(workLocations: any) {
+    const oldRows = (this.editGroupedElement?.originalRows || []).filter(
+      (r: any) => !r.userServciceRoleDeleted,
+    );
+
+    const deactivateOld$ = oldRows.map((row: any) =>
+      this.worklocationmapping.DeleteWorkLocationMapping({
+        uSRMappingID: row.uSRMappingID,
+        deleted: true,
+      }),
+    );
+
+    const roleIDsToUse: any[] =
+      this.roleIDs_duringEdit && this.roleIDs_duringEdit.length
+        ? this.roleIDs_duringEdit
+        : [this.roleID_duringEdit];
+
+    const buildNewRows = () => {
+      const newRows: any[] = [];
+      const tus = this.selectedNikshayTUs?.length
+        ? this.selectedNikshayTUs
+        : [null];
+      for (const roleID of roleIDsToUse) {
+        for (const tu of tus) {
+          const facilitiesUnderThisTU = (
+            this.selectedNikshayFacilities || []
+          ).filter((f: any) => !tu || f.nikshayTUID === tu.nikshayTUID);
+          const facilities = facilitiesUnderThisTU.length
+            ? facilitiesUnderThisTU
+            : [null];
+          for (const facility of facilities) {
+            const villageIDArr = (this.selectedNikshayVillages || []).map(
+              (v: any) => v.districtBranchID,
+            );
+            const villageNameArr = (this.selectedNikshayVillages || []).map(
+              (v: any) => v.villageName,
+            );
+            newRows.push({
+              userID: this.userID_duringEdit,
+              roleID1: [{ roleID1: roleID }],
+              providerServiceMapID: this.providerServiceMapID_duringEdit,
+              createdBy: this.createdBy,
+              stateID: this.stateID_duringEdit,
+              districtID: this.district_duringEdit,
+              nikshayTUID: tu?.nikshayTUID || null,
+              nikshayFacilityID: facility?.nikshayFacilityID || null,
+              villageID: villageIDArr.length ? villageIDArr : null,
+              villageName: villageNameArr.length ? villageNameArr : null,
+              Inbound: 'N/A',
+              Outbound: 'N/A',
+              teleConsultation: [null],
+            });
+          }
+        }
+      }
+      return newRows;
+    };
+
+    forkJoin(deactivateOld$.length ? deactivateOld$ : [Promise.resolve(true)])
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: () => {
+          const newRows = buildNewRows();
+          if (!newRows.length) {
+            this.alertService.alert('Updated successfully', 'success');
+            this.showTable();
+            this.getAllMappedWorkLocations();
+            return;
+          }
+          this.worklocationmapping
+            .SaveWorkLocationMapping(newRows)
+            .pipe(takeUntil(this.destroy$))
+            .subscribe({
+              next: () => {
+                this.alertService.alert('Updated successfully', 'success');
+                this.showTable();
+                this.getAllMappedWorkLocations();
+              },
+              error: () => {
+                this.alertService.alert(
+                  "Old mapping deactivated but saving new selections failed — please re-check this user's mapping.",
+                  'error',
+                );
+                this.showTable();
+                this.getAllMappedWorkLocations();
+              },
+            });
+        },
+        error: () => {
+          this.alertService.alert('Failed to update work location', 'error');
+        },
+      });
+  }
+
   updateWorkLocation(workLocations: any) {
+    // Stop TB — handled entirely separately from the generic/ASHA update flow below,
+    // since it needs to reconcile multiple TU x Facility rows, not one row.
+    // Approach: deactivate all of this user's existing Stop TB rows, then create
+    // fresh rows for the currently-selected combinations. Simpler and safer than
+    // fine-grained row-by-row reconciliation, and Stop TB has no dependency (like
+    // ASHA Supervisor does) on a row's USRMappingID staying stable across edits.
+    if (this.isStopTBServicelineEdit) {
+      this.updateStopTBWorkLocation(workLocations);
+      return;
+    }
     // Fix 15: warn if district or block changed
     if (!this._fix15WarnConfirmed) {
       const origDistrict = parseInt(this.edit_Details?.workingDistrictID, 10);
@@ -3780,6 +4238,7 @@ export class WorkLocationMappingComponent
       this.villageFlag = true;
       this.isFacilityServiceline =
         serviceline === 'FLW' || serviceline === 'HWC';
+      this.isStopTBServiceline = serviceline === 'Stop TB';
       if (serviceline === 'TM' || serviceline === 'MMU') {
         this.isBlockRequired = false;
         this.isVillageRequired = false;
@@ -3791,8 +4250,12 @@ export class WorkLocationMappingComponent
       this.blockFlag = false;
       this.villageFlag = false;
       this.isFacilityServiceline = false;
+      this.isStopTBServiceline = false;
       this.isBlockRequired = false;
       this.isVillageRequired = false;
+    }
+    if (!this.isStopTBServiceline) {
+      this.resetNikshaySelection();
     }
   }
 

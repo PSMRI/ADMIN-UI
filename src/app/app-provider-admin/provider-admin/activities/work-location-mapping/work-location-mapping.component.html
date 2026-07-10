@@ -357,7 +357,8 @@
                     Serviceline.serviceID,
                     State.providerServiceMapID,
                     User.userID
-                  )
+                  );
+                  isStopTBServiceline && loadNikshayTUs(District.districtID)
                 "
                 name="district"
                 (openedChange)="$event ? null : districtSearch = ''"
@@ -399,7 +400,98 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="!isFacilityServiceline && !isBlockRequired">
+          <div class="col-12 row" *ngIf="isStopTBServiceline">
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select TU (Block)</mat-label>
+                <mat-select
+                  multiple
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayTUs"
+                  name="nikshayTUs"
+                  (selectionChange)="onNikshayTUChange()"
+                  (openedChange)="$event ? null : nikshayTUSearch = ''"
+                  required
+                >
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayTUSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <div class="select-search-box">
+                    <a (click)="toggleSelectAllNikshayTUs()">{{
+                      allNikshayTUsSelected ? 'Deselect All' : 'Select All'
+                    }}</a>
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayTUList" [value]="item">
+                    {{ item.tUName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Health Facility</mat-label>
+                <mat-select
+                  multiple
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayFacilities"
+                  name="nikshayFacilities"
+                  (selectionChange)="onNikshayFacilityChange()"
+                  (openedChange)="$event ? null : nikshayFacilitySearch = ''"
+                  required
+                >
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayFacilitySearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <div class="select-search-box">
+                    <a (click)="toggleSelectAllNikshayFacilities()">{{
+                      allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
+                    }}</a>
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
+                    {{ item.facilityName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Village</mat-label>
+                <mat-select
+                  multiple
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayVillages"
+                  name="nikshayVillages"
+                  (openedChange)="$event ? null : nikshayVillageSearch = ''"
+                  required
+                >
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayVillageSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <div class="select-search-box">
+                    <a (click)="toggleSelectAllNikshayVillages()">{{
+                      allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
+                    }}</a>
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
+                    {{ item.villageName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
+
+          <div class="col-3" *ngIf="!isFacilityServiceline && !isBlockRequired && !isStopTBServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Work Location</mat-label>
               <mat-select
@@ -851,7 +943,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="!isFacilityServicelineEdit && !isBlockRequiredEdit">
+          <div class="col-3" *ngIf="!isFacilityServicelineEdit && !isBlockRequiredEdit && !isStopTBServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Work Location</mat-label>
               <mat-select
@@ -866,6 +958,59 @@
               </mat-select>
             </mat-form-field>
           </div>
+
+          <ng-container *ngIf="isStopTBServicelineEdit">
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select TU (Block)</mat-label>
+                <mat-select
+                  multiple
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayTUs"
+                  name="nikshayTUsEdit"
+                  (selectionChange)="onNikshayTUChange()"
+                  required
+                >
+                  <mat-option *ngFor="let item of nikshayTUList" [value]="item">
+                    {{ item.tUName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Health Facility</mat-label>
+                <mat-select
+                  multiple
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayFacilities"
+                  name="nikshayFacilitiesEdit"
+                  (selectionChange)="onNikshayFacilityChange()"
+                  required
+                >
+                  <mat-option *ngFor="let item of nikshayFacilityList" [value]="item">
+                    {{ item.facilityName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Village</mat-label>
+                <mat-select
+                  multiple
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayVillages"
+                  name="nikshayVillagesEdit"
+                  required
+                >
+                  <mat-option *ngFor="let item of nikshayVillageList" [value]="item">
+                    {{ item.villageName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </ng-container>
 
           <div class="col-3" *ngIf="editGroupedElement && editServiceName !== 'FLW'">
             <mat-form-field [style.width]="'100%'">
