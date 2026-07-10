@@ -553,7 +553,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline">
+          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline && !isStopTBServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
@@ -1062,7 +1062,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
+          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit && !isStopTBServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select

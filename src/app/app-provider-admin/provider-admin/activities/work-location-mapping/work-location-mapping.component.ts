@@ -2173,6 +2173,11 @@ export class WorkLocationMappingComponent
             villageName: this.bufferArray.data[i].villageName,
 
             facilityID: this.bufferArray.data[i].facilityID,
+
+            nikshayTUID: this.bufferArray.data[i].nikshayTUID || null,
+
+            nikshayFacilityID:
+              this.bufferArray.data[i].nikshayFacilityID || null,
           },
         ],
 
@@ -4244,7 +4249,8 @@ export class WorkLocationMappingComponent
         this.isVillageRequired = false;
       } else {
         this.isBlockRequired = true;
-        this.isVillageRequired = this.isFacilityServiceline ? false : true;
+        this.isVillageRequired =
+          this.isFacilityServiceline || this.isStopTBServiceline ? false : true;
       }
     } else {
       this.blockFlag = false;
