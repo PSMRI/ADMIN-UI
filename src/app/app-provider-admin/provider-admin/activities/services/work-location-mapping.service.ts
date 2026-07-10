@@ -127,4 +127,33 @@ export class WorkLocationMapping {
   getTaluks(districtId: number) {
     return this.http.get(environment._getTalukListURL + districtId);
   }
+
+  // Nikshay location master (Stop TB) — read-only cascading lookups
+  getNikshayStates() {
+    return this.http.get(environment.nikshayStates_url);
+  }
+
+  getNikshayDistricts(stateID: any) {
+    return this.http.get(
+      `${environment.nikshayDistricts_url}?stateID=${stateID}`,
+    );
+  }
+
+  getNikshayTUs(districtID: any) {
+    return this.http.get(
+      `${environment.nikshayTUs_url}?districtID=${districtID}`,
+    );
+  }
+
+  getNikshayFacilities(tuIDs: any[]) {
+    return this.http.get(
+      `${environment.nikshayFacilities_url}?tuIDs=${tuIDs.join(',')}`,
+    );
+  }
+
+  getNikshayVillages(facilityIDs: any[]) {
+    return this.http.get(
+      `${environment.nikshayVillages_url}?facilityIDs=${facilityIDs.join(',')}`,
+    );
+  }
 }
