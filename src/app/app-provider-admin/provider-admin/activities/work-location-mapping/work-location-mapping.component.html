@@ -357,7 +357,8 @@
                 [(ngModel)]="District"
                 (selectionChange)="
                   getAllWorkLocations(State, Serviceline, isNational);
-                  getBlockMaster(District)
+                  getBlockMaster(District);
+                  isStopTBServiceline && resolveNikshayDistrictAndLoadTUs(State, District)
                 "
                 name="district"
                 (openedChange)="$event ? null : districtSearch = ''"
@@ -369,54 +370,6 @@
                     (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
                 </div>
                 <mat-option *ngFor="let item of filteredDistrictsList" [value]="item">
-                  {{ item.districtName }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="col-3" *ngIf="isStopTBServiceline">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select State (Nikshay)</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [(ngModel)]="selectedNikshayState"
-                name="nikshayState"
-                (selectionChange)="loadNikshayDistricts(selectedNikshayState.nikshayStateID)"
-                (openedChange)="$event ? null : nikshayStateSearch = ''"
-                required
-              >
-                <div class="select-search-box">
-                  <mat-icon>search</mat-icon>
-                  <input matInput placeholder="Search..." [(ngModel)]="nikshayStateSearch"
-                    [ngModelOptions]="{ standalone: true }"
-                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
-                </div>
-                <mat-option *ngFor="let item of filteredNikshayStateList" [value]="item">
-                  {{ item.stateName }}
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
-          </div>
-
-          <div class="col-3" *ngIf="isStopTBServiceline">
-            <mat-form-field [style.width]="'100%'">
-              <mat-label>Select District (Nikshay)</mat-label>
-              <mat-select
-                [style.width]="'100%'"
-                [(ngModel)]="selectedNikshayDistrict"
-                name="nikshayDistrict"
-                (selectionChange)="loadNikshayTUs(selectedNikshayDistrict.nikshayDistrictID)"
-                (openedChange)="$event ? null : nikshayDistrictSearch = ''"
-                required
-              >
-                <div class="select-search-box">
-                  <mat-icon>search</mat-icon>
-                  <input matInput placeholder="Search..." [(ngModel)]="nikshayDistrictSearch"
-                    [ngModelOptions]="{ standalone: true }"
-                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
-                </div>
-                <mat-option *ngFor="let item of filteredNikshayDistrictList" [value]="item">
                   {{ item.districtName }}
                 </mat-option>
               </mat-select>
