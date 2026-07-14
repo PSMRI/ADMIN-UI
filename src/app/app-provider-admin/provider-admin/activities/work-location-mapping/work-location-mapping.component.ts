@@ -214,11 +214,16 @@ export class WorkLocationMappingComponent
     }
   }
 
-  // --- Nikshay location master (Stop TB) — Block / TU / Facility / Village cascade ---
-  // State/District are AMRIT's own fields (see resolveNikshayDistrictAndLoadTUs) —
-  // nikshayStateList is kept only as an internal cache for that name-match lookup.
+  // --- Nikshay location master (Stop TB) — District / Block / TU / Facility / Village cascade ---
+  // State is AMRIT's own field (needed for providerServiceMapID/roles regardless
+  // of service line) — selecting it resolves the matching Nikshay state by name
+  // and loads Nikshay's own district list directly into "Select District" for
+  // Stop TB. District itself is 100% Nikshay-sourced from there on, no further
+  // AMRIT matching — AMRIT's own m_District proved unreliable for this (stale
+  // post-2022 district data, orphaned rows, inconsistent between environments).
   isStopTBServiceline = false;
   nikshayStateList: any[] = [];
+  nikshayDistrictList: any[] = [];
   nikshayTUList: any[] = [];
   nikshayFacilityList: any[] = [];
   nikshayVillageList: any[] = [];
@@ -331,30 +336,26 @@ export class WorkLocationMappingComponent
       : [...this.nikshayVillageList];
   }
 
-  // Called when serviceline = Stop TB is selected — preloads the Nikshay
-  // state list used internally by resolveNikshayDistrictAndLoadTUs.
-  loadNikshayStates() {
-    this.resetNikshaySelection();
-    this.nikshayStateList = [];
-    this.worklocationmapping
-      .getNikshayStates()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(
-        (response: any) => {
-          this.nikshayStateList = response.data || [];
-        },
-        () => {
-          this.alertService.alert('Failed to load Nikshay states', 'error');
-        },
-      );
+  // Called on District's selectionChange — Stop TB loads the Nikshay TU list
+  // directly from the selected (already-Nikshay) district; every other
+  // service line keeps its existing AMRIT-driven behavior unchanged.
+  onDistrictChange() {
+    if (this.isStopTBServiceline) {
+      this.loadNikshayTUs((this.District as any)?.nikshayDistrictID);
+    } else {
+      this.getAllWorkLocations(this.State, this.Serviceline, this.isNational);
+      this.getBlockMaster(this.District);
+    }
   }
 
-  // Bridges AMRIT's selected State/District to Nikshay's own State/District by
-  // name match, then loads the TU list. AMRIT's State/District dropdowns stay
-  // as the single fields the user fills in (needed for roles/work-locations
-  // regardless of service line) — this only resolves the corresponding
-  // Nikshay IDs to drive the Block/TU/Facility/Village cascade.
-  resolveNikshayDistrictAndLoadTUs(state: any, district: any) {
+  // Called when AMRIT State is selected, for Stop TB only: resolves the
+  // matching Nikshay state by name (low-risk — only ~10 stable state names,
+  // no reorganization ambiguity like districts have) and loads its district
+  // list directly into "Select District". From here on District is 100%
+  // Nikshay-sourced, no further AMRIT matching.
+  resolveNikshayStateAndLoadDistricts(state: any) {
+    this.nikshayDistrictList = [];
+    this.District = null as any;
     this.nikshayTUList = [];
     this.nikshayFacilityList = [];
     this.nikshayVillageList = [];
@@ -362,20 +363,18 @@ export class WorkLocationMappingComponent
     this.selectedNikshayTUs = [];
     this.selectedNikshayFacilities = [];
     this.selectedNikshayVillages = [];
-    if (!state?.stateName || !district?.districtName) return;
+    if (!state?.stateName) return;
 
     const normalize = (v: string) => (v || '').trim().toLowerCase();
     const stateName = normalize(state.stateName);
-    const districtName = normalize(district.districtName);
-
-    const matchNikshayState = (states: any[]) =>
-      (states || []).find((s: any) => normalize(s.stateName) === stateName);
 
     const resolveWithStates = (states: any[]) => {
-      const nikshayState = matchNikshayState(states);
+      const nikshayState = (states || []).find(
+        (s: any) => normalize(s.stateName) === stateName,
+      );
       if (!nikshayState) {
         this.alertService.alert(
-          `"${state.stateName}" is not yet in Nikshay's location master — TU/Facility/Village unavailable until it's imported.`,
+          `"${state.stateName}" is not yet in Nikshay's location master — districts unavailable until it's imported.`,
           'error',
         );
         return;
@@ -385,18 +384,7 @@ export class WorkLocationMappingComponent
         .pipe(takeUntil(this.destroy$))
         .subscribe(
           (response: any) => {
-            const districts = response.data || [];
-            const nikshayDistrict = districts.find(
-              (d: any) => normalize(d.districtName) === districtName,
-            );
-            if (!nikshayDistrict) {
-              this.alertService.alert(
-                `"${district.districtName}" is not yet in Nikshay's location master — TU/Facility/Village unavailable until it's imported.`,
-                'error',
-              );
-              return;
-            }
-            this.loadNikshayTUs(nikshayDistrict.nikshayDistrictID);
+            this.nikshayDistrictList = response.data || [];
           },
           () => {
             this.alertService.alert(
@@ -494,6 +482,7 @@ export class WorkLocationMappingComponent
 
   resetNikshaySelection() {
     this.nikshayStateList = [];
+    this.nikshayDistrictList = [];
     this.nikshayTUList = [];
     this.nikshayFacilityList = [];
     this.nikshayVillageList = [];
@@ -4381,11 +4370,7 @@ export class WorkLocationMappingComponent
       this.isBlockRequired = false;
       this.isVillageRequired = false;
     }
-    if (this.isStopTBServiceline) {
-      this.loadNikshayStates();
-    } else {
-      this.resetNikshaySelection();
-    }
+    this.resetNikshaySelection();
   }
 
   showEditBlockDrop(serviceName: any) {

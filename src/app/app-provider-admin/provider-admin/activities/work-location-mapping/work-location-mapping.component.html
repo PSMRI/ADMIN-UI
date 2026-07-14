@@ -331,7 +331,8 @@
                     Serviceline.serviceID,
                     State.providerServiceMapID,
                     User.userID
-                  )
+                  );
+                  isStopTBServiceline && resolveNikshayStateAndLoadDistricts(State)
                 "
                 (openedChange)="$event ? null : stateSearch = ''"
                 required
@@ -355,11 +356,7 @@
                 [disabled]="isNational"
                 [style.width]="'100%'"
                 [(ngModel)]="District"
-                (selectionChange)="
-                  getAllWorkLocations(State, Serviceline, isNational);
-                  getBlockMaster(District);
-                  isStopTBServiceline && resolveNikshayDistrictAndLoadTUs(State, District)
-                "
+                (selectionChange)="onDistrictChange()"
                 name="district"
                 (openedChange)="$event ? null : districtSearch = ''"
                 required
@@ -369,7 +366,7 @@
                   <input matInput placeholder="Search..." [(ngModel)]="districtSearch"
                     (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
                 </div>
-                <mat-option *ngFor="let item of filteredDistrictsList" [value]="item">
+                <mat-option *ngFor="let item of (isStopTBServiceline ? nikshayDistrictList : filteredDistrictsList)" [value]="item">
                   {{ item.districtName }}
                 </mat-option>
               </mat-select>
