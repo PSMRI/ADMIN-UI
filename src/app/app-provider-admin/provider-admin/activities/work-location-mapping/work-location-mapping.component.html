@@ -326,7 +326,12 @@
                 name="state"
                 (selectionChange)="
                   getAllDistricts(Serviceline.serviceID, User, State);
-                  resetBlockVillageFields()
+                  resetBlockVillageFields();
+                  getAllRoles(
+                    Serviceline.serviceID,
+                    State.providerServiceMapID,
+                    User.userID
+                  )
                 "
                 (openedChange)="$event ? null : stateSearch = ''"
                 required
@@ -353,12 +358,7 @@
                 (selectionChange)="
                   getAllWorkLocations(State, Serviceline, isNational);
                   getBlockMaster(District);
-                  getAllRoles(
-                    Serviceline.serviceID,
-                    State.providerServiceMapID,
-                    User.userID
-                  );
-                  isStopTBServiceline && loadNikshayTUs(District.districtID)
+                  isStopTBServiceline && resolveNikshayDistrictAndLoadTUs(State, District)
                 "
                 name="district"
                 (openedChange)="$event ? null : districtSearch = ''"
@@ -403,7 +403,30 @@
           <div class="col-12 row" *ngIf="isStopTBServiceline">
             <div class="col-3">
               <mat-form-field [style.width]="'100%'">
-                <mat-label>Select TU (Block)</mat-label>
+                <mat-label>Select Block</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayBlock"
+                  name="nikshayBlock"
+                  (openedChange)="$event ? null : nikshayBlockSearch = ''"
+                  required
+                >
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayBlockSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayBlockList" [value]="item">
+                    {{ item.tUName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select TU</mat-label>
                 <mat-select
                   multiple
                   [style.width]="'100%'"
