@@ -1927,19 +1927,12 @@ export class WorkLocationMappingComponent
             stateName: objectToBeAdded.state?.stateName || 'All States',
             districtID: objectToBeAdded.district?.districtID || null,
             district: objectToBeAdded.district?.districtName || null,
-            blockID:
-              objectToBeAdded.Serviceblock !== undefined &&
-              objectToBeAdded.Serviceblock.blockID !== undefined &&
-              objectToBeAdded.Serviceblock.blockID !== null
-                ? objectToBeAdded.Serviceblock.blockID
-                : null,
-            blockName:
-              objectToBeAdded.Serviceblock !== undefined &&
-              objectToBeAdded.Serviceblock.blockName !== undefined &&
-              objectToBeAdded.Serviceblock.blockName !== '' &&
-              objectToBeAdded.Serviceblock.blockName !== null
-                ? objectToBeAdded.Serviceblock.blockName
-                : null,
+            // AMRIT's own Block master is sparser than Nikshay's TU list for
+            // Stop TB districts, so the selected Nikshay TU is saved as the
+            // Block value instead of a separate (and often unmatched) Block
+            // selection.
+            blockID: tu?.nikshayTUID || null,
+            blockName: tu?.tUName || null,
             nikshayTUID: tu?.nikshayTUID || null,
             nikshayTUName: tu?.tUName || null,
             nikshayFacilityID: facility?.nikshayFacilityID || null,
@@ -3216,6 +3209,10 @@ export class WorkLocationMappingComponent
               createdBy: this.createdBy,
               stateID: this.stateID_duringEdit,
               districtID: this.district_duringEdit,
+              // Selected Nikshay TU doubles as the Block value here too, same
+              // as the create flow in setWorkLocationObject().
+              blockID: tu?.nikshayTUID || null,
+              blockName: tu?.tUName || null,
               nikshayTUID: tu?.nikshayTUID || null,
               nikshayFacilityID: facility?.nikshayFacilityID || null,
               villageID: villageIDArr.length ? villageIDArr : null,

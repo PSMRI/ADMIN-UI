@@ -377,7 +377,7 @@
           </div>
         </div>
         <div class="col-12 row">
-          <div class="col-3">
+          <div class="col-3" *ngIf="!isStopTBServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Block</mat-label>
               <mat-select
@@ -920,7 +920,7 @@
           </div>
         </div>
         <div class="col-12 row">
-          <div class="col-3" *ngIf="enableEditBlockFlag">
+          <div class="col-3" *ngIf="enableEditBlockFlag && !isStopTBServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Block</mat-label>
               <mat-select
