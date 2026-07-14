@@ -365,7 +365,17 @@ export class WorkLocationMappingComponent
     this.selectedNikshayVillages = [];
     if (!state?.stateName) return;
 
-    const normalize = (v: string) => (v || '').trim().toLowerCase();
+    // AMRIT's m_state spells this "Chattisgarh" (one 'h'); Nikshay's own data
+    // spells it "Chhattisgarh" (correct spelling, two 'h's). Every other of
+    // the ~10 covered states matches exactly — this is the one known,
+    // verified exception, not a general fuzzy-match problem.
+    const STATE_NAME_ALIASES: Record<string, string> = {
+      chattisgarh: 'chhattisgarh',
+    };
+    const normalize = (v: string) => {
+      const n = (v || '').trim().toLowerCase();
+      return STATE_NAME_ALIASES[n] || n;
+    };
     const stateName = normalize(state.stateName);
 
     const resolveWithStates = (states: any[]) => {

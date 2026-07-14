@@ -325,14 +325,15 @@
                 [(ngModel)]="State"
                 name="state"
                 (selectionChange)="
-                  getAllDistricts(Serviceline.serviceID, User, State);
                   resetBlockVillageFields();
                   getAllRoles(
                     Serviceline.serviceID,
                     State.providerServiceMapID,
                     User.userID
                   );
-                  isStopTBServiceline && resolveNikshayStateAndLoadDistricts(State)
+                  isStopTBServiceline
+                    ? resolveNikshayStateAndLoadDistricts(State)
+                    : getAllDistricts(Serviceline.serviceID, User, State)
                 "
                 (openedChange)="$event ? null : stateSearch = ''"
                 required
