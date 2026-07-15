@@ -507,11 +507,9 @@ export class WorkLocationMappingComponent
   }
 
   /**
-   * Edit mode: Stop TB spreads one worker's mapping across multiple rows
-   * (one per TU x Facility combination, same pattern as ASHA Supervisor).
-   * Find all of this worker's rows, pull out the distinct TU/Facility/Village
-   * IDs they're currently mapped to, then load each dropdown's option list
-   * and pre-select the matching entries.
+   * Edit mode: find this worker's Stop TB row(s), pull out the TU/Facility
+   * IDs from their comma-joined lists plus the Village ID array, then load
+   * each dropdown's option list and pre-select the matching entries.
    */
   loadNikshayEditSelections() {
     this.resetNikshaySelection();
@@ -524,15 +522,20 @@ export class WorkLocationMappingComponent
         !row.userServciceRoleDeleted,
     );
 
+    // NikshayTUID/NikshayFacilityID are now comma-joined lists on a single
+    // row per user-role (see setWorkLocationObject/updateStopTBWorkLocation),
+    // not one ID per row — split and flatten before comparing to option IDs.
+    const splitIDs = (value: any): number[] =>
+      String(value || '')
+        .split(',')
+        .map((v: string) => Number(v.trim()))
+        .filter((n: number) => !isNaN(n));
+
     const existingTUIDs = [
-      ...new Set(
-        userRows.map((r: any) => r.nikshayTUID).filter((id: any) => !!id),
-      ),
+      ...new Set(userRows.flatMap((r: any) => splitIDs(r.nikshayTUID))),
     ];
     const existingFacilityIDs = [
-      ...new Set(
-        userRows.map((r: any) => r.nikshayFacilityID).filter((id: any) => !!id),
-      ),
+      ...new Set(userRows.flatMap((r: any) => splitIDs(r.nikshayFacilityID))),
     ];
     const existingVillageIDs: any[] = [];
     userRows.forEach((r: any) => {
@@ -543,12 +546,87 @@ export class WorkLocationMappingComponent
     // The dropdown OPTIONS always load (old-style users need to be able to pick
     // Nikshay values for the first time too) — only the pre-selected values
     // depend on whether this user already has any existing Nikshay mapping.
-    if (!this.district_duringEdit) {
+    // The saved row's district is AMRIT's own (old rows predate Nikshay, and
+    // even new ones save AMRIT's district for other purposes) — resolve the
+    // matching Nikshay state/district by name first, same as Create does,
+    // rather than passing an AMRIT ID straight into a Nikshay-ID lookup.
+    const rowStateName = userRows[0]?.stateName;
+    const rowDistrictName = userRows[0]?.district;
+    if (!rowStateName || !rowDistrictName) {
       return;
     }
+    this.loadNikshayTUsForEdit(
+      rowStateName,
+      rowDistrictName,
+      existingTUIDs,
+      existingFacilityIDs,
+      uniqueVillageIDs,
+    );
+  }
 
+  private loadNikshayTUsForEdit(
+    stateName: string,
+    districtName: string,
+    existingTUIDs: any[],
+    existingFacilityIDs: any[],
+    uniqueVillageIDs: any[],
+  ) {
+    const STATE_NAME_ALIASES: Record<string, string> = {
+      chattisgarh: 'chhattisgarh',
+    };
+    const normalize = (v: string) => {
+      const n = (v || '').trim().toLowerCase();
+      return STATE_NAME_ALIASES[n] || n;
+    };
+    const normStateName = normalize(stateName);
+    const normDistrictName = normalize(districtName);
+
+    const resolveDistrict = (states: any[]) => {
+      const nikshayState = (states || []).find(
+        (s: any) => normalize(s.stateName) === normStateName,
+      );
+      if (!nikshayState) return;
+      this.worklocationmapping
+        .getNikshayDistricts(nikshayState.nikshayStateID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((distResponse: any) => {
+          const districts = distResponse.data || [];
+          const nikshayDistrict = districts.find(
+            (d: any) => normalize(d.districtName) === normDistrictName,
+          );
+          if (!nikshayDistrict) return;
+          // Pre-select District itself, same object shape Create uses.
+          this.District = nikshayDistrict;
+          this.loadNikshayTUsForEditContinued(
+            nikshayDistrict.nikshayDistrictID,
+            existingTUIDs,
+            existingFacilityIDs,
+            uniqueVillageIDs,
+          );
+        });
+    };
+
+    if (this.nikshayStateList?.length) {
+      resolveDistrict(this.nikshayStateList);
+    } else {
+      this.worklocationmapping
+        .getNikshayStates()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((response: any) => {
+          this.nikshayStateList = response.data || [];
+          resolveDistrict(this.nikshayStateList);
+        });
+    }
+  }
+
+  private loadNikshayTUsForEditContinued(
+    nikshayDistrictID: any,
+    existingTUIDs: any[],
+    existingFacilityIDs: any[],
+    uniqueVillageIDs: any[],
+  ) {
     this.worklocationmapping
-      .getNikshayTUs(this.district_duringEdit)
+      .getNikshayTUs(nikshayDistrictID)
       .pipe(takeUntil(this.destroy$))
       .subscribe((tuResponse: any) => {
         this.nikshayTUList = tuResponse.data || [];
@@ -1994,10 +2072,12 @@ export class WorkLocationMappingComponent
     InboundValue: any,
     OnboundValue: any,
   ) {
-    // Stop TB — Nikshay TU/Facility/Village: one row per TU x Facility
-    // combination selected, each carrying that facility's selected villages.
-    // Handled separately from the generic flow below since it needs its own
-    // multi-level (TU + Facility), not just a single facility list.
+    // Stop TB — Nikshay TU/Facility/Village: a single row per user-role,
+    // carrying all selected TUs/Facilities/Villages as comma-joined lists
+    // (NikshayTUID/NikshayFacilityID are TEXT columns, same idea as
+    // Villageid already was). Previously this looped one row per TU x
+    // Facility combination, which multiplied rows for no reason (e.g. 10
+    // TUs x 100 facilities = 1,000 rows for one user/role).
     if (this.isStopTBServiceline) {
       const roleObjStopTB = [obj];
       const providerServiceMapID =
@@ -2005,57 +2085,61 @@ export class WorkLocationMappingComponent
           ? objectToBeAdded.state.providerServiceMapID
           : this.states_array[0].providerServiceMapID;
 
-      const tus = this.selectedNikshayTUs?.length
-        ? this.selectedNikshayTUs
-        : [null];
-      for (const tu of tus) {
-        const facilitiesUnderThisTU = (
-          this.selectedNikshayFacilities || []
-        ).filter((f: any) => !tu || f.nikshayTUID === tu.nikshayTUID);
-        const facilities = facilitiesUnderThisTU.length
-          ? facilitiesUnderThisTU
-          : [null];
+      const tuIDArrTB: any[] = [];
+      const tuNameArrTB: any[] = [];
+      (this.selectedNikshayTUs || []).forEach((tu: any) => {
+        tuIDArrTB.push(tu.nikshayTUID);
+        tuNameArrTB.push(tu.tUName);
+      });
 
-        for (const facility of facilities) {
-          const villageIDArrTB: any[] = [];
-          const villageNameArrTB: any[] = [];
-          (this.selectedNikshayVillages || []).forEach((v: any) => {
-            villageIDArrTB.push(v.nikshayVillageID);
-            villageNameArrTB.push(v.villageName);
-          });
+      const facilityIDArrTB: any[] = [];
+      const facilityNameArrTB: any[] = [];
+      (this.selectedNikshayFacilities || []).forEach((facility: any) => {
+        facilityIDArrTB.push(facility.nikshayFacilityID);
+        facilityNameArrTB.push(facility.facilityName);
+      });
 
-          const stopTBWorkLocationObj: any = {
-            previleges: [],
-            userID: objectToBeAdded.user.userID,
-            userName: objectToBeAdded.user.userName,
-            serviceID: objectToBeAdded.serviceline.serviceID,
-            serviceName: objectToBeAdded.serviceline.serviceName,
-            roleID1: roleObjStopTB,
-            providerServiceMapID: providerServiceMapID,
-            createdBy: this.createdBy,
-            stateID: objectToBeAdded.state?.stateID || null,
-            stateName: objectToBeAdded.state?.stateName || 'All States',
-            districtID: objectToBeAdded.district?.districtID || null,
-            district: objectToBeAdded.district?.districtName || null,
-            // AMRIT's own Block master is sparser than Nikshay's TU list for
-            // Stop TB districts, so the selected Nikshay TU is saved as the
-            // Block value instead of a separate (and often unmatched) Block
-            // selection.
-            blockID: tu?.nikshayTUID || null,
-            blockName: tu?.tUName || null,
-            nikshayTUID: tu?.nikshayTUID || null,
-            nikshayTUName: tu?.tUName || null,
-            nikshayFacilityID: facility?.nikshayFacilityID || null,
-            nikshayFacilityName: facility?.facilityName || null,
-            villageID: villageIDArrTB.length ? villageIDArrTB : null,
-            villageName: villageNameArrTB.length ? villageNameArrTB : null,
-            Inbound: 'N/A',
-            Outbound: 'N/A',
-            teleConsultation: [null],
-          };
-          this.bufferArray.data.push(stopTBWorkLocationObj);
-        }
-      }
+      const villageIDArrTB: any[] = [];
+      const villageNameArrTB: any[] = [];
+      (this.selectedNikshayVillages || []).forEach((v: any) => {
+        villageIDArrTB.push(v.nikshayVillageID);
+        villageNameArrTB.push(v.villageName);
+      });
+
+      const stopTBWorkLocationObj: any = {
+        previleges: [],
+        userID: objectToBeAdded.user.userID,
+        userName: objectToBeAdded.user.userName,
+        serviceID: objectToBeAdded.serviceline.serviceID,
+        serviceName: objectToBeAdded.serviceline.serviceName,
+        roleID1: roleObjStopTB,
+        providerServiceMapID: providerServiceMapID,
+        createdBy: this.createdBy,
+        stateID: objectToBeAdded.state?.stateID || null,
+        stateName: objectToBeAdded.state?.stateName || 'All States',
+        districtID: objectToBeAdded.district?.districtID || null,
+        district: objectToBeAdded.district?.districtName || null,
+        // AMRIT's own Blockid column is a single Integer, so it can't carry
+        // multiple TUs — kept as the first selected TU purely for backward
+        // compatibility with any generic block-comparison logic elsewhere.
+        // BlockName is a String column so it can show the full list.
+        blockID: tuIDArrTB.length ? tuIDArrTB[0] : null,
+        blockName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
+        nikshayTUID: tuIDArrTB.length ? tuIDArrTB.join(',') : null,
+        nikshayTUName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
+        nikshayFacilityID: facilityIDArrTB.length
+          ? facilityIDArrTB.join(',')
+          : null,
+        nikshayFacilityName: facilityNameArrTB.length
+          ? facilityNameArrTB.join(', ')
+          : null,
+        villageID: villageIDArrTB.length ? villageIDArrTB : null,
+        villageName: villageNameArrTB.length ? villageNameArrTB : null,
+        Inbound: 'N/A',
+        Outbound: 'N/A',
+        teleConsultation: [null],
+      };
+      this.bufferArray.data.push(stopTBWorkLocationObj);
       if (this.paginatorSecond) {
         this.bufferArray.paginator = this.paginatorSecond;
       }
@@ -3294,45 +3378,56 @@ export class WorkLocationMappingComponent
 
     const buildNewRows = () => {
       const newRows: any[] = [];
-      const tus = this.selectedNikshayTUs?.length
-        ? this.selectedNikshayTUs
-        : [null];
+
+      const tuIDArr = (this.selectedNikshayTUs || []).map(
+        (tu: any) => tu.nikshayTUID,
+      );
+      const tuNameArr = (this.selectedNikshayTUs || []).map(
+        (tu: any) => tu.tUName,
+      );
+      const facilityIDArr = (this.selectedNikshayFacilities || []).map(
+        (facility: any) => facility.nikshayFacilityID,
+      );
+      const facilityNameArr = (this.selectedNikshayFacilities || []).map(
+        (facility: any) => facility.facilityName,
+      );
+      const villageIDArr = (this.selectedNikshayVillages || []).map(
+        (v: any) => v.nikshayVillageID,
+      );
+      const villageNameArr = (this.selectedNikshayVillages || []).map(
+        (v: any) => v.villageName,
+      );
+
+      // One row per user-role, carrying all selected TUs/Facilities as
+      // comma-joined lists — same fix as the create flow above, avoiding a
+      // row per TU x Facility combination.
       for (const roleID of roleIDsToUse) {
-        for (const tu of tus) {
-          const facilitiesUnderThisTU = (
-            this.selectedNikshayFacilities || []
-          ).filter((f: any) => !tu || f.nikshayTUID === tu.nikshayTUID);
-          const facilities = facilitiesUnderThisTU.length
-            ? facilitiesUnderThisTU
-            : [null];
-          for (const facility of facilities) {
-            const villageIDArr = (this.selectedNikshayVillages || []).map(
-              (v: any) => v.nikshayVillageID,
-            );
-            const villageNameArr = (this.selectedNikshayVillages || []).map(
-              (v: any) => v.villageName,
-            );
-            newRows.push({
-              userID: this.userID_duringEdit,
-              roleID1: [{ roleID1: roleID }],
-              providerServiceMapID: this.providerServiceMapID_duringEdit,
-              createdBy: this.createdBy,
-              stateID: this.stateID_duringEdit,
-              districtID: this.district_duringEdit,
-              // Selected Nikshay TU doubles as the Block value here too, same
-              // as the create flow in setWorkLocationObject().
-              blockID: tu?.nikshayTUID || null,
-              blockName: tu?.tUName || null,
-              nikshayTUID: tu?.nikshayTUID || null,
-              nikshayFacilityID: facility?.nikshayFacilityID || null,
-              villageID: villageIDArr.length ? villageIDArr : null,
-              villageName: villageNameArr.length ? villageNameArr : null,
-              Inbound: 'N/A',
-              Outbound: 'N/A',
-              teleConsultation: [null],
-            });
-          }
-        }
+        newRows.push({
+          userID: this.userID_duringEdit,
+          roleID1: [{ roleID1: roleID }],
+          providerServiceMapID: this.providerServiceMapID_duringEdit,
+          createdBy: this.createdBy,
+          stateID: this.stateID_duringEdit,
+          districtID: this.district_duringEdit,
+          // Blockid is a single Integer column, so it can't carry multiple
+          // TUs — kept as the first selected TU purely for backward
+          // compatibility with any generic block-comparison logic elsewhere.
+          blockID: tuIDArr.length ? tuIDArr[0] : null,
+          blockName: tuNameArr.length ? tuNameArr.join(', ') : null,
+          nikshayTUID: tuIDArr.length ? tuIDArr.join(',') : null,
+          nikshayTUName: tuNameArr.length ? tuNameArr.join(', ') : null,
+          nikshayFacilityID: facilityIDArr.length
+            ? facilityIDArr.join(',')
+            : null,
+          nikshayFacilityName: facilityNameArr.length
+            ? facilityNameArr.join(', ')
+            : null,
+          villageID: villageIDArr.length ? villageIDArr : null,
+          villageName: villageNameArr.length ? villageNameArr : null,
+          Inbound: 'N/A',
+          Outbound: 'N/A',
+          teleConsultation: [null],
+        });
       }
       return newRows;
     };
