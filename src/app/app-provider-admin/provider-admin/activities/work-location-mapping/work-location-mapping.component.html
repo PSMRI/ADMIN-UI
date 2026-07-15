@@ -928,7 +928,7 @@
                 [style.width]="'100%'"
                 [(ngModel)]="district_duringEdit"
                 name="district"
-                required
+                [required]="!isStopTBServicelineEdit"
               >
                 <mat-option
                   *ngFor="let item of districts_array"

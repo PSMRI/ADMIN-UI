@@ -543,13 +543,27 @@ export class WorkLocationMappingComponent
     });
     const uniqueVillageIDs = [...new Set(existingVillageIDs)];
 
-    // The dropdown OPTIONS always load (old-style users need to be able to pick
-    // Nikshay values for the first time too) — only the pre-selected values
-    // depend on whether this user already has any existing Nikshay mapping.
-    // The saved row's district is AMRIT's own (old rows predate Nikshay, and
-    // even new ones save AMRIT's district for other purposes) — resolve the
-    // matching Nikshay state/district by name first, same as Create does,
-    // rather than passing an AMRIT ID straight into a Nikshay-ID lookup.
+    // DistrictID is repurposed to hold the Nikshay district ID directly for
+    // Stop TB rows (AMRIT's own DistrictID is never used for Stop TB — see
+    // setWorkLocationObject). Rows saved after that fix can use it straight
+    // away, no name matching needed.
+    const savedNikshayDistrictID = parseInt(userRows[0]?.districtID, 10);
+    if (!isNaN(savedNikshayDistrictID) && savedNikshayDistrictID) {
+      this.district_duringEdit = savedNikshayDistrictID;
+      this.loadNikshayTUsForEditContinued(
+        savedNikshayDistrictID,
+        existingTUIDs,
+        existingFacilityIDs,
+        uniqueVillageIDs,
+      );
+      return;
+    }
+
+    // Fallback for rows saved before the DistrictID fix (DistrictID null) —
+    // best-effort name match against AMRIT's stored district name. Usually
+    // also empty for Stop TB, since WorkingDistrictName is never populated
+    // either (it's derived from WorkingLocationID, which Stop TB doesn't
+    // use), but kept in case a row has it from some other path.
     const rowStateName = userRows[0]?.stateName;
     const rowDistrictName = userRows[0]?.district;
     if (!rowStateName || !rowDistrictName) {
@@ -597,6 +611,7 @@ export class WorkLocationMappingComponent
           if (!nikshayDistrict) return;
           // Pre-select District itself, same object shape Create uses.
           this.District = nikshayDistrict;
+          this.district_duringEdit = nikshayDistrict.nikshayDistrictID;
           this.loadNikshayTUsForEditContinued(
             nikshayDistrict.nikshayDistrictID,
             existingTUIDs,
@@ -2117,14 +2132,19 @@ export class WorkLocationMappingComponent
         createdBy: this.createdBy,
         stateID: objectToBeAdded.state?.stateID || null,
         stateName: objectToBeAdded.state?.stateName || 'All States',
-        districtID: objectToBeAdded.district?.districtID || null,
+        // DistrictID is repurposed to hold the Nikshay district ID for Stop
+        // TB (AMRIT's own DistrictID is never used here — District is 100%
+        // Nikshay-sourced). The Create form's District control binds the
+        // NikshayDistrict object, whose ID field is nikshayDistrictID, not
+        // districtID — reading .districtID here always came back null.
+        districtID: objectToBeAdded.district?.nikshayDistrictID || null,
         district: objectToBeAdded.district?.districtName || null,
-        // AMRIT's own Blockid column is a single Integer, so it can't carry
-        // multiple TUs — kept as the first selected TU purely for backward
-        // compatibility with any generic block-comparison logic elsewhere.
-        // BlockName is a String column so it can show the full list.
+        // Block is a single-value legacy field (both ID and Name) — kept as
+        // just the first selected TU for backward compatibility with any
+        // generic block-comparison logic elsewhere. The full multi-TU list
+        // lives in NikshayTUID/NikshayTUName, not here.
         blockID: tuIDArrTB.length ? tuIDArrTB[0] : null,
-        blockName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
+        blockName: tuNameArrTB.length ? tuNameArrTB[0] : null,
         nikshayTUID: tuIDArrTB.length ? tuIDArrTB.join(',') : null,
         nikshayTUName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
         nikshayFacilityID: facilityIDArrTB.length
@@ -3409,11 +3429,12 @@ export class WorkLocationMappingComponent
           createdBy: this.createdBy,
           stateID: this.stateID_duringEdit,
           districtID: this.district_duringEdit,
-          // Blockid is a single Integer column, so it can't carry multiple
-          // TUs — kept as the first selected TU purely for backward
-          // compatibility with any generic block-comparison logic elsewhere.
+          // Block is a single-value legacy field (both ID and Name) — kept as
+          // just the first selected TU for backward compatibility with any
+          // generic block-comparison logic elsewhere. The full multi-TU list
+          // lives in NikshayTUID/NikshayTUName, not here.
           blockID: tuIDArr.length ? tuIDArr[0] : null,
-          blockName: tuNameArr.length ? tuNameArr.join(', ') : null,
+          blockName: tuNameArr.length ? tuNameArr[0] : null,
           nikshayTUID: tuIDArr.length ? tuIDArr.join(',') : null,
           nikshayTUName: tuNameArr.length ? tuNameArr.join(', ') : null,
           nikshayFacilityID: facilityIDArr.length
@@ -4954,6 +4975,19 @@ export class WorkLocationMappingComponent
     // Facility serviceline detection
     this.isFacilityServicelineEdit =
       firstRow.serviceName === 'FLW' || firstRow.serviceName === 'HWC';
+
+    // Stop TB / Nikshay detection — this was previously only set in the
+    // unused editRow() function, never here (the actual grouped-row edit
+    // entry point), so the TU/Facility/Village fields never rendered on
+    // Edit and it silently fell through to the generic Work Location field.
+    this.isBlockRequiredEdit = firstRow.serviceName === 'Stop TB';
+    this.isStopTBServicelineEdit = firstRow.serviceName === 'Stop TB';
+    if (this.isStopTBServicelineEdit) {
+      this.loadNikshayEditSelections();
+    } else {
+      this.resetNikshaySelection();
+    }
+
     if (this.isFacilityServicelineEdit) {
       // Use merged group villages (union of all roles) instead of firstRow only
       this.editExistingVillageIDs = Array.isArray(group.villageID)
@@ -5074,7 +5108,7 @@ export class WorkLocationMappingComponent
       this.stateID_duringEdit = '';
       this.district_duringEdit = null;
 
-      if (this.isFacilityServicelineEdit) {
+      if (this.isFacilityServicelineEdit || this.isStopTBServicelineEdit) {
         // HWC/FLW with null workLocationID: derive state from providerServiceMapID,
         // then load districts + blocks so dropdowns are pre-populated
         this.worklocationmapping
@@ -5144,11 +5178,17 @@ export class WorkLocationMappingComponent
           (response: any) => {
             if (response) {
               this.districts_array = response.data;
-              // Set district value AFTER options are loaded
-              this.district_duringEdit = parseInt(
-                this.edit_Details.workingDistrictID,
-                10,
-              );
+              // Set district value AFTER options are loaded. Skipped for Stop
+              // TB — district_duringEdit already holds the Nikshay district
+              // ID resolved by loadNikshayEditSelections() above, and
+              // workingDistrictID (AMRIT) is always null for Stop TB rows,
+              // which would otherwise overwrite it with NaN.
+              if (!this.isStopTBServicelineEdit) {
+                this.district_duringEdit = parseInt(
+                  this.edit_Details.workingDistrictID,
+                  10,
+                );
+              }
               // Load blocks → set ServiceEditblock → load villages
               if (
                 !isNaN(this.district_duringEdit) &&
@@ -5159,9 +5199,12 @@ export class WorkLocationMappingComponent
               ) {
                 this.getEditBlockPatchMaster(this.district_duringEdit);
               }
-              // HWC/FLW: no workingLocationID — load roles directly
+              // HWC/FLW/Stop TB: no workingLocationID — load roles directly
               // Other services: chain via work locations
-              if (this.isFacilityServicelineEdit) {
+              if (
+                this.isFacilityServicelineEdit ||
+                this.isStopTBServicelineEdit
+              ) {
                 this.getAllRoles_duringEdit2(
                   this.serviceID_duringEdit,
                   this.providerServiceMapID_duringEdit,
