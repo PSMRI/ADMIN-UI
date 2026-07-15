@@ -3462,9 +3462,6 @@ export class WorkLocationMappingComponent
       const facilityIDArr = (this.selectedNikshayFacilities || []).map(
         (facility: any) => facility.nikshayFacilityID,
       );
-      const facilityNameArr = (this.selectedNikshayFacilities || []).map(
-        (facility: any) => facility.facilityName,
-      );
       const villageIDArr = (this.selectedNikshayVillages || []).map(
         (v: any) => v.nikshayVillageID,
       );
@@ -3475,33 +3472,49 @@ export class WorkLocationMappingComponent
       // One row per user-role, carrying all selected TUs/Facilities as
       // comma-joined lists — same fix as the create flow above, avoiding a
       // row per TU x Facility combination.
+      //
+      // Payload shape must match saveWorkLocations()'s requestArray exactly
+      // ({previleges: [{ID: [...], ...}], userID, createdBy,
+      // serviceProviderID}) — that's what /userRoleMappings actually parses
+      // (Priveleges1097_1[] -> .getPrevileges() -> Previleges1097_3[] ->
+      // .getID() -> Priveleges1097_2[]). A flatter shape here previously
+      // silently created zero rows: the nested-array parsing found nothing
+      // to iterate over, so no error surfaced, and the old row (already
+      // deactivated by the delete calls above) never got replaced.
       for (const roleID of roleIDsToUse) {
         newRows.push({
+          previleges: [
+            {
+              ID: [
+                {
+                  roleID: roleID,
+                  teleConsultation: null,
+                  inbound: null,
+                  outbound: null,
+                },
+              ],
+              providerServiceMapID: this.providerServiceMapID_duringEdit,
+              workingLocationID: null,
+              stateID: this.stateID_duringEdit,
+              districtID: this.district_duringEdit,
+              // Block is a single-value legacy field (both ID and Name) —
+              // kept as just the first selected TU for backward
+              // compatibility with any generic block-comparison logic
+              // elsewhere. The full multi-TU list lives in NikshayTUID.
+              blockID: tuIDArr.length ? tuIDArr[0] : null,
+              blockName: tuNameArr.length ? tuNameArr[0] : null,
+              villageID: villageIDArr.length ? villageIDArr : null,
+              villageName: villageNameArr.length ? villageNameArr : null,
+              facilityID: null,
+              nikshayTUID: tuIDArr.length ? tuIDArr.join(',') : null,
+              nikshayFacilityID: facilityIDArr.length
+                ? facilityIDArr.join(',')
+                : null,
+            },
+          ],
           userID: this.userID_duringEdit,
-          roleID1: [{ roleID1: roleID }],
-          providerServiceMapID: this.providerServiceMapID_duringEdit,
           createdBy: this.createdBy,
-          stateID: this.stateID_duringEdit,
-          districtID: this.district_duringEdit,
-          // Block is a single-value legacy field (both ID and Name) — kept as
-          // just the first selected TU for backward compatibility with any
-          // generic block-comparison logic elsewhere. The full multi-TU list
-          // lives in NikshayTUID/NikshayTUName, not here.
-          blockID: tuIDArr.length ? tuIDArr[0] : null,
-          blockName: tuNameArr.length ? tuNameArr[0] : null,
-          nikshayTUID: tuIDArr.length ? tuIDArr.join(',') : null,
-          nikshayTUName: tuNameArr.length ? tuNameArr.join(', ') : null,
-          nikshayFacilityID: facilityIDArr.length
-            ? facilityIDArr.join(',')
-            : null,
-          nikshayFacilityName: facilityNameArr.length
-            ? facilityNameArr.join(', ')
-            : null,
-          villageID: villageIDArr.length ? villageIDArr : null,
-          villageName: villageNameArr.length ? villageNameArr : null,
-          Inbound: 'N/A',
-          Outbound: 'N/A',
-          teleConsultation: [null],
+          serviceProviderID: this.serviceProviderID,
         });
       }
       return newRows;
