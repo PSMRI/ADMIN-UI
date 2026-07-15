@@ -522,60 +522,70 @@ export class WorkLocationMappingComponent
         !row.userServciceRoleDeleted,
     );
 
-    // NikshayTUID/NikshayFacilityID are now comma-joined lists on a single
-    // row per user-role (see setWorkLocationObject/updateStopTBWorkLocation),
-    // not one ID per row — split and flatten before comparing to option IDs.
-    const splitIDs = (value: any): number[] =>
-      String(value || '')
-        .split(',')
-        .map((v: string) => Number(v.trim()))
-        .filter((n: number) => !isNaN(n));
-
-    const existingTUIDs = [
-      ...new Set(userRows.flatMap((r: any) => splitIDs(r.nikshayTUID))),
-    ];
-    const existingFacilityIDs = [
-      ...new Set(userRows.flatMap((r: any) => splitIDs(r.nikshayFacilityID))),
-    ];
     const existingVillageIDs: any[] = [];
     userRows.forEach((r: any) => {
       if (Array.isArray(r.villageID)) existingVillageIDs.push(...r.villageID);
     });
     const uniqueVillageIDs = [...new Set(existingVillageIDs)];
 
-    // DistrictID is repurposed to hold the Nikshay district ID directly for
-    // Stop TB rows (AMRIT's own DistrictID is never used for Stop TB — see
-    // setWorkLocationObject). Rows saved after that fix can use it straight
-    // away, no name matching needed.
-    const savedNikshayDistrictID = parseInt(userRows[0]?.districtID, 10);
-    if (!isNaN(savedNikshayDistrictID) && savedNikshayDistrictID) {
-      this.district_duringEdit = savedNikshayDistrictID;
-      this.loadNikshayTUsForEditContinued(
-        savedNikshayDistrictID,
-        existingTUIDs,
-        existingFacilityIDs,
-        uniqueVillageIDs,
-      );
+    // NikshayTUID/NikshayFacilityID/DistrictID are comma-joined/direct
+    // values on m_userservicerolemapping (see setWorkLocationObject), but
+    // v_userservicerolemapping — what mappedWorkLocationsList is built from
+    // — never exposes those columns. Fetch them straight from the raw table
+    // by USRMappingID instead.
+    const usrMappingID = this.uSRMappingID || this.edit_Details.uSRMappingID;
+    if (!usrMappingID) {
       return;
     }
+    const splitIDs = (value: any): number[] =>
+      String(value || '')
+        .split(',')
+        .map((v: string) => Number(v.trim()))
+        .filter((n: number) => !isNaN(n));
 
-    // Fallback for rows saved before the DistrictID fix (DistrictID null) —
-    // best-effort name match against AMRIT's stored district name. Usually
-    // also empty for Stop TB, since WorkingDistrictName is never populated
-    // either (it's derived from WorkingLocationID, which Stop TB doesn't
-    // use), but kept in case a row has it from some other path.
-    const rowStateName = userRows[0]?.stateName;
-    const rowDistrictName = userRows[0]?.district;
-    if (!rowStateName || !rowDistrictName) {
-      return;
-    }
-    this.loadNikshayTUsForEdit(
-      rowStateName,
-      rowDistrictName,
-      existingTUIDs,
-      existingFacilityIDs,
-      uniqueVillageIDs,
-    );
+    this.worklocationmapping
+      .getNikshayUserMappingData(usrMappingID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        const data = response?.data || {};
+        const existingTUIDs = splitIDs(data.nikshayTUID);
+        const existingFacilityIDs = splitIDs(data.nikshayFacilityID);
+
+        // DistrictID is repurposed to hold the Nikshay district ID directly
+        // for Stop TB rows (AMRIT's own DistrictID is never used for Stop
+        // TB — see setWorkLocationObject). Rows saved after that fix can
+        // use it straight away, no name matching needed.
+        const savedNikshayDistrictID = parseInt(data.districtID, 10);
+        if (!isNaN(savedNikshayDistrictID) && savedNikshayDistrictID) {
+          this.district_duringEdit = savedNikshayDistrictID;
+          this.loadNikshayTUsForEditContinued(
+            savedNikshayDistrictID,
+            existingTUIDs,
+            existingFacilityIDs,
+            uniqueVillageIDs,
+          );
+          return;
+        }
+
+        // Fallback for rows saved before the DistrictID fix (DistrictID
+        // null) — best-effort name match against AMRIT's stored district
+        // name. Usually also empty for Stop TB, since WorkingDistrictName
+        // is never populated either (it's derived from WorkingLocationID,
+        // which Stop TB doesn't use), but kept in case a row has it from
+        // some other path.
+        const rowStateName = userRows[0]?.stateName;
+        const rowDistrictName = userRows[0]?.district;
+        if (!rowStateName || !rowDistrictName) {
+          return;
+        }
+        this.loadNikshayTUsForEdit(
+          rowStateName,
+          rowDistrictName,
+          existingTUIDs,
+          existingFacilityIDs,
+          uniqueVillageIDs,
+        );
+      });
   }
 
   private loadNikshayTUsForEdit(

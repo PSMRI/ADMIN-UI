@@ -168,6 +168,7 @@ export const environment = {
   nikshayTUs_url: `${adminBaseUrl}nikshay/location/tus`,
   nikshayFacilities_url: `${adminBaseUrl}nikshay/location/facilities`,
   nikshayVillages_url: `${adminBaseUrl}nikshay/location/villages`,
+  nikshayUserMapping_url: `${adminBaseUrl}nikshay/location/userMapping`,
   update_facilities_Url: `${adminBaseUrl}editFacility`,
   delete_facilities_Url: `${adminBaseUrl}deleteFacility`,
   get_FacilityLevels_Url: `${adminBaseUrl}getFacilityLevels`,
