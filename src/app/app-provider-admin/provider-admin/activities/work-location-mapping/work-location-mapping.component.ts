@@ -5324,6 +5324,15 @@ export class WorkLocationMappingComponent
       return;
     }
 
+    // Stop TB: has its own TU x Facility x Village reconciliation logic in
+    // updateStopTBWorkLocation(), same reason as ASHA Supervisor above — the
+    // generic rolesToKeep loop below has no idea about NikshayTUID/
+    // NikshayFacilityID and would silently drop them from the save.
+    if (this.isStopTBServicelineEdit) {
+      this.updateStopTBWorkLocation(workLocations);
+      return;
+    }
+
     const group = this.editGroupedElement;
     const existingRoleIDs = [
       ...new Set(
