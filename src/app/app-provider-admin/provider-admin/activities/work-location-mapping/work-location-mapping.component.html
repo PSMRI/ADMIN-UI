@@ -406,8 +406,8 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayBlock"
                   name="nikshayBlock"
+                  (selectionChange)="onNikshayBlockChange()"
                   (openedChange)="$event ? null : nikshayBlockSearch = ''"
-                  required
                 >
                   <div class="select-search-box">
                     <mat-icon>search</mat-icon>
@@ -986,7 +986,22 @@
           <ng-container *ngIf="isStopTBServicelineEdit">
             <div class="col-3">
               <mat-form-field [style.width]="'100%'">
-                <mat-label>Select TU (Block)</mat-label>
+                <mat-label>Select Block</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayBlock"
+                  name="nikshayBlockEdit"
+                  (selectionChange)="onNikshayBlockChange()"
+                >
+                  <mat-option *ngFor="let item of nikshayTUList" [value]="item">
+                    {{ item.tUName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select TU</mat-label>
                 <mat-select
                   multiple
                   [style.width]="'100%'"

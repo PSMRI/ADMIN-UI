@@ -446,6 +446,27 @@ export class WorkLocationMappingComponent
       );
   }
 
+  // Select Block is a single-select quick-add: picking one TU there adds it
+  // into the same selectedNikshayTUs multi-select Select TU manages,
+  // instead of being a separate, disconnected filter. Covers the common
+  // case (one TU) fast, while Select TU still handles picking more. Shared
+  // by both Create and Edit — operates purely on component state, not
+  // tied to either form.
+  onNikshayBlockChange() {
+    if (this.selectedNikshayBlock) {
+      const alreadySelected = (this.selectedNikshayTUs || []).some(
+        (t: any) => t.nikshayTUID === this.selectedNikshayBlock.nikshayTUID,
+      );
+      if (!alreadySelected) {
+        this.selectedNikshayTUs = [
+          ...(this.selectedNikshayTUs || []),
+          this.selectedNikshayBlock,
+        ];
+      }
+    }
+    this.onNikshayTUChange();
+  }
+
   // Called whenever the TU multi-select changes
   onNikshayTUChange() {
     this.nikshayFacilityList = [];
@@ -591,6 +612,7 @@ export class WorkLocationMappingComponent
   }
 
   onNikshayDistrictChangeEdit() {
+    this.selectedNikshayBlock = null;
     this.selectedNikshayTUs = [];
     this.selectedNikshayFacilities = [];
     this.selectedNikshayVillages = [];
@@ -5277,28 +5299,20 @@ export class WorkLocationMappingComponent
           (f: any) => f.nikshayFacilityID,
         )
       : [];
-    // Villageid intentionally does NOT take the Nikshay Village picker's
-    // selection. Villageid holds AMRIT village IDs everywhere else in the
-    // system, including the mobile app's own beneficiary worklist match —
-    // writing Nikshay village IDs into it breaks that match (two different
-    // numbering systems for the same real place), silently cutting a
-    // worker off from beneficiaries they can already see today. Until a
-    // Nikshay-village-to-AMRIT-village bridge table exists to translate
-    // safely, round-trip the row's EXISTING villageidDb/villageNameDb
-    // unchanged instead. setVillageID/setVillageName on the backend are
-    // unconditional overwrites (no null-check), so sending null here would
-    // erase existing correct data rather than just leave it alone.
-    const existingVillageIDArr = this.isStopTBServicelineEdit
-      ? String(this.edit_Details?.villageidDb || '')
-          .split(',')
-          .map((v: string) => v.trim())
-          .filter((v: string) => v.length > 0)
+    // Villageid takes the Nikshay Village picker's selection directly on
+    // Edit (explicit instruction — Edit overwrites, Create does not).
+    // NOTE: Villageid holds AMRIT village IDs everywhere else in the
+    // system, including the mobile app's own beneficiary worklist match
+    // (BenFlowStatus.villageID) — writing Nikshay village IDs here means
+    // that match breaks until a Nikshay-village-to-AMRIT-village bridge
+    // table exists to translate between the two numbering systems. A
+    // worker saved through this path will not see beneficiaries in the
+    // mobile worklist for these villages until that bridge is built.
+    const nikshayVillageIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID)
       : [];
-    const existingVillageNameArr = this.isStopTBServicelineEdit
-      ? String(this.edit_Details?.villageNameDb || '')
-          .split(',')
-          .map((v: string) => v.trim())
-          .filter((v: string) => v.length > 0)
+    const nikshayVillageNameArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayVillages || []).map((v: any) => v.villageName)
       : [];
 
     const blockIDToUse = this.isStopTBServicelineEdit
@@ -5312,13 +5326,13 @@ export class WorkLocationMappingComponent
         : null
       : this.blockname;
     const villageIDToUse = this.isStopTBServicelineEdit
-      ? existingVillageIDArr.length
-        ? existingVillageIDArr
+      ? nikshayVillageIDArr.length
+        ? nikshayVillageIDArr
         : null
       : editVillageIdArray;
     const villageNameToUse = this.isStopTBServicelineEdit
-      ? existingVillageNameArr.length
-        ? existingVillageNameArr
+      ? nikshayVillageNameArr.length
+        ? nikshayVillageNameArr
         : null
       : editVillageNameArray.length > 0
         ? editVillageNameArray
