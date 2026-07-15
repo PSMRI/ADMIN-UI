@@ -924,11 +924,14 @@
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select District</mat-label>
               <mat-select
-                [disabled]="true"
+                [disabled]="!isStopTBServicelineEdit"
                 [style.width]="'100%'"
                 [(ngModel)]="district_duringEdit"
                 name="district"
                 [required]="!isStopTBServicelineEdit"
+                (selectionChange)="
+                  isStopTBServicelineEdit && onNikshayDistrictChangeEdit()
+                "
               >
                 <mat-option
                   *ngFor="let item of (isStopTBServicelineEdit ? nikshayDistrictList : districts_array)"

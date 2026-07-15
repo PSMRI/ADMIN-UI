@@ -571,32 +571,55 @@ export class WorkLocationMappingComponent
           return;
         }
 
-        // Fallback for rows saved before the DistrictID fix (DistrictID
-        // null) — best-effort name match against AMRIT's stored district
-        // name. Usually also empty for Stop TB, since WorkingDistrictName
-        // is never populated either (it's derived from WorkingLocationID,
-        // which Stop TB doesn't use), but kept in case a row has it from
-        // some other path.
+        // Old-style user, or a fresh row with nothing selected yet: no
+        // saved DistrictID to resolve from. Try a best-effort name match
+        // against the row's AMRIT WorkingDistrictName first (only ever
+        // populated for genuinely old, pre-Nikshay rows — see
+        // loadNikshayDistrictListForEdit) — if that doesn't resolve, the
+        // District dropdown's OPTIONS still populate from the one thing
+        // reliably known (State), and the actual pick is left to the
+        // admin. The dropdown is editable for Stop TB (see template);
+        // picking a district calls onNikshayDistrictChangeEdit().
         const rowStateName = this.edit_Details?.stateName;
-        const rowDistrictName = this.edit_Details?.district;
-        if (!rowStateName || !rowDistrictName) {
-          return;
+        if (rowStateName) {
+          this.loadNikshayDistrictListForEdit(
+            rowStateName,
+            this.edit_Details?.workingDistrictName,
+          );
         }
-        this.loadNikshayTUsForEdit(
-          rowStateName,
-          rowDistrictName,
-          existingTUIDs,
-          existingFacilityIDs,
-          uniqueVillageIDs,
-        );
+      });
+  }
+
+  onNikshayDistrictChangeEdit() {
+    this.selectedNikshayTUs = [];
+    this.selectedNikshayFacilities = [];
+    this.selectedNikshayVillages = [];
+    this.nikshayTUList = [];
+    this.nikshayFacilityList = [];
+    this.nikshayVillageList = [];
+    if (!this.district_duringEdit) {
+      return;
+    }
+    this.worklocationmapping
+      .getNikshayTUs(this.district_duringEdit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        this.nikshayTUList = response.data || [];
       });
   }
 
   // Populates nikshayDistrictList (the "Select District" dropdown's option
-  // source in edit mode) for a known state name, without needing to match a
-  // specific district by name — used when the district ID is already known
-  // directly from the saved row.
-  private loadNikshayDistrictListForEdit(stateName: string) {
+  // source in edit mode) for a known state name. If amritDistrictName is
+  // given, also tries a best-effort name match against it and auto-selects
+  // on a hit — meaningful only for genuinely old, pre-Nikshay rows that
+  // went through the old AMRIT work-location flow and therefore have a
+  // real WorkingDistrictName (rows saved through the newer Nikshay flow
+  // never set WorkingLocationID at all, so this never fires for them —
+  // they fall through to the plain empty-options case, same as before).
+  private loadNikshayDistrictListForEdit(
+    stateName: string,
+    amritDistrictName?: string,
+  ) {
     const STATE_NAME_ALIASES: Record<string, string> = {
       chattisgarh: 'chhattisgarh',
     };
@@ -605,6 +628,9 @@ export class WorkLocationMappingComponent
       return STATE_NAME_ALIASES[n] || n;
     };
     const normStateName = normalize(stateName);
+    const normAmritDistrictName = amritDistrictName
+      ? normalize(amritDistrictName)
+      : null;
 
     const resolveAndLoad = (states: any[]) => {
       const nikshayState = (states || []).find(
@@ -616,6 +642,15 @@ export class WorkLocationMappingComponent
         .pipe(takeUntil(this.destroy$))
         .subscribe((distResponse: any) => {
           this.nikshayDistrictList = distResponse.data || [];
+          if (normAmritDistrictName) {
+            const matched = this.nikshayDistrictList.find(
+              (d: any) => normalize(d.districtName) === normAmritDistrictName,
+            );
+            if (matched) {
+              this.district_duringEdit = matched.nikshayDistrictID;
+              this.onNikshayDistrictChangeEdit();
+            }
+          }
         });
     };
 
@@ -2168,13 +2203,6 @@ export class WorkLocationMappingComponent
         facilityNameArrTB.push(facility.facilityName);
       });
 
-      const villageIDArrTB: any[] = [];
-      const villageNameArrTB: any[] = [];
-      (this.selectedNikshayVillages || []).forEach((v: any) => {
-        villageIDArrTB.push(v.nikshayVillageID);
-        villageNameArrTB.push(v.villageName);
-      });
-
       const stopTBWorkLocationObj: any = {
         previleges: [],
         userID: objectToBeAdded.user.userID,
@@ -2207,8 +2235,17 @@ export class WorkLocationMappingComponent
         nikshayFacilityName: facilityNameArrTB.length
           ? facilityNameArrTB.join(', ')
           : null,
-        villageID: villageIDArrTB.length ? villageIDArrTB : null,
-        villageName: villageNameArrTB.length ? villageNameArrTB : null,
+        // Villageid intentionally does NOT take the Nikshay Village
+        // picker's selection — it holds AMRIT village IDs everywhere else
+        // in the system, including the mobile app's own beneficiary
+        // worklist match. Writing Nikshay village IDs here breaks that
+        // match (two different numbering systems for the same real
+        // place). A brand-new row has no existing value to preserve, so
+        // null is safe here (unlike the edit path, which must round-trip
+        // the existing value instead). Revisit once a Nikshay-village-to-
+        // AMRIT-village bridge table exists to translate safely.
+        villageID: null,
+        villageName: null,
         Inbound: 'N/A',
         Outbound: 'N/A',
         teleConsultation: [null],
@@ -5240,11 +5277,28 @@ export class WorkLocationMappingComponent
           (f: any) => f.nikshayFacilityID,
         )
       : [];
-    const nikshayVillageIDArr = this.isStopTBServicelineEdit
-      ? (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID)
+    // Villageid intentionally does NOT take the Nikshay Village picker's
+    // selection. Villageid holds AMRIT village IDs everywhere else in the
+    // system, including the mobile app's own beneficiary worklist match —
+    // writing Nikshay village IDs into it breaks that match (two different
+    // numbering systems for the same real place), silently cutting a
+    // worker off from beneficiaries they can already see today. Until a
+    // Nikshay-village-to-AMRIT-village bridge table exists to translate
+    // safely, round-trip the row's EXISTING villageidDb/villageNameDb
+    // unchanged instead. setVillageID/setVillageName on the backend are
+    // unconditional overwrites (no null-check), so sending null here would
+    // erase existing correct data rather than just leave it alone.
+    const existingVillageIDArr = this.isStopTBServicelineEdit
+      ? String(this.edit_Details?.villageidDb || '')
+          .split(',')
+          .map((v: string) => v.trim())
+          .filter((v: string) => v.length > 0)
       : [];
-    const nikshayVillageNameArr = this.isStopTBServicelineEdit
-      ? (this.selectedNikshayVillages || []).map((v: any) => v.villageName)
+    const existingVillageNameArr = this.isStopTBServicelineEdit
+      ? String(this.edit_Details?.villageNameDb || '')
+          .split(',')
+          .map((v: string) => v.trim())
+          .filter((v: string) => v.length > 0)
       : [];
 
     const blockIDToUse = this.isStopTBServicelineEdit
@@ -5258,13 +5312,13 @@ export class WorkLocationMappingComponent
         : null
       : this.blockname;
     const villageIDToUse = this.isStopTBServicelineEdit
-      ? nikshayVillageIDArr.length
-        ? nikshayVillageIDArr
+      ? existingVillageIDArr.length
+        ? existingVillageIDArr
         : null
       : editVillageIdArray;
     const villageNameToUse = this.isStopTBServicelineEdit
-      ? nikshayVillageNameArr.length
-        ? nikshayVillageNameArr
+      ? existingVillageNameArr.length
+        ? existingVillageNameArr
         : null
       : editVillageNameArray.length > 0
         ? editVillageNameArray
