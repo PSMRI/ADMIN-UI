@@ -514,19 +514,24 @@ export class WorkLocationMappingComponent
   loadNikshayEditSelections() {
     this.resetNikshaySelection();
 
-    const userRows = (this.mappedWorkLocationsList || []).filter(
-      (row: any) =>
-        row.userID === this.edit_Details.userID &&
-        row.providerServiceMapID === this.edit_Details.providerServiceMapID &&
-        row.roleName === this.edit_Details.roleName &&
-        !row.userServciceRoleDeleted,
-    );
+    const splitIDs = (value: any): number[] =>
+      String(value || '')
+        .split(',')
+        .map((v: string) => Number(v.trim()))
+        .filter((n: number) => !isNaN(n));
 
-    const existingVillageIDs: any[] = [];
-    userRows.forEach((r: any) => {
-      if (Array.isArray(r.villageID)) existingVillageIDs.push(...r.villageID);
-    });
-    const uniqueVillageIDs = [...new Set(existingVillageIDs)];
+    // edit_Details IS this user-role's row already (set directly in
+    // editGroupedRow/editRow) — read villageidDb/stateName straight off it
+    // instead of re-filtering mappedWorkLocationsList by roleName, which
+    // can silently come up empty on a mismatch and quietly break every
+    // fallback that depended on it (district list, village pre-selection).
+    // row.villageID (the transient array field on the backend entity) is
+    // write-only — it's never populated when reading from the DB, only
+    // when the frontend sends it on save. villageidDb is the raw
+    // comma-joined string column, which IS populated on read.
+    const uniqueVillageIDs = [
+      ...new Set(splitIDs(this.edit_Details?.villageidDb)),
+    ];
 
     // NikshayTUID/NikshayFacilityID/DistrictID are comma-joined/direct
     // values on m_userservicerolemapping (see setWorkLocationObject), but
@@ -537,11 +542,6 @@ export class WorkLocationMappingComponent
     if (!usrMappingID) {
       return;
     }
-    const splitIDs = (value: any): number[] =>
-      String(value || '')
-        .split(',')
-        .map((v: string) => Number(v.trim()))
-        .filter((n: number) => !isNaN(n));
 
     this.worklocationmapping
       .getNikshayUserMappingData(usrMappingID)
@@ -558,6 +558,10 @@ export class WorkLocationMappingComponent
         const savedNikshayDistrictID = parseInt(data.districtID, 10);
         if (!isNaN(savedNikshayDistrictID) && savedNikshayDistrictID) {
           this.district_duringEdit = savedNikshayDistrictID;
+          // nikshayDistrictList also needs populating — it's what the
+          // "Select District" dropdown's options come from in edit mode —
+          // otherwise the resolved ID has nothing to display against.
+          this.loadNikshayDistrictListForEdit(this.edit_Details?.stateName);
           this.loadNikshayTUsForEditContinued(
             savedNikshayDistrictID,
             existingTUIDs,
@@ -573,8 +577,8 @@ export class WorkLocationMappingComponent
         // is never populated either (it's derived from WorkingLocationID,
         // which Stop TB doesn't use), but kept in case a row has it from
         // some other path.
-        const rowStateName = userRows[0]?.stateName;
-        const rowDistrictName = userRows[0]?.district;
+        const rowStateName = this.edit_Details?.stateName;
+        const rowDistrictName = this.edit_Details?.district;
         if (!rowStateName || !rowDistrictName) {
           return;
         }
@@ -586,6 +590,46 @@ export class WorkLocationMappingComponent
           uniqueVillageIDs,
         );
       });
+  }
+
+  // Populates nikshayDistrictList (the "Select District" dropdown's option
+  // source in edit mode) for a known state name, without needing to match a
+  // specific district by name — used when the district ID is already known
+  // directly from the saved row.
+  private loadNikshayDistrictListForEdit(stateName: string) {
+    const STATE_NAME_ALIASES: Record<string, string> = {
+      chattisgarh: 'chhattisgarh',
+    };
+    const normalize = (v: string) => {
+      const n = (v || '').trim().toLowerCase();
+      return STATE_NAME_ALIASES[n] || n;
+    };
+    const normStateName = normalize(stateName);
+
+    const resolveAndLoad = (states: any[]) => {
+      const nikshayState = (states || []).find(
+        (s: any) => normalize(s.stateName) === normStateName,
+      );
+      if (!nikshayState) return;
+      this.worklocationmapping
+        .getNikshayDistricts(nikshayState.nikshayStateID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((distResponse: any) => {
+          this.nikshayDistrictList = distResponse.data || [];
+        });
+    };
+
+    if (this.nikshayStateList?.length) {
+      resolveAndLoad(this.nikshayStateList);
+    } else {
+      this.worklocationmapping
+        .getNikshayStates()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((response: any) => {
+          this.nikshayStateList = response.data || [];
+          resolveAndLoad(this.nikshayStateList);
+        });
+    }
   }
 
   private loadNikshayTUsForEdit(

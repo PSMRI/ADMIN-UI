@@ -931,8 +931,8 @@
                 [required]="!isStopTBServicelineEdit"
               >
                 <mat-option
-                  *ngFor="let item of districts_array"
-                  [value]="item.districtID"
+                  *ngFor="let item of (isStopTBServicelineEdit ? nikshayDistrictList : districts_array)"
+                  [value]="isStopTBServicelineEdit ? item.nikshayDistrictID : item.districtID"
                 >
                   {{ item.districtName }}
                 </mat-option>
