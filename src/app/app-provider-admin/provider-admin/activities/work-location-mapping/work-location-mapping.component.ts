@@ -3426,147 +3426,7 @@ export class WorkLocationMappingComponent
       );
   }
 
-  /**
-   * Stop TB update: deactivate all existing rows for this user/role/service,
-   * then create fresh rows for the currently-selected TU x Facility x Village
-   * combinations. Simpler than row-by-row add/remove reconciliation, and safe
-   * here since (unlike ASHA Supervisor) nothing else depends on a Stop TB
-   * row's USRMappingID staying the same across an edit.
-   */
-  updateStopTBWorkLocation(workLocations: any) {
-    const oldRows = (this.editGroupedElement?.originalRows || []).filter(
-      (r: any) => !r.userServciceRoleDeleted,
-    );
-
-    const deactivateOld$ = oldRows.map((row: any) =>
-      this.worklocationmapping.DeleteWorkLocationMapping({
-        uSRMappingID: row.uSRMappingID,
-        deleted: true,
-      }),
-    );
-
-    const roleIDsToUse: any[] =
-      this.roleIDs_duringEdit && this.roleIDs_duringEdit.length
-        ? this.roleIDs_duringEdit
-        : [this.roleID_duringEdit];
-
-    const buildNewRows = () => {
-      const newRows: any[] = [];
-
-      const tuIDArr = (this.selectedNikshayTUs || []).map(
-        (tu: any) => tu.nikshayTUID,
-      );
-      const tuNameArr = (this.selectedNikshayTUs || []).map(
-        (tu: any) => tu.tUName,
-      );
-      const facilityIDArr = (this.selectedNikshayFacilities || []).map(
-        (facility: any) => facility.nikshayFacilityID,
-      );
-      const villageIDArr = (this.selectedNikshayVillages || []).map(
-        (v: any) => v.nikshayVillageID,
-      );
-      const villageNameArr = (this.selectedNikshayVillages || []).map(
-        (v: any) => v.villageName,
-      );
-
-      // One row per user-role, carrying all selected TUs/Facilities as
-      // comma-joined lists — same fix as the create flow above, avoiding a
-      // row per TU x Facility combination.
-      //
-      // Payload shape must match saveWorkLocations()'s requestArray exactly
-      // ({previleges: [{ID: [...], ...}], userID, createdBy,
-      // serviceProviderID}) — that's what /userRoleMappings actually parses
-      // (Priveleges1097_1[] -> .getPrevileges() -> Previleges1097_3[] ->
-      // .getID() -> Priveleges1097_2[]). A flatter shape here previously
-      // silently created zero rows: the nested-array parsing found nothing
-      // to iterate over, so no error surfaced, and the old row (already
-      // deactivated by the delete calls above) never got replaced.
-      for (const roleID of roleIDsToUse) {
-        newRows.push({
-          previleges: [
-            {
-              ID: [
-                {
-                  roleID: roleID,
-                  teleConsultation: null,
-                  inbound: null,
-                  outbound: null,
-                },
-              ],
-              providerServiceMapID: this.providerServiceMapID_duringEdit,
-              workingLocationID: null,
-              stateID: this.stateID_duringEdit,
-              districtID: this.district_duringEdit,
-              // Block is a single-value legacy field (both ID and Name) —
-              // kept as just the first selected TU for backward
-              // compatibility with any generic block-comparison logic
-              // elsewhere. The full multi-TU list lives in NikshayTUID.
-              blockID: tuIDArr.length ? tuIDArr[0] : null,
-              blockName: tuNameArr.length ? tuNameArr[0] : null,
-              villageID: villageIDArr.length ? villageIDArr : null,
-              villageName: villageNameArr.length ? villageNameArr : null,
-              facilityID: null,
-              nikshayTUID: tuIDArr.length ? tuIDArr.join(',') : null,
-              nikshayFacilityID: facilityIDArr.length
-                ? facilityIDArr.join(',')
-                : null,
-            },
-          ],
-          userID: this.userID_duringEdit,
-          createdBy: this.createdBy,
-          serviceProviderID: this.serviceProviderID,
-        });
-      }
-      return newRows;
-    };
-
-    forkJoin(deactivateOld$.length ? deactivateOld$ : [Promise.resolve(true)])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          const newRows = buildNewRows();
-          if (!newRows.length) {
-            this.alertService.alert('Updated successfully', 'success');
-            this.showTable();
-            this.getAllMappedWorkLocations();
-            return;
-          }
-          this.worklocationmapping
-            .SaveWorkLocationMapping(newRows)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-              next: () => {
-                this.alertService.alert('Updated successfully', 'success');
-                this.showTable();
-                this.getAllMappedWorkLocations();
-              },
-              error: () => {
-                this.alertService.alert(
-                  "Old mapping deactivated but saving new selections failed — please re-check this user's mapping.",
-                  'error',
-                );
-                this.showTable();
-                this.getAllMappedWorkLocations();
-              },
-            });
-        },
-        error: () => {
-          this.alertService.alert('Failed to update work location', 'error');
-        },
-      });
-  }
-
   updateWorkLocation(workLocations: any) {
-    // Stop TB — handled entirely separately from the generic/ASHA update flow below,
-    // since it needs to reconcile multiple TU x Facility rows, not one row.
-    // Approach: deactivate all of this user's existing Stop TB rows, then create
-    // fresh rows for the currently-selected combinations. Simpler and safer than
-    // fine-grained row-by-row reconciliation, and Stop TB has no dependency (like
-    // ASHA Supervisor does) on a row's USRMappingID staying stable across edits.
-    if (this.isStopTBServicelineEdit) {
-      this.updateStopTBWorkLocation(workLocations);
-      return;
-    }
     // Fix 15: warn if district or block changed
     if (!this._fix15WarnConfirmed) {
       const origDistrict = parseInt(this.edit_Details?.workingDistrictID, 10);
@@ -5337,15 +5197,6 @@ export class WorkLocationMappingComponent
       return;
     }
 
-    // Stop TB: has its own TU x Facility x Village reconciliation logic in
-    // updateStopTBWorkLocation(), same reason as ASHA Supervisor above — the
-    // generic rolesToKeep loop below has no idea about NikshayTUID/
-    // NikshayFacilityID and would silently drop them from the save.
-    if (this.isStopTBServicelineEdit) {
-      this.updateStopTBWorkLocation(workLocations);
-      return;
-    }
-
     const group = this.editGroupedElement;
     const existingRoleIDs = [
       ...new Set(
@@ -5370,6 +5221,61 @@ export class WorkLocationMappingComponent
     const { editVillageIdArray, editVillageNameArray } =
       this.getEditVillageArrays();
 
+    // Stop TB: block/village fields come from the Nikshay TU/Facility/
+    // Village pickers instead of the generic AMRIT block/village pickers
+    // every other serviceline uses here. This is the same in-place update
+    // path everyone else already uses (UpdateWorkLocationMapping ->
+    // updateUserRoleMapping, which already handles NikshayTUID/
+    // NikshayFacilityID) — no need for Stop TB's own deactivate-and-
+    // recreate mechanism, which left a trail of deactivated ghost rows on
+    // every edit.
+    const nikshayTUIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayTUs || []).map((tu: any) => tu.nikshayTUID)
+      : [];
+    const nikshayTUNameArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayTUs || []).map((tu: any) => tu.tUName)
+      : [];
+    const nikshayFacilityIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayFacilities || []).map(
+          (f: any) => f.nikshayFacilityID,
+        )
+      : [];
+    const nikshayVillageIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID)
+      : [];
+    const nikshayVillageNameArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayVillages || []).map((v: any) => v.villageName)
+      : [];
+
+    const blockIDToUse = this.isStopTBServicelineEdit
+      ? nikshayTUIDArr.length
+        ? nikshayTUIDArr[0]
+        : null
+      : this.ServiceEditblock;
+    const blockNameToUse = this.isStopTBServicelineEdit
+      ? nikshayTUNameArr.length
+        ? nikshayTUNameArr[0]
+        : null
+      : this.blockname;
+    const villageIDToUse = this.isStopTBServicelineEdit
+      ? nikshayVillageIDArr.length
+        ? nikshayVillageIDArr
+        : null
+      : editVillageIdArray;
+    const villageNameToUse = this.isStopTBServicelineEdit
+      ? nikshayVillageNameArr.length
+        ? nikshayVillageNameArr
+        : null
+      : editVillageNameArray.length > 0
+        ? editVillageNameArray
+        : null;
+    const nikshayTUIDToSend = nikshayTUIDArr.length
+      ? nikshayTUIDArr.join(',')
+      : null;
+    const nikshayFacilityIDToSend = nikshayFacilityIDArr.length
+      ? nikshayFacilityIDArr.join(',')
+      : null;
+
     // UPDATE existing rows for kept roles
     for (const rid of rolesToKeep) {
       const existingEntry = group.roles.find(
@@ -5387,13 +5293,16 @@ export class WorkLocationMappingComponent
             : this.workLocationID_duringEdit,
           stateID: this.stateID_duringEdit,
           districtID: this.district_duringEdit,
-          blockID: this.ServiceEditblock,
-          blockName: this.blockname,
-          villageID: editVillageIdArray,
-          villageName:
-            editVillageNameArray.length > 0 ? editVillageNameArray : null,
+          blockID: blockIDToUse,
+          blockName: blockNameToUse,
+          villageID: villageIDToUse,
+          villageName: villageNameToUse,
           modifiedBy: this.createdBy,
         };
+        if (this.isStopTBServicelineEdit) {
+          updateObj.nikshayTUID = nikshayTUIDToSend;
+          updateObj.nikshayFacilityID = nikshayFacilityIDToSend;
+        }
         if (group.serviceName === '1097') {
           updateObj.inbound =
             roleName?.toLowerCase() === 'supervisor'
@@ -5467,15 +5376,20 @@ export class WorkLocationMappingComponent
               : this.workLocationID_duringEdit,
             stateID: this.stateID_duringEdit,
             districtID: this.district_duringEdit,
-            blockID: this.ServiceEditblock,
-            blockName: this.blockname,
-            villageID: editVillageIdArray,
-            villageName:
-              editVillageNameArray.length > 0 ? editVillageNameArray : null,
+            blockID: blockIDToUse,
+            blockName: blockNameToUse,
+            villageID: villageIDToUse,
+            villageName: villageNameToUse,
             facilityID:
               this.isFacilityServicelineEdit && this.editFacilityMappingData
                 ? this.editFacilityMappingData.facilityID
                 : null,
+            ...(this.isStopTBServicelineEdit
+              ? {
+                  nikshayTUID: nikshayTUIDToSend,
+                  nikshayFacilityID: nikshayFacilityIDToSend,
+                }
+              : {}),
           },
         ],
         userID: this.userID_duringEdit,
