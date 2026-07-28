@@ -325,8 +325,15 @@
                 [(ngModel)]="State"
                 name="state"
                 (selectionChange)="
-                  getAllDistricts(Serviceline.serviceID, User, State);
-                  resetBlockVillageFields()
+                  resetBlockVillageFields();
+                  getAllRoles(
+                    Serviceline.serviceID,
+                    State.providerServiceMapID,
+                    User.userID
+                  );
+                  isStopTBServiceline
+                    ? resolveNikshayStateAndLoadDistricts(State)
+                    : getAllDistricts(Serviceline.serviceID, User, State)
                 "
                 (openedChange)="$event ? null : stateSearch = ''"
                 required
@@ -350,16 +357,7 @@
                 [disabled]="isNational"
                 [style.width]="'100%'"
                 [(ngModel)]="District"
-                (selectionChange)="
-                  getAllWorkLocations(State, Serviceline, isNational);
-                  getBlockMaster(District);
-                  getAllRoles(
-                    Serviceline.serviceID,
-                    State.providerServiceMapID,
-                    User.userID
-                  );
-                  isStopTBServiceline && loadNikshayTUs(District.districtID)
-                "
+                (selectionChange)="onDistrictChange()"
                 name="district"
                 (openedChange)="$event ? null : districtSearch = ''"
                 required
@@ -369,7 +367,7 @@
                   <input matInput placeholder="Search..." [(ngModel)]="districtSearch"
                     (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
                 </div>
-                <mat-option *ngFor="let item of filteredDistrictsList" [value]="item">
+                <mat-option *ngFor="let item of (isStopTBServiceline ? nikshayDistrictList : filteredDistrictsList)" [value]="item">
                   {{ item.districtName }}
                 </mat-option>
               </mat-select>
@@ -377,7 +375,7 @@
           </div>
         </div>
         <div class="col-12 row">
-          <div class="col-3">
+          <div class="col-3" *ngIf="!isStopTBServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Block</mat-label>
               <mat-select
@@ -403,7 +401,30 @@
           <div class="col-12 row" *ngIf="isStopTBServiceline">
             <div class="col-3">
               <mat-form-field [style.width]="'100%'">
-                <mat-label>Select TU (Block)</mat-label>
+                <mat-label>Select Block</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayBlock"
+                  name="nikshayBlock"
+                  (selectionChange)="onNikshayBlockChange()"
+                  (openedChange)="$event ? null : nikshayBlockSearch = ''"
+                >
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayBlockSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayBlockList" [value]="item">
+                    {{ item.tUName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select TU</mat-label>
                 <mat-select
                   multiple
                   [style.width]="'100%'"
@@ -553,7 +574,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline">
+          <div class="col-3" *ngIf="(villageFlag || isBlockRequired) && !isFacilityServiceline && !isStopTBServiceline">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select
@@ -903,15 +924,18 @@
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select District</mat-label>
               <mat-select
-                [disabled]="true"
+                [disabled]="!isStopTBServicelineEdit"
                 [style.width]="'100%'"
                 [(ngModel)]="district_duringEdit"
                 name="district"
-                required
+                [required]="!isStopTBServicelineEdit"
+                (selectionChange)="
+                  isStopTBServicelineEdit && onNikshayDistrictChangeEdit()
+                "
               >
                 <mat-option
-                  *ngFor="let item of districts_array"
-                  [value]="item.districtID"
+                  *ngFor="let item of (isStopTBServicelineEdit ? nikshayDistrictList : districts_array)"
+                  [value]="isStopTBServicelineEdit ? item.nikshayDistrictID : item.districtID"
                 >
                   {{ item.districtName }}
                 </mat-option>
@@ -920,7 +944,7 @@
           </div>
         </div>
         <div class="col-12 row">
-          <div class="col-3" *ngIf="enableEditBlockFlag">
+          <div class="col-3" *ngIf="enableEditBlockFlag && !isStopTBServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Block</mat-label>
               <mat-select
@@ -962,7 +986,22 @@
           <ng-container *ngIf="isStopTBServicelineEdit">
             <div class="col-3">
               <mat-form-field [style.width]="'100%'">
-                <mat-label>Select TU (Block)</mat-label>
+                <mat-label>Select Block</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedNikshayBlock"
+                  name="nikshayBlockEdit"
+                  (selectionChange)="onNikshayBlockChange()"
+                >
+                  <mat-option *ngFor="let item of nikshayTUList" [value]="item">
+                    {{ item.tUName }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select TU</mat-label>
                 <mat-select
                   multiple
                   [style.width]="'100%'"
@@ -1062,7 +1101,7 @@
             </mat-form-field>
           </div>
 
-          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit">
+          <div class="col-3" *ngIf="enableEditVillageFlag && !isFacilityServicelineEdit && !isStopTBServicelineEdit">
             <mat-form-field [style.width]="'100%'">
               <mat-label>Select Village</mat-label>
               <mat-select

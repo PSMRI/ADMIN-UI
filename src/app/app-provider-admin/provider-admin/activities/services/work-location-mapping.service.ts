@@ -156,4 +156,14 @@ export class WorkLocationMapping {
       `${environment.nikshayVillages_url}?facilityIDs=${facilityIDs.join(',')}`,
     );
   }
+
+  // Stop TB Edit: v_userservicerolemapping (backing mappedWorkLocationsList)
+  // never exposes DistrictID/NikshayTUID/NikshayFacilityID, so Edit can't
+  // read back what was saved from that list alone — this reads the raw
+  // table directly for just those fields, by USRMappingID.
+  getNikshayUserMappingData(usrMappingID: any) {
+    return this.http.get(
+      `${environment.nikshayUserMapping_url}?usrMappingID=${usrMappingID}`,
+    );
+  }
 }

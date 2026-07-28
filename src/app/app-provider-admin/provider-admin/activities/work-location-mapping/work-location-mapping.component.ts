@@ -214,18 +214,36 @@ export class WorkLocationMappingComponent
     }
   }
 
-  // --- Nikshay location master (Stop TB) — TU / Facility / Village cascade ---
+  // --- Nikshay location master (Stop TB) — District / Block / TU / Facility / Village cascade ---
+  // State is AMRIT's own field (needed for providerServiceMapID/roles regardless
+  // of service line) — selecting it resolves the matching Nikshay state by name
+  // and loads Nikshay's own district list directly into "Select District" for
+  // Stop TB. District itself is 100% Nikshay-sourced from there on, no further
+  // AMRIT matching — AMRIT's own m_District proved unreliable for this (stale
+  // post-2022 district data, orphaned rows, inconsistent between environments).
   isStopTBServiceline = false;
+  nikshayStateList: any[] = [];
+  nikshayDistrictList: any[] = [];
   nikshayTUList: any[] = [];
   nikshayFacilityList: any[] = [];
   nikshayVillageList: any[] = [];
+  selectedNikshayBlock: any = null;
   selectedNikshayTUs: any[] = [];
   selectedNikshayFacilities: any[] = [];
   selectedNikshayVillages: any[] = [];
 
+  nikshayBlockSearch = '';
   nikshayTUSearch = '';
   nikshayFacilitySearch = '';
   nikshayVillageSearch = '';
+
+  get filteredNikshayBlockList(): any[] {
+    if (!this.nikshayBlockSearch) return this.nikshayTUList;
+    const s = this.nikshayBlockSearch.toLowerCase();
+    return this.nikshayTUList.filter((t: any) =>
+      (t.tUName || '').toLowerCase().includes(s),
+    );
+  }
 
   get filteredNikshayTUList(): any[] {
     if (!this.nikshayTUSearch) return this.nikshayTUList;
@@ -259,11 +277,11 @@ export class WorkLocationMappingComponent
     if (!this.nikshayVillageSearch) return this.nikshayVillageList;
     const s = this.nikshayVillageSearch.toLowerCase();
     const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.districtBranchID),
+      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
     );
     return this.nikshayVillageList.filter(
       (v: any) =>
-        selectedIDs.has(v.districtBranchID) ||
+        selectedIDs.has(v.nikshayVillageID) ||
         (v.villageName || '').toLowerCase().includes(s),
     );
   }
@@ -305,10 +323,10 @@ export class WorkLocationMappingComponent
   get allNikshayVillagesSelected(): boolean {
     if (!this.nikshayVillageList?.length) return false;
     const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.districtBranchID),
+      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
     );
     return this.nikshayVillageList.every((v: any) =>
-      selectedIDs.has(v.districtBranchID),
+      selectedIDs.has(v.nikshayVillageID),
     );
   }
 
@@ -318,11 +336,99 @@ export class WorkLocationMappingComponent
       : [...this.nikshayVillageList];
   }
 
-  // Called when District is selected and serviceline = Stop TB
+  // Called on District's selectionChange — Stop TB loads the Nikshay TU list
+  // directly from the selected (already-Nikshay) district; every other
+  // service line keeps its existing AMRIT-driven behavior unchanged.
+  onDistrictChange() {
+    if (this.isStopTBServiceline) {
+      this.loadNikshayTUs((this.District as any)?.nikshayDistrictID);
+    } else {
+      this.getAllWorkLocations(this.State, this.Serviceline, this.isNational);
+      this.getBlockMaster(this.District);
+    }
+  }
+
+  // Called when AMRIT State is selected, for Stop TB only: resolves the
+  // matching Nikshay state by name (low-risk — only ~10 stable state names,
+  // no reorganization ambiguity like districts have) and loads its district
+  // list directly into "Select District". From here on District is 100%
+  // Nikshay-sourced, no further AMRIT matching.
+  resolveNikshayStateAndLoadDistricts(state: any) {
+    this.nikshayDistrictList = [];
+    this.District = null as any;
+    this.nikshayTUList = [];
+    this.nikshayFacilityList = [];
+    this.nikshayVillageList = [];
+    this.selectedNikshayBlock = null;
+    this.selectedNikshayTUs = [];
+    this.selectedNikshayFacilities = [];
+    this.selectedNikshayVillages = [];
+    if (!state?.stateName) return;
+
+    // AMRIT's m_state spells this "Chattisgarh" (one 'h'); Nikshay's own data
+    // spells it "Chhattisgarh" (correct spelling, two 'h's). Every other of
+    // the ~10 covered states matches exactly — this is the one known,
+    // verified exception, not a general fuzzy-match problem.
+    const STATE_NAME_ALIASES: Record<string, string> = {
+      chattisgarh: 'chhattisgarh',
+    };
+    const normalize = (v: string) => {
+      const n = (v || '').trim().toLowerCase();
+      return STATE_NAME_ALIASES[n] || n;
+    };
+    const stateName = normalize(state.stateName);
+
+    const resolveWithStates = (states: any[]) => {
+      const nikshayState = (states || []).find(
+        (s: any) => normalize(s.stateName) === stateName,
+      );
+      if (!nikshayState) {
+        this.alertService.alert(
+          `"${state.stateName}" is not yet in Nikshay's location master — districts unavailable until it's imported.`,
+          'error',
+        );
+        return;
+      }
+      this.worklocationmapping
+        .getNikshayDistricts(nikshayState.nikshayStateID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(
+          (response: any) => {
+            this.nikshayDistrictList = response.data || [];
+          },
+          () => {
+            this.alertService.alert(
+              'Failed to load Nikshay districts',
+              'error',
+            );
+          },
+        );
+    };
+
+    if (this.nikshayStateList?.length) {
+      resolveWithStates(this.nikshayStateList);
+    } else {
+      this.worklocationmapping
+        .getNikshayStates()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe(
+          (response: any) => {
+            this.nikshayStateList = response.data || [];
+            resolveWithStates(this.nikshayStateList);
+          },
+          () => {
+            this.alertService.alert('Failed to load Nikshay states', 'error');
+          },
+        );
+    }
+  }
+
+  // Called when Nikshay District is selected — populates both Block (single) and TU (multi)
   loadNikshayTUs(districtID: any) {
     this.nikshayTUList = [];
     this.nikshayFacilityList = [];
     this.nikshayVillageList = [];
+    this.selectedNikshayBlock = null;
     this.selectedNikshayTUs = [];
     this.selectedNikshayFacilities = [];
     this.selectedNikshayVillages = [];
@@ -338,6 +444,27 @@ export class WorkLocationMappingComponent
           this.alertService.alert('Failed to load Nikshay TUs', 'error');
         },
       );
+  }
+
+  // Select Block is a single-select quick-add: picking one TU there adds it
+  // into the same selectedNikshayTUs multi-select Select TU manages,
+  // instead of being a separate, disconnected filter. Covers the common
+  // case (one TU) fast, while Select TU still handles picking more. Shared
+  // by both Create and Edit — operates purely on component state, not
+  // tied to either form.
+  onNikshayBlockChange() {
+    if (this.selectedNikshayBlock) {
+      const alreadySelected = (this.selectedNikshayTUs || []).some(
+        (t: any) => t.nikshayTUID === this.selectedNikshayBlock.nikshayTUID,
+      );
+      if (!alreadySelected) {
+        this.selectedNikshayTUs = [
+          ...(this.selectedNikshayTUs || []),
+          this.selectedNikshayBlock,
+        ];
+      }
+    }
+    this.onNikshayTUChange();
   }
 
   // Called whenever the TU multi-select changes
@@ -385,60 +512,247 @@ export class WorkLocationMappingComponent
   }
 
   resetNikshaySelection() {
+    this.nikshayStateList = [];
+    this.nikshayDistrictList = [];
     this.nikshayTUList = [];
     this.nikshayFacilityList = [];
     this.nikshayVillageList = [];
+    this.selectedNikshayBlock = null;
     this.selectedNikshayTUs = [];
     this.selectedNikshayFacilities = [];
     this.selectedNikshayVillages = [];
+    this.nikshayBlockSearch = '';
     this.nikshayTUSearch = '';
     this.nikshayFacilitySearch = '';
     this.nikshayVillageSearch = '';
   }
 
   /**
-   * Edit mode: Stop TB spreads one worker's mapping across multiple rows
-   * (one per TU x Facility combination, same pattern as ASHA Supervisor).
-   * Find all of this worker's rows, pull out the distinct TU/Facility/Village
-   * IDs they're currently mapped to, then load each dropdown's option list
-   * and pre-select the matching entries.
+   * Edit mode: find this worker's Stop TB row(s), pull out the TU/Facility
+   * IDs from their comma-joined lists plus the Village ID array, then load
+   * each dropdown's option list and pre-select the matching entries.
    */
   loadNikshayEditSelections() {
     this.resetNikshaySelection();
 
-    const userRows = (this.mappedWorkLocationsList || []).filter(
-      (row: any) =>
-        row.userID === this.edit_Details.userID &&
-        row.providerServiceMapID === this.edit_Details.providerServiceMapID &&
-        row.roleName === this.edit_Details.roleName &&
-        !row.userServciceRoleDeleted,
-    );
+    const splitIDs = (value: any): number[] =>
+      String(value || '')
+        .split(',')
+        .map((v: string) => Number(v.trim()))
+        .filter((n: number) => !isNaN(n));
 
-    const existingTUIDs = [
-      ...new Set(
-        userRows.map((r: any) => r.nikshayTUID).filter((id: any) => !!id),
-      ),
+    // edit_Details IS this user-role's row already (set directly in
+    // editGroupedRow/editRow) — read villageidDb/stateName straight off it
+    // instead of re-filtering mappedWorkLocationsList by roleName, which
+    // can silently come up empty on a mismatch and quietly break every
+    // fallback that depended on it (district list, village pre-selection).
+    // row.villageID (the transient array field on the backend entity) is
+    // write-only — it's never populated when reading from the DB, only
+    // when the frontend sends it on save. villageidDb is the raw
+    // comma-joined string column, which IS populated on read.
+    const uniqueVillageIDs = [
+      ...new Set(splitIDs(this.edit_Details?.villageidDb)),
     ];
-    const existingFacilityIDs = [
-      ...new Set(
-        userRows.map((r: any) => r.nikshayFacilityID).filter((id: any) => !!id),
-      ),
-    ];
-    const existingVillageIDs: any[] = [];
-    userRows.forEach((r: any) => {
-      if (Array.isArray(r.villageID)) existingVillageIDs.push(...r.villageID);
-    });
-    const uniqueVillageIDs = [...new Set(existingVillageIDs)];
 
-    // The dropdown OPTIONS always load (old-style users need to be able to pick
-    // Nikshay values for the first time too) — only the pre-selected values
-    // depend on whether this user already has any existing Nikshay mapping.
-    if (!this.district_duringEdit) {
+    // NikshayTUID/NikshayFacilityID/DistrictID are comma-joined/direct
+    // values on m_userservicerolemapping (see setWorkLocationObject), but
+    // v_userservicerolemapping — what mappedWorkLocationsList is built from
+    // — never exposes those columns. Fetch them straight from the raw table
+    // by USRMappingID instead.
+    const usrMappingID = this.uSRMappingID || this.edit_Details.uSRMappingID;
+    if (!usrMappingID) {
       return;
     }
 
     this.worklocationmapping
+      .getNikshayUserMappingData(usrMappingID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        const data = response?.data || {};
+        const existingTUIDs = splitIDs(data.nikshayTUID);
+        const existingFacilityIDs = splitIDs(data.nikshayFacilityID);
+
+        // DistrictID is repurposed to hold the Nikshay district ID directly
+        // for Stop TB rows (AMRIT's own DistrictID is never used for Stop
+        // TB — see setWorkLocationObject). Rows saved after that fix can
+        // use it straight away, no name matching needed.
+        const savedNikshayDistrictID = parseInt(data.districtID, 10);
+        if (!isNaN(savedNikshayDistrictID) && savedNikshayDistrictID) {
+          this.district_duringEdit = savedNikshayDistrictID;
+          // nikshayDistrictList also needs populating — it's what the
+          // "Select District" dropdown's options come from in edit mode —
+          // otherwise the resolved ID has nothing to display against.
+          this.loadNikshayDistrictListForEdit(this.edit_Details?.stateName);
+          this.loadNikshayTUsForEditContinued(
+            savedNikshayDistrictID,
+            existingTUIDs,
+            existingFacilityIDs,
+            uniqueVillageIDs,
+          );
+          return;
+        }
+
+        // Old-style user, or a fresh row with nothing selected yet: no
+        // saved DistrictID to resolve from. Try a best-effort name match
+        // against the row's AMRIT WorkingDistrictName first (only ever
+        // populated for genuinely old, pre-Nikshay rows — see
+        // loadNikshayDistrictListForEdit) — if that doesn't resolve, the
+        // District dropdown's OPTIONS still populate from the one thing
+        // reliably known (State), and the actual pick is left to the
+        // admin. The dropdown is editable for Stop TB (see template);
+        // picking a district calls onNikshayDistrictChangeEdit().
+        const rowStateName = this.edit_Details?.stateName;
+        if (rowStateName) {
+          this.loadNikshayDistrictListForEdit(
+            rowStateName,
+            this.edit_Details?.workingDistrictName,
+          );
+        }
+      });
+  }
+
+  onNikshayDistrictChangeEdit() {
+    this.selectedNikshayBlock = null;
+    this.selectedNikshayTUs = [];
+    this.selectedNikshayFacilities = [];
+    this.selectedNikshayVillages = [];
+    this.nikshayTUList = [];
+    this.nikshayFacilityList = [];
+    this.nikshayVillageList = [];
+    if (!this.district_duringEdit) {
+      return;
+    }
+    this.worklocationmapping
       .getNikshayTUs(this.district_duringEdit)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        this.nikshayTUList = response.data || [];
+      });
+  }
+
+  // Populates nikshayDistrictList (the "Select District" dropdown's option
+  // source in edit mode) for a known state name. If amritDistrictName is
+  // given, also tries a best-effort name match against it and auto-selects
+  // on a hit — meaningful only for genuinely old, pre-Nikshay rows that
+  // went through the old AMRIT work-location flow and therefore have a
+  // real WorkingDistrictName (rows saved through the newer Nikshay flow
+  // never set WorkingLocationID at all, so this never fires for them —
+  // they fall through to the plain empty-options case, same as before).
+  private loadNikshayDistrictListForEdit(
+    stateName: string,
+    amritDistrictName?: string,
+  ) {
+    const STATE_NAME_ALIASES: Record<string, string> = {
+      chattisgarh: 'chhattisgarh',
+    };
+    const normalize = (v: string) => {
+      const n = (v || '').trim().toLowerCase();
+      return STATE_NAME_ALIASES[n] || n;
+    };
+    const normStateName = normalize(stateName);
+    const normAmritDistrictName = amritDistrictName
+      ? normalize(amritDistrictName)
+      : null;
+
+    const resolveAndLoad = (states: any[]) => {
+      const nikshayState = (states || []).find(
+        (s: any) => normalize(s.stateName) === normStateName,
+      );
+      if (!nikshayState) return;
+      this.worklocationmapping
+        .getNikshayDistricts(nikshayState.nikshayStateID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((distResponse: any) => {
+          this.nikshayDistrictList = distResponse.data || [];
+          if (normAmritDistrictName) {
+            const matched = this.nikshayDistrictList.find(
+              (d: any) => normalize(d.districtName) === normAmritDistrictName,
+            );
+            if (matched) {
+              this.district_duringEdit = matched.nikshayDistrictID;
+              this.onNikshayDistrictChangeEdit();
+            }
+          }
+        });
+    };
+
+    if (this.nikshayStateList?.length) {
+      resolveAndLoad(this.nikshayStateList);
+    } else {
+      this.worklocationmapping
+        .getNikshayStates()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((response: any) => {
+          this.nikshayStateList = response.data || [];
+          resolveAndLoad(this.nikshayStateList);
+        });
+    }
+  }
+
+  private loadNikshayTUsForEdit(
+    stateName: string,
+    districtName: string,
+    existingTUIDs: any[],
+    existingFacilityIDs: any[],
+    uniqueVillageIDs: any[],
+  ) {
+    const STATE_NAME_ALIASES: Record<string, string> = {
+      chattisgarh: 'chhattisgarh',
+    };
+    const normalize = (v: string) => {
+      const n = (v || '').trim().toLowerCase();
+      return STATE_NAME_ALIASES[n] || n;
+    };
+    const normStateName = normalize(stateName);
+    const normDistrictName = normalize(districtName);
+
+    const resolveDistrict = (states: any[]) => {
+      const nikshayState = (states || []).find(
+        (s: any) => normalize(s.stateName) === normStateName,
+      );
+      if (!nikshayState) return;
+      this.worklocationmapping
+        .getNikshayDistricts(nikshayState.nikshayStateID)
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((distResponse: any) => {
+          const districts = distResponse.data || [];
+          const nikshayDistrict = districts.find(
+            (d: any) => normalize(d.districtName) === normDistrictName,
+          );
+          if (!nikshayDistrict) return;
+          // Pre-select District itself, same object shape Create uses.
+          this.District = nikshayDistrict;
+          this.district_duringEdit = nikshayDistrict.nikshayDistrictID;
+          this.loadNikshayTUsForEditContinued(
+            nikshayDistrict.nikshayDistrictID,
+            existingTUIDs,
+            existingFacilityIDs,
+            uniqueVillageIDs,
+          );
+        });
+    };
+
+    if (this.nikshayStateList?.length) {
+      resolveDistrict(this.nikshayStateList);
+    } else {
+      this.worklocationmapping
+        .getNikshayStates()
+        .pipe(takeUntil(this.destroy$))
+        .subscribe((response: any) => {
+          this.nikshayStateList = response.data || [];
+          resolveDistrict(this.nikshayStateList);
+        });
+    }
+  }
+
+  private loadNikshayTUsForEditContinued(
+    nikshayDistrictID: any,
+    existingTUIDs: any[],
+    existingFacilityIDs: any[],
+    uniqueVillageIDs: any[],
+  ) {
+    this.worklocationmapping
+      .getNikshayTUs(nikshayDistrictID)
       .pipe(takeUntil(this.destroy$))
       .subscribe((tuResponse: any) => {
         this.nikshayTUList = tuResponse.data || [];
@@ -467,7 +781,7 @@ export class WorkLocationMappingComponent
               .subscribe((villResponse: any) => {
                 this.nikshayVillageList = villResponse.data || [];
                 this.selectedNikshayVillages = this.nikshayVillageList.filter(
-                  (v: any) => uniqueVillageIDs.includes(v.districtBranchID),
+                  (v: any) => uniqueVillageIDs.includes(v.nikshayVillageID),
                 );
               });
           });
@@ -1884,10 +2198,12 @@ export class WorkLocationMappingComponent
     InboundValue: any,
     OnboundValue: any,
   ) {
-    // Stop TB — Nikshay TU/Facility/Village: one row per TU x Facility
-    // combination selected, each carrying that facility's selected villages.
-    // Handled separately from the generic flow below since it needs its own
-    // multi-level (TU + Facility), not just a single facility list.
+    // Stop TB — Nikshay TU/Facility/Village: a single row per user-role,
+    // carrying all selected TUs/Facilities/Villages as comma-joined lists
+    // (NikshayTUID/NikshayFacilityID are TEXT columns, same idea as
+    // Villageid already was). Previously this looped one row per TU x
+    // Facility combination, which multiplied rows for no reason (e.g. 10
+    // TUs x 100 facilities = 1,000 rows for one user/role).
     if (this.isStopTBServiceline) {
       const roleObjStopTB = [obj];
       const providerServiceMapID =
@@ -1895,51 +2211,68 @@ export class WorkLocationMappingComponent
           ? objectToBeAdded.state.providerServiceMapID
           : this.states_array[0].providerServiceMapID;
 
-      const tus = this.selectedNikshayTUs?.length
-        ? this.selectedNikshayTUs
-        : [null];
-      for (const tu of tus) {
-        const facilitiesUnderThisTU = (
-          this.selectedNikshayFacilities || []
-        ).filter((f: any) => !tu || f.nikshayTUID === tu.nikshayTUID);
-        const facilities = facilitiesUnderThisTU.length
-          ? facilitiesUnderThisTU
-          : [null];
+      const tuIDArrTB: any[] = [];
+      const tuNameArrTB: any[] = [];
+      (this.selectedNikshayTUs || []).forEach((tu: any) => {
+        tuIDArrTB.push(tu.nikshayTUID);
+        tuNameArrTB.push(tu.tUName);
+      });
 
-        for (const facility of facilities) {
-          const villageIDArrTB: any[] = [];
-          const villageNameArrTB: any[] = [];
-          (this.selectedNikshayVillages || []).forEach((v: any) => {
-            villageIDArrTB.push(v.districtBranchID);
-            villageNameArrTB.push(v.villageName);
-          });
+      const facilityIDArrTB: any[] = [];
+      const facilityNameArrTB: any[] = [];
+      (this.selectedNikshayFacilities || []).forEach((facility: any) => {
+        facilityIDArrTB.push(facility.nikshayFacilityID);
+        facilityNameArrTB.push(facility.facilityName);
+      });
 
-          const stopTBWorkLocationObj: any = {
-            previleges: [],
-            userID: objectToBeAdded.user.userID,
-            userName: objectToBeAdded.user.userName,
-            serviceID: objectToBeAdded.serviceline.serviceID,
-            serviceName: objectToBeAdded.serviceline.serviceName,
-            roleID1: roleObjStopTB,
-            providerServiceMapID: providerServiceMapID,
-            createdBy: this.createdBy,
-            stateID: objectToBeAdded.state?.stateID || null,
-            stateName: objectToBeAdded.state?.stateName || 'All States',
-            districtID: objectToBeAdded.district?.districtID || null,
-            district: objectToBeAdded.district?.districtName || null,
-            nikshayTUID: tu?.nikshayTUID || null,
-            nikshayTUName: tu?.tUName || null,
-            nikshayFacilityID: facility?.nikshayFacilityID || null,
-            nikshayFacilityName: facility?.facilityName || null,
-            villageID: villageIDArrTB.length ? villageIDArrTB : null,
-            villageName: villageNameArrTB.length ? villageNameArrTB : null,
-            Inbound: 'N/A',
-            Outbound: 'N/A',
-            teleConsultation: [null],
-          };
-          this.bufferArray.data.push(stopTBWorkLocationObj);
-        }
-      }
+      const stopTBWorkLocationObj: any = {
+        previleges: [],
+        userID: objectToBeAdded.user.userID,
+        userName: objectToBeAdded.user.userName,
+        serviceID: objectToBeAdded.serviceline.serviceID,
+        serviceName: objectToBeAdded.serviceline.serviceName,
+        roleID1: roleObjStopTB,
+        providerServiceMapID: providerServiceMapID,
+        createdBy: this.createdBy,
+        stateID: objectToBeAdded.state?.stateID || null,
+        stateName: objectToBeAdded.state?.stateName || 'All States',
+        // DistrictID is repurposed to hold the Nikshay district ID for Stop
+        // TB (AMRIT's own DistrictID is never used here — District is 100%
+        // Nikshay-sourced). The Create form's District control binds the
+        // NikshayDistrict object, whose ID field is nikshayDistrictID, not
+        // districtID — reading .districtID here always came back null.
+        districtID: objectToBeAdded.district?.nikshayDistrictID || null,
+        district: objectToBeAdded.district?.districtName || null,
+        // Block is a single-value legacy field (both ID and Name) — kept as
+        // just the first selected TU for backward compatibility with any
+        // generic block-comparison logic elsewhere. The full multi-TU list
+        // lives in NikshayTUID/NikshayTUName, not here.
+        blockID: tuIDArrTB.length ? tuIDArrTB[0] : null,
+        blockName: tuNameArrTB.length ? tuNameArrTB[0] : null,
+        nikshayTUID: tuIDArrTB.length ? tuIDArrTB.join(',') : null,
+        nikshayTUName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
+        nikshayFacilityID: facilityIDArrTB.length
+          ? facilityIDArrTB.join(',')
+          : null,
+        nikshayFacilityName: facilityNameArrTB.length
+          ? facilityNameArrTB.join(', ')
+          : null,
+        // Villageid intentionally does NOT take the Nikshay Village
+        // picker's selection — it holds AMRIT village IDs everywhere else
+        // in the system, including the mobile app's own beneficiary
+        // worklist match. Writing Nikshay village IDs here breaks that
+        // match (two different numbering systems for the same real
+        // place). A brand-new row has no existing value to preserve, so
+        // null is safe here (unlike the edit path, which must round-trip
+        // the existing value instead). Revisit once a Nikshay-village-to-
+        // AMRIT-village bridge table exists to translate safely.
+        villageID: null,
+        villageName: null,
+        Inbound: 'N/A',
+        Outbound: 'N/A',
+        teleConsultation: [null],
+      };
+      this.bufferArray.data.push(stopTBWorkLocationObj);
       if (this.paginatorSecond) {
         this.bufferArray.paginator = this.paginatorSecond;
       }
@@ -2173,6 +2506,11 @@ export class WorkLocationMappingComponent
             villageName: this.bufferArray.data[i].villageName,
 
             facilityID: this.bufferArray.data[i].facilityID,
+
+            nikshayTUID: this.bufferArray.data[i].nikshayTUID || null,
+
+            nikshayFacilityID:
+              this.bufferArray.data[i].nikshayFacilityID || null,
           },
         ],
 
@@ -3147,118 +3485,7 @@ export class WorkLocationMappingComponent
       );
   }
 
-  /**
-   * Stop TB update: deactivate all existing rows for this user/role/service,
-   * then create fresh rows for the currently-selected TU x Facility x Village
-   * combinations. Simpler than row-by-row add/remove reconciliation, and safe
-   * here since (unlike ASHA Supervisor) nothing else depends on a Stop TB
-   * row's USRMappingID staying the same across an edit.
-   */
-  updateStopTBWorkLocation(workLocations: any) {
-    const oldRows = (this.editGroupedElement?.originalRows || []).filter(
-      (r: any) => !r.userServciceRoleDeleted,
-    );
-
-    const deactivateOld$ = oldRows.map((row: any) =>
-      this.worklocationmapping.DeleteWorkLocationMapping({
-        uSRMappingID: row.uSRMappingID,
-        deleted: true,
-      }),
-    );
-
-    const roleIDsToUse: any[] =
-      this.roleIDs_duringEdit && this.roleIDs_duringEdit.length
-        ? this.roleIDs_duringEdit
-        : [this.roleID_duringEdit];
-
-    const buildNewRows = () => {
-      const newRows: any[] = [];
-      const tus = this.selectedNikshayTUs?.length
-        ? this.selectedNikshayTUs
-        : [null];
-      for (const roleID of roleIDsToUse) {
-        for (const tu of tus) {
-          const facilitiesUnderThisTU = (
-            this.selectedNikshayFacilities || []
-          ).filter((f: any) => !tu || f.nikshayTUID === tu.nikshayTUID);
-          const facilities = facilitiesUnderThisTU.length
-            ? facilitiesUnderThisTU
-            : [null];
-          for (const facility of facilities) {
-            const villageIDArr = (this.selectedNikshayVillages || []).map(
-              (v: any) => v.districtBranchID,
-            );
-            const villageNameArr = (this.selectedNikshayVillages || []).map(
-              (v: any) => v.villageName,
-            );
-            newRows.push({
-              userID: this.userID_duringEdit,
-              roleID1: [{ roleID1: roleID }],
-              providerServiceMapID: this.providerServiceMapID_duringEdit,
-              createdBy: this.createdBy,
-              stateID: this.stateID_duringEdit,
-              districtID: this.district_duringEdit,
-              nikshayTUID: tu?.nikshayTUID || null,
-              nikshayFacilityID: facility?.nikshayFacilityID || null,
-              villageID: villageIDArr.length ? villageIDArr : null,
-              villageName: villageNameArr.length ? villageNameArr : null,
-              Inbound: 'N/A',
-              Outbound: 'N/A',
-              teleConsultation: [null],
-            });
-          }
-        }
-      }
-      return newRows;
-    };
-
-    forkJoin(deactivateOld$.length ? deactivateOld$ : [Promise.resolve(true)])
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: () => {
-          const newRows = buildNewRows();
-          if (!newRows.length) {
-            this.alertService.alert('Updated successfully', 'success');
-            this.showTable();
-            this.getAllMappedWorkLocations();
-            return;
-          }
-          this.worklocationmapping
-            .SaveWorkLocationMapping(newRows)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-              next: () => {
-                this.alertService.alert('Updated successfully', 'success');
-                this.showTable();
-                this.getAllMappedWorkLocations();
-              },
-              error: () => {
-                this.alertService.alert(
-                  "Old mapping deactivated but saving new selections failed — please re-check this user's mapping.",
-                  'error',
-                );
-                this.showTable();
-                this.getAllMappedWorkLocations();
-              },
-            });
-        },
-        error: () => {
-          this.alertService.alert('Failed to update work location', 'error');
-        },
-      });
-  }
-
   updateWorkLocation(workLocations: any) {
-    // Stop TB — handled entirely separately from the generic/ASHA update flow below,
-    // since it needs to reconcile multiple TU x Facility rows, not one row.
-    // Approach: deactivate all of this user's existing Stop TB rows, then create
-    // fresh rows for the currently-selected combinations. Simpler and safer than
-    // fine-grained row-by-row reconciliation, and Stop TB has no dependency (like
-    // ASHA Supervisor does) on a row's USRMappingID staying stable across edits.
-    if (this.isStopTBServicelineEdit) {
-      this.updateStopTBWorkLocation(workLocations);
-      return;
-    }
     // Fix 15: warn if district or block changed
     if (!this._fix15WarnConfirmed) {
       const origDistrict = parseInt(this.edit_Details?.workingDistrictID, 10);
@@ -4244,7 +4471,8 @@ export class WorkLocationMappingComponent
         this.isVillageRequired = false;
       } else {
         this.isBlockRequired = true;
-        this.isVillageRequired = this.isFacilityServiceline ? false : true;
+        this.isVillageRequired =
+          this.isFacilityServiceline || this.isStopTBServiceline ? false : true;
       }
     } else {
       this.blockFlag = false;
@@ -4254,9 +4482,7 @@ export class WorkLocationMappingComponent
       this.isBlockRequired = false;
       this.isVillageRequired = false;
     }
-    if (!this.isStopTBServiceline) {
-      this.resetNikshaySelection();
-    }
+    this.resetNikshaySelection();
   }
 
   showEditBlockDrop(serviceName: any) {
@@ -4735,6 +4961,19 @@ export class WorkLocationMappingComponent
     // Facility serviceline detection
     this.isFacilityServicelineEdit =
       firstRow.serviceName === 'FLW' || firstRow.serviceName === 'HWC';
+
+    // Stop TB / Nikshay detection — this was previously only set in the
+    // unused editRow() function, never here (the actual grouped-row edit
+    // entry point), so the TU/Facility/Village fields never rendered on
+    // Edit and it silently fell through to the generic Work Location field.
+    this.isBlockRequiredEdit = firstRow.serviceName === 'Stop TB';
+    this.isStopTBServicelineEdit = firstRow.serviceName === 'Stop TB';
+    if (this.isStopTBServicelineEdit) {
+      this.loadNikshayEditSelections();
+    } else {
+      this.resetNikshaySelection();
+    }
+
     if (this.isFacilityServicelineEdit) {
       // Use merged group villages (union of all roles) instead of firstRow only
       this.editExistingVillageIDs = Array.isArray(group.villageID)
@@ -4855,7 +5094,7 @@ export class WorkLocationMappingComponent
       this.stateID_duringEdit = '';
       this.district_duringEdit = null;
 
-      if (this.isFacilityServicelineEdit) {
+      if (this.isFacilityServicelineEdit || this.isStopTBServicelineEdit) {
         // HWC/FLW with null workLocationID: derive state from providerServiceMapID,
         // then load districts + blocks so dropdowns are pre-populated
         this.worklocationmapping
@@ -4925,11 +5164,17 @@ export class WorkLocationMappingComponent
           (response: any) => {
             if (response) {
               this.districts_array = response.data;
-              // Set district value AFTER options are loaded
-              this.district_duringEdit = parseInt(
-                this.edit_Details.workingDistrictID,
-                10,
-              );
+              // Set district value AFTER options are loaded. Skipped for Stop
+              // TB — district_duringEdit already holds the Nikshay district
+              // ID resolved by loadNikshayEditSelections() above, and
+              // workingDistrictID (AMRIT) is always null for Stop TB rows,
+              // which would otherwise overwrite it with NaN.
+              if (!this.isStopTBServicelineEdit) {
+                this.district_duringEdit = parseInt(
+                  this.edit_Details.workingDistrictID,
+                  10,
+                );
+              }
               // Load blocks → set ServiceEditblock → load villages
               if (
                 !isNaN(this.district_duringEdit) &&
@@ -4940,9 +5185,12 @@ export class WorkLocationMappingComponent
               ) {
                 this.getEditBlockPatchMaster(this.district_duringEdit);
               }
-              // HWC/FLW: no workingLocationID — load roles directly
+              // HWC/FLW/Stop TB: no workingLocationID — load roles directly
               // Other services: chain via work locations
-              if (this.isFacilityServicelineEdit) {
+              if (
+                this.isFacilityServicelineEdit ||
+                this.isStopTBServicelineEdit
+              ) {
                 this.getAllRoles_duringEdit2(
                   this.serviceID_duringEdit,
                   this.providerServiceMapID_duringEdit,
@@ -5032,6 +5280,70 @@ export class WorkLocationMappingComponent
     const { editVillageIdArray, editVillageNameArray } =
       this.getEditVillageArrays();
 
+    // Stop TB: block/village fields come from the Nikshay TU/Facility/
+    // Village pickers instead of the generic AMRIT block/village pickers
+    // every other serviceline uses here. This is the same in-place update
+    // path everyone else already uses (UpdateWorkLocationMapping ->
+    // updateUserRoleMapping, which already handles NikshayTUID/
+    // NikshayFacilityID) — no need for Stop TB's own deactivate-and-
+    // recreate mechanism, which left a trail of deactivated ghost rows on
+    // every edit.
+    const nikshayTUIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayTUs || []).map((tu: any) => tu.nikshayTUID)
+      : [];
+    const nikshayTUNameArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayTUs || []).map((tu: any) => tu.tUName)
+      : [];
+    const nikshayFacilityIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayFacilities || []).map(
+          (f: any) => f.nikshayFacilityID,
+        )
+      : [];
+    // Villageid takes the Nikshay Village picker's selection directly on
+    // Edit (explicit instruction — Edit overwrites, Create does not).
+    // NOTE: Villageid holds AMRIT village IDs everywhere else in the
+    // system, including the mobile app's own beneficiary worklist match
+    // (BenFlowStatus.villageID) — writing Nikshay village IDs here means
+    // that match breaks until a Nikshay-village-to-AMRIT-village bridge
+    // table exists to translate between the two numbering systems. A
+    // worker saved through this path will not see beneficiaries in the
+    // mobile worklist for these villages until that bridge is built.
+    const nikshayVillageIDArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID)
+      : [];
+    const nikshayVillageNameArr = this.isStopTBServicelineEdit
+      ? (this.selectedNikshayVillages || []).map((v: any) => v.villageName)
+      : [];
+
+    const blockIDToUse = this.isStopTBServicelineEdit
+      ? nikshayTUIDArr.length
+        ? nikshayTUIDArr[0]
+        : null
+      : this.ServiceEditblock;
+    const blockNameToUse = this.isStopTBServicelineEdit
+      ? nikshayTUNameArr.length
+        ? nikshayTUNameArr[0]
+        : null
+      : this.blockname;
+    const villageIDToUse = this.isStopTBServicelineEdit
+      ? nikshayVillageIDArr.length
+        ? nikshayVillageIDArr
+        : null
+      : editVillageIdArray;
+    const villageNameToUse = this.isStopTBServicelineEdit
+      ? nikshayVillageNameArr.length
+        ? nikshayVillageNameArr
+        : null
+      : editVillageNameArray.length > 0
+        ? editVillageNameArray
+        : null;
+    const nikshayTUIDToSend = nikshayTUIDArr.length
+      ? nikshayTUIDArr.join(',')
+      : null;
+    const nikshayFacilityIDToSend = nikshayFacilityIDArr.length
+      ? nikshayFacilityIDArr.join(',')
+      : null;
+
     // UPDATE existing rows for kept roles
     for (const rid of rolesToKeep) {
       const existingEntry = group.roles.find(
@@ -5049,13 +5361,16 @@ export class WorkLocationMappingComponent
             : this.workLocationID_duringEdit,
           stateID: this.stateID_duringEdit,
           districtID: this.district_duringEdit,
-          blockID: this.ServiceEditblock,
-          blockName: this.blockname,
-          villageID: editVillageIdArray,
-          villageName:
-            editVillageNameArray.length > 0 ? editVillageNameArray : null,
+          blockID: blockIDToUse,
+          blockName: blockNameToUse,
+          villageID: villageIDToUse,
+          villageName: villageNameToUse,
           modifiedBy: this.createdBy,
         };
+        if (this.isStopTBServicelineEdit) {
+          updateObj.nikshayTUID = nikshayTUIDToSend;
+          updateObj.nikshayFacilityID = nikshayFacilityIDToSend;
+        }
         if (group.serviceName === '1097') {
           updateObj.inbound =
             roleName?.toLowerCase() === 'supervisor'
@@ -5129,15 +5444,20 @@ export class WorkLocationMappingComponent
               : this.workLocationID_duringEdit,
             stateID: this.stateID_duringEdit,
             districtID: this.district_duringEdit,
-            blockID: this.ServiceEditblock,
-            blockName: this.blockname,
-            villageID: editVillageIdArray,
-            villageName:
-              editVillageNameArray.length > 0 ? editVillageNameArray : null,
+            blockID: blockIDToUse,
+            blockName: blockNameToUse,
+            villageID: villageIDToUse,
+            villageName: villageNameToUse,
             facilityID:
               this.isFacilityServicelineEdit && this.editFacilityMappingData
                 ? this.editFacilityMappingData.facilityID
                 : null,
+            ...(this.isStopTBServicelineEdit
+              ? {
+                  nikshayTUID: nikshayTUIDToSend,
+                  nikshayFacilityID: nikshayFacilityIDToSend,
+                }
+              : {}),
           },
         ],
         userID: this.userID_duringEdit,
