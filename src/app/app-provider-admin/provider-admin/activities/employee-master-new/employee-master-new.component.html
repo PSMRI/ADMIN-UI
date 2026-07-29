@@ -89,7 +89,7 @@
             <th mat-header-cell *matHeaderCellDef>Lock/Unlock</th>
             <td mat-cell *matCellDef="let element">
               <button
-                *ngIf="element.lockedDueToFailedAttempts"
+                *ngIf="element.lockedDueToFailedAttempts && element.deleted !== true"
                 mat-raised-button
                 color="accent"
                 class="mat_green"
@@ -109,14 +109,14 @@
                 Lock
               </button>
               <button
-                *ngIf="element.deleted === true && !element.lockedDueToFailedAttempts"
+                *ngIf="element.deleted === true"
                 mat-raised-button
                 class="mat_blue"
                 color="primary"
                 disabled
                 matTooltip="Activate the account before changing lock status"
               >
-                Lock
+                {{ element.lockedDueToFailedAttempts ? 'Unlock' : 'Lock' }}
               </button>
             </td>
           </ng-container>
