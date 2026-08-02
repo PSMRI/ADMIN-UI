@@ -6,6 +6,21 @@
     }
 }
 
+/* Village list cell in the mapping tables — long comma-joined village
+   lists (esp. Stop TB's) get their own fixed-width horizontal scroll
+   instead of stretching the row height or the whole table width, so the
+   rest of the columns (Edit/Deactivate etc.) stay on screen. */
+.village-cell-scroll {
+  max-width: 260px;
+  overflow-x: auto;
+  white-space: nowrap;
+  cursor: grab;
+}
+
+.village-cell-scroll:active {
+  cursor: grabbing;
+}
+
 .role-chip {
   display: inline-block;
   padding: 2px 10px;

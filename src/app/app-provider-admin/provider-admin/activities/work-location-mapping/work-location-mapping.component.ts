@@ -4805,6 +4805,18 @@ export class WorkLocationMappingComponent
 
   // ── Grouped row helpers ──
 
+  // Village lists (especially Stop TB's, sourced from an entire TU/facility)
+  // can run to hundreds of comma-joined names. The list table renders this
+  // in a fixed-width scrollable cell (see .village-cell-scroll) instead of
+  // stretching the row or the whole table, so joining with ", " here is
+  // just for readability in that cell and its tooltip.
+  asVillageText(villageName: any): string {
+    if (!villageName) return '';
+    return Array.isArray(villageName)
+      ? villageName.join(', ')
+      : String(villageName);
+  }
+
   getUniqueRoles(roles: RoleEntry[]): RoleEntry[] {
     if (!roles) return [];
     const seen = new Set<string>();

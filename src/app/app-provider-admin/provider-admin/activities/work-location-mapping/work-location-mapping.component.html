@@ -72,7 +72,9 @@
           <ng-container matColumnDef="Village">
             <th mat-header-cell *matHeaderCellDef>Village</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.villageName }}
+              <div class="village-cell-scroll" [matTooltip]="asVillageText(element.villageName)">
+                {{ asVillageText(element.villageName) }}
+              </div>
             </td>
           </ng-container>
           <ng-container matColumnDef="FacilityID">
@@ -741,7 +743,9 @@
           <ng-container matColumnDef="Village">
             <th mat-header-cell *matHeaderCellDef>Village</th>
             <td mat-cell *matCellDef="let element">
-              {{ element.villageName }}
+              <div class="village-cell-scroll" [matTooltip]="asVillageText(element.villageName)">
+                {{ asVillageText(element.villageName) }}
+              </div>
             </td>
           </ng-container>
           <ng-container matColumnDef="FacilityID">
