@@ -992,8 +992,15 @@
                   [(ngModel)]="selectedNikshayBlock"
                   name="nikshayBlockEdit"
                   (selectionChange)="onNikshayBlockChange()"
+                  (openedChange)="$event ? null : nikshayBlockSearch = ''"
                 >
-                  <mat-option *ngFor="let item of nikshayTUList" [value]="item">
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayBlockSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayBlockList" [value]="item">
                     {{ item.tUName }}
                   </mat-option>
                 </mat-select>
@@ -1008,9 +1015,21 @@
                   [(ngModel)]="selectedNikshayTUs"
                   name="nikshayTUsEdit"
                   (selectionChange)="onNikshayTUChange()"
+                  (openedChange)="$event ? null : nikshayTUSearch = ''"
                   required
                 >
-                  <mat-option *ngFor="let item of nikshayTUList" [value]="item">
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayTUSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <div class="select-search-box">
+                    <a (click)="toggleSelectAllNikshayTUs()">{{
+                      allNikshayTUsSelected ? 'Deselect All' : 'Select All'
+                    }}</a>
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayTUList" [value]="item">
                     {{ item.tUName }}
                   </mat-option>
                 </mat-select>
@@ -1025,9 +1044,21 @@
                   [(ngModel)]="selectedNikshayFacilities"
                   name="nikshayFacilitiesEdit"
                   (selectionChange)="onNikshayFacilityChange()"
+                  (openedChange)="$event ? null : nikshayFacilitySearch = ''"
                   required
                 >
-                  <mat-option *ngFor="let item of nikshayFacilityList" [value]="item">
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayFacilitySearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <div class="select-search-box">
+                    <a (click)="toggleSelectAllNikshayFacilities()">{{
+                      allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
+                    }}</a>
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
                     {{ item.facilityName }}
                   </mat-option>
                 </mat-select>
@@ -1041,9 +1072,21 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
                   name="nikshayVillagesEdit"
+                  (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required
                 >
-                  <mat-option *ngFor="let item of nikshayVillageList" [value]="item">
+                  <div class="select-search-box">
+                    <mat-icon>search</mat-icon>
+                    <input matInput placeholder="Search..." [(ngModel)]="nikshayVillageSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                  </div>
+                  <div class="select-search-box">
+                    <a (click)="toggleSelectAllNikshayVillages()">{{
+                      allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
+                    }}</a>
+                  </div>
+                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
                     {{ item.villageName }}
                   </mat-option>
                 </mat-select>
@@ -1110,7 +1153,14 @@
                 [(ngModel)]="serviceEditvillage"
                 name="serviceEditvillage"
                 required
+                (openedChange)="$event ? null : serviceEditVillageSearch = ''"
               >
+                <div class="select-search-box">
+                  <mat-icon>search</mat-icon>
+                  <input matInput placeholder="Search..." [(ngModel)]="serviceEditVillageSearch"
+                    [ngModelOptions]="{ standalone: true }"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
+                </div>
                 <div class="select-all-option" (click)="$event.stopPropagation()">
                   <mat-checkbox
                     [checked]="allEditVillagesSelected"
@@ -1120,7 +1170,7 @@
                   >Select All</mat-checkbox>
                 </div>
                 <mat-option
-                  *ngFor="let item of editVillageArr"
+                  *ngFor="let item of filteredEditVillageList"
                   [value]="item.villageName"
                 >
                   {{ item.villageName }} [{{ item.districtBranchID }}]

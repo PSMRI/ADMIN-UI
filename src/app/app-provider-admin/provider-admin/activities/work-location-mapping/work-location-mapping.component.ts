@@ -592,21 +592,25 @@ export class WorkLocationMappingComponent
           return;
         }
 
-        // Old-style user, or a fresh row with nothing selected yet: no
-        // saved DistrictID to resolve from. Try a best-effort name match
-        // against the row's AMRIT WorkingDistrictName first (only ever
-        // populated for genuinely old, pre-Nikshay rows — see
-        // loadNikshayDistrictListForEdit) — if that doesn't resolve, the
-        // District dropdown's OPTIONS still populate from the one thing
-        // reliably known (State), and the actual pick is left to the
-        // admin. The dropdown is editable for Stop TB (see template);
-        // picking a district calls onNikshayDistrictChangeEdit().
+        // Old-style user (mapped through the pre-Nikshay AMRIT flow), or a
+        // fresh row with nothing selected yet: no saved Nikshay DistrictID
+        // to resolve from. District/TU/Facility/Village are left fully
+        // blank — deliberately NOT guessed from the row's old AMRIT
+        // WorkingDistrictName, since that name space doesn't reliably line
+        // up with Nikshay's. Only User/Serviceline/Role carry over from
+        // the old row; the admin picks fresh Nikshay values and Update
+        // re-saves this worker on the new schema. district_duringEdit is
+        // explicitly cleared here — editGroupedRow/editRow already set it
+        // to the row's old AMRIT district ID earlier for every service
+        // line, which would otherwise show as a bogus selection against
+        // the Nikshay district list. The District dropdown's OPTIONS still
+        // populate from the one thing reliably known (State); the dropdown
+        // is editable for Stop TB (see template) and picking a district
+        // calls onNikshayDistrictChangeEdit().
+        this.district_duringEdit = null;
         const rowStateName = this.edit_Details?.stateName;
         if (rowStateName) {
-          this.loadNikshayDistrictListForEdit(
-            rowStateName,
-            this.edit_Details?.workingDistrictName,
-          );
+          this.loadNikshayDistrictListForEdit(rowStateName);
         }
       });
   }
@@ -638,10 +642,7 @@ export class WorkLocationMappingComponent
   // real WorkingDistrictName (rows saved through the newer Nikshay flow
   // never set WorkingLocationID at all, so this never fires for them —
   // they fall through to the plain empty-options case, same as before).
-  private loadNikshayDistrictListForEdit(
-    stateName: string,
-    amritDistrictName?: string,
-  ) {
+  private loadNikshayDistrictListForEdit(stateName: string) {
     const STATE_NAME_ALIASES: Record<string, string> = {
       chattisgarh: 'chhattisgarh',
     };
@@ -650,9 +651,6 @@ export class WorkLocationMappingComponent
       return STATE_NAME_ALIASES[n] || n;
     };
     const normStateName = normalize(stateName);
-    const normAmritDistrictName = amritDistrictName
-      ? normalize(amritDistrictName)
-      : null;
 
     const resolveAndLoad = (states: any[]) => {
       const nikshayState = (states || []).find(
@@ -664,15 +662,6 @@ export class WorkLocationMappingComponent
         .pipe(takeUntil(this.destroy$))
         .subscribe((distResponse: any) => {
           this.nikshayDistrictList = distResponse.data || [];
-          if (normAmritDistrictName) {
-            const matched = this.nikshayDistrictList.find(
-              (d: any) => normalize(d.districtName) === normAmritDistrictName,
-            );
-            if (matched) {
-              this.district_duringEdit = matched.nikshayDistrictID;
-              this.onNikshayDistrictChangeEdit();
-            }
-          }
         });
     };
 
@@ -2225,6 +2214,13 @@ export class WorkLocationMappingComponent
         facilityNameArrTB.push(facility.facilityName);
       });
 
+      const villageIDArrTB: any[] = [];
+      const villageNameArrTB: any[] = [];
+      (this.selectedNikshayVillages || []).forEach((village: any) => {
+        villageIDArrTB.push(village.nikshayVillageID);
+        villageNameArrTB.push(village.villageName);
+      });
+
       const stopTBWorkLocationObj: any = {
         previleges: [],
         userID: objectToBeAdded.user.userID,
@@ -2257,17 +2253,21 @@ export class WorkLocationMappingComponent
         nikshayFacilityName: facilityNameArrTB.length
           ? facilityNameArrTB.join(', ')
           : null,
-        // Villageid intentionally does NOT take the Nikshay Village
-        // picker's selection — it holds AMRIT village IDs everywhere else
-        // in the system, including the mobile app's own beneficiary
-        // worklist match. Writing Nikshay village IDs here breaks that
-        // match (two different numbering systems for the same real
-        // place). A brand-new row has no existing value to preserve, so
-        // null is safe here (unlike the edit path, which must round-trip
-        // the existing value instead). Revisit once a Nikshay-village-to-
-        // AMRIT-village bridge table exists to translate safely.
-        villageID: null,
-        villageName: null,
+        // Villageid takes the Nikshay Village picker's selection directly,
+        // same as the Edit path (see updateGroupedWorkLocation). This
+        // column holds AMRIT village IDs everywhere else in the system,
+        // including the mobile app's own beneficiary worklist match
+        // (BenFlowStatus.villageID) — writing Nikshay village IDs here
+        // means that match won't resolve for these villages until a
+        // Nikshay-village-to-AMRIT-village bridge table exists to
+        // translate between the two numbering systems. Previously this was
+        // left null specifically on Create to avoid that collision, but
+        // Edit was already writing it the same way — silently dropping the
+        // admin's village selection on every new Stop TB worker until they
+        // were separately edited was a worse outcome than the collision
+        // risk both paths already carry identically.
+        villageID: villageIDArrTB.length ? villageIDArrTB : null,
+        villageName: villageNameArrTB.length ? villageNameArrTB : null,
         Inbound: 'N/A',
         Outbound: 'N/A',
         teleConsultation: [null],
@@ -4329,6 +4329,23 @@ export class WorkLocationMappingComponent
     this.createUserVillageIDs = [];
     this.createUserVillageNames = [];
     this.collectUserExistingVillages();
+  }
+
+  // Edit-mode search for the plain (MMU/TM) Village dropdown — mirrors
+  // Create's villageSearch/filteredVillagesList, kept separate since Edit
+  // uses its own array (editVillageArr) and a villageName-string model
+  // (serviceEditvillage) rather than Create's village-object model.
+  serviceEditVillageSearch = '';
+
+  get filteredEditVillageList(): any[] {
+    if (!this.serviceEditVillageSearch) return this.editVillageArr;
+    const s = this.serviceEditVillageSearch.toLowerCase();
+    const selectedNames = new Set(this.serviceEditvillage || []);
+    return this.editVillageArr.filter(
+      (v: any) =>
+        selectedNames.has(v.villageName) ||
+        (v.villageName || '').toLowerCase().includes(s),
+    );
   }
 
   get allEditVillagesSelected(): boolean {

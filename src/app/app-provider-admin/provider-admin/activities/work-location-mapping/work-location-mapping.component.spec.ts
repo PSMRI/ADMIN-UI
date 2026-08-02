@@ -19,124 +19,177 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { WorkLocationMappingComponent } from './work-location-mapping.component';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import { dataService } from '../services/dataService/data.service';
-import { Router } from '@angular/router';
-import { Md2Module } from 'md2';
 import { FormsModule } from '@angular/forms';
-import { fakeAsync } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { tick } from '@angular/core/testing';
-import { ConfirmationDialogsService } from '../services/dialog/confirmation.service';
-import { WorkLocationMapping } from '../services/ProviderAdminServices/work-location-mapping.service';
+import { of } from 'rxjs';
+import { WorkLocationMappingComponent } from './work-location-mapping.component';
+import { WorkLocationMapping } from '../services/work-location-mapping.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { VillageMasterService } from 'src/app/core/services/adminServices/AdminVillage/village-master-service.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
+
 let component: WorkLocationMappingComponent;
 let fixture: ComponentFixture<WorkLocationMappingComponent>;
 
-const FakeConfirmationDialogsService = {};
-
-const providerForFakeConfirmationDialogsService = {
-  provide: ConfirmationDialogsService,
-  useValue: FakeConfirmationDialogsService,
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
 };
-const FakeDataService = {
-  service_providerID: 'serviceProviderID',
+
+const FakeWorkLocationMapping = {
+  getServices: (_userID: any) => of({ data: [] }),
+  getMappedWorkLocationList: (_serviceProviderID: any) => of({ data: [] }),
+  getUserName: (_serviceProviderID: any) => of({ data: [] }),
+};
+
+const FakeVillageMasterService = {};
+const FakeFacilityMasterService = {};
+
+const sessionValues: Record<string, any> = {
+  service_providerID: 'SP1',
+  uid: 'U1',
   uname: 'admin',
 };
-
-const providerForFakeDataService = {
-  provide: dataService,
-  useValue: FakeDataService,
-};
-class FakeWorkLocationMapping {
-  getUserName(data) {
-    return Observable.of([
-      {
-        userID: '1',
-      },
-    ]);
-  }
-  getMappedWorkLocationList() {
-    return Observable.of([
-      {
-        userLangID: '1',
-      },
-    ]);
-  }
-  getAllServiceLinesByProvider(data) {
-    return Observable.of([
-      {
-        languageID: '1',
-        LanguageName: 'english',
-      },
-    ]);
-  }
-}
-
-const providerForWorkLocationMapping = {
-  provide: WorkLocationMapping,
-  useClass: FakeWorkLocationMapping,
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
 };
 
-function InitializeAdminTestBed() {
-  beforeEach(async(() => {
+function initTestBed() {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [WorkLocationMappingComponent],
       schemas: [NO_ERRORS_SCHEMA],
-      imports: [Md2Module, FormsModule],
+      imports: [FormsModule],
       providers: [
-        providerForFakeConfirmationDialogsService,
-        providerForFakeDataService,
-        providerForWorkLocationMapping,
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: WorkLocationMapping, useValue: FakeWorkLocationMapping },
+        { provide: VillageMasterService, useValue: FakeVillageMasterService },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
+        { provide: FacilityMasterService, useValue: FakeFacilityMasterService },
       ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // uses mat-table/matSort/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic
+    // (setWorkLocationObject etc.), not the rendered DOM. ngOnInit is
+    // still run explicitly so session-storage-derived fields are set.
     fixture = TestBed.createComponent(WorkLocationMappingComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
 }
-describe('Work-Location-mapping', () => {
-  fdescribe('When the component is getting loaded, then ngOninit', () => {
-    InitializeAdminTestBed();
+
+describe('WorkLocationMappingComponent', () => {
+  describe('When the component is loaded, then ngOnInit', () => {
+    initTestBed();
 
     it('should be created', () => {
       expect(component).toBeTruthy();
     });
-    it('should be defined', () => {
-      expect(component).toBeDefined();
-    });
-    it('checking the value of uname should not be null and shoul have some value username', () => {
-      expect(component.createdBy).not.toBe('1');
+
+    it('should read createdBy from session storage', () => {
       expect(component.createdBy).toBe('admin');
     });
-    it('should set the ProviderServiceId after OnInit', () => {
-      expect(component.serviceProviderID).not.toBe('');
-      expect(component.serviceProviderID).toBe('serviceProviderID');
+
+    it('should read serviceProviderID from session storage', () => {
+      expect(component.serviceProviderID).toBe('SP1');
     });
-    // it(' getUserName should be called after OnInit', () => {
-    //   spyOn(component, 'getUserName');
-    //   component.ngOnInit();
-    //   expect(component.getUserName).toHaveBeenCalled;
-    //   expect(component.userNamesList).not.toBe('');
-    // });
-    // it('getAllMappedWorkLocations method should be called after OnInit', () => {
-    //   spyOn(component, 'getAllMappedWorkLocations');
-    //   component.ngOnInit();
-    //   expect(component.getAllMappedWorkLocations).toHaveBeenCalled;
-    //   expect(component.mappedWorkLocationsList).not.toBe('');
-    // });
-    // it(' getAllServicelines should be called after OnInit', () => {
-    //   spyOn(component, 'getAllServicelines');
-    //   component.ngOnInit();
-    //   expect(component.getAllServicelines).toHaveBeenCalled;
-    //   expect(component.services_array).not.toBe('');
-    // });
+  });
+
+  // These tests exercise setWorkLocationObject() directly — it is pure,
+  // synchronous request-building logic (no HTTP), so it can be verified
+  // without a running backend. They confirm the on-Create village-save
+  // behavior for each service line, including the known Stop TB gap:
+  // TU/Facility save correctly, but Village is hardcoded to null on the
+  // Create path (see setWorkLocationObject's isStopTBServiceline branch).
+  describe('setWorkLocationObject — village save behavior per serviceline (Create)', () => {
+    initTestBed();
+
+    const baseUser = { userID: 1, userName: 'worker1' };
+    const baseRole = { roleID: 5, roleName: 'Field Worker' };
+
+    it('MMU: saves villageID/villageName from the plain village picker', () => {
+      component.isStopTBServiceline = false;
+      component.isFacilityServiceline = false;
+
+      const objectToBeAdded: any = {
+        user: baseUser,
+        serviceline: { serviceID: 9, serviceName: 'MMU', isNational: false },
+        state: { stateID: 2, stateName: 'Karnataka', providerServiceMapID: 77 },
+        district: { districtID: 20, districtName: 'Bidar' },
+        Serviceblock: { blockID: 300, blockName: 'Bhalki' },
+        Servicevillage: [{ villageName: 'Alamkeri', districtBranchID: 555 }],
+      };
+
+      component.setWorkLocationObject(objectToBeAdded, baseRole, false, false);
+
+      const saved = component.bufferArray.data[0];
+      expect(saved.villageID).toEqual([555]);
+      expect(saved.villageName).toEqual(['Alamkeri']);
+    });
+
+    it('FLW/HWC: saves villageID/villageName resolved via the facility sub-component', () => {
+      component.isStopTBServiceline = false;
+      component.isFacilityServiceline = true;
+      component.currentFacilityMappingData = {
+        villageIDs: [7, 8],
+        villageNames: ['V7', 'V8'],
+        facilityID: 99,
+      };
+
+      const objectToBeAdded: any = {
+        user: baseUser,
+        serviceline: { serviceID: 3, serviceName: 'HWC', isNational: false },
+        state: { stateID: 2, stateName: 'Karnataka', providerServiceMapID: 77 },
+        district: { districtID: 20, districtName: 'Bidar' },
+      };
+
+      component.setWorkLocationObject(objectToBeAdded, baseRole, false, false);
+
+      const saved = component.bufferArray.data[0];
+      expect(saved.villageID).toEqual([7, 8]);
+      expect(saved.villageName).toEqual(['V7', 'V8']);
+      expect(saved.facilityID).toBe(99);
+    });
+
+    it('Stop TB: saves TU, Facility, and Village all together on Create', () => {
+      component.isStopTBServiceline = true;
+      component.selectedNikshayTUs = [
+        { nikshayTUID: 8903, tUName: 'Bhalki-TU' },
+      ];
+      component.selectedNikshayFacilities = [
+        { nikshayFacilityID: 648139, facilityName: 'Shadole hospital' },
+      ];
+      component.selectedNikshayVillages = [
+        { nikshayVillageID: 100, villageName: 'Alamkeri' },
+      ];
+
+      const objectToBeAdded: any = {
+        user: baseUser,
+        serviceline: {
+          serviceID: 11,
+          serviceName: 'Stop TB',
+          isNational: false,
+        },
+        state: { stateID: 2, stateName: 'Karnataka', providerServiceMapID: 77 },
+        district: { nikshayDistrictID: 312, districtName: 'Bidar' },
+      };
+
+      component.setWorkLocationObject(objectToBeAdded, baseRole, false, false);
+
+      const saved = component.bufferArray.data[0];
+      expect(saved.nikshayTUID).toBe('8903');
+      expect(saved.nikshayFacilityID).toBe('648139');
+      // Village selection is now saved on Create too, same as Edit.
+      expect(saved.villageID).toEqual([100]);
+      expect(saved.villageName).toEqual(['Alamkeri']);
+    });
   });
 });
