@@ -572,11 +572,15 @@ export class WorkLocationMappingComponent
         const existingTUIDs = splitIDs(data.nikshayTUID);
         const existingFacilityIDs = splitIDs(data.nikshayFacilityID);
         // BlockID/BlockName on m_userservicerolemapping ARE the saved
-        // "Select Block" value — stamped by onNikshayBlockChange() at
-        // save time and independent of how many TUs ended up in
-        // NikshayTUID. This is the source of truth for what to
-        // pre-select there, not a guess off how many TUs come back.
-        const savedBlockID = parseInt(data.blockID, 10);
+        // "Select Block" value — stamped by onNikshayBlockChange() at save
+        // time, independent of how many TUs ended up in NikshayTUID.
+        // getNikshayUserMappingData's raw-table response does NOT include
+        // these two columns (verified against live UAT response — only
+        // nikshayTUID/nikshayFacilityID/districtID come back), so pull it
+        // from edit_Details instead — the row is already sitting there
+        // with blockID/blockName intact, sourced from getUserRoleMapped
+        // (v_userservicerolemapping) when the row was opened for Edit.
+        const savedBlockID = parseInt(this.edit_Details?.blockID, 10);
 
         // DistrictID is repurposed to hold the Nikshay district ID directly
         // for Stop TB rows (AMRIT's own DistrictID is never used for Stop
