@@ -571,6 +571,12 @@ export class WorkLocationMappingComponent
         const data = response?.data || {};
         const existingTUIDs = splitIDs(data.nikshayTUID);
         const existingFacilityIDs = splitIDs(data.nikshayFacilityID);
+        // BlockID/BlockName on m_userservicerolemapping ARE the saved
+        // "Select Block" value — stamped by onNikshayBlockChange() at
+        // save time and independent of how many TUs ended up in
+        // NikshayTUID. This is the source of truth for what to
+        // pre-select there, not a guess off how many TUs come back.
+        const savedBlockID = parseInt(data.blockID, 10);
 
         // DistrictID is repurposed to hold the Nikshay district ID directly
         // for Stop TB rows (AMRIT's own DistrictID is never used for Stop
@@ -588,6 +594,7 @@ export class WorkLocationMappingComponent
             existingTUIDs,
             existingFacilityIDs,
             uniqueVillageIDs,
+            savedBlockID,
           );
           return;
         }
@@ -739,6 +746,7 @@ export class WorkLocationMappingComponent
     existingTUIDs: any[],
     existingFacilityIDs: any[],
     uniqueVillageIDs: any[],
+    savedBlockID?: number,
   ) {
     this.worklocationmapping
       .getNikshayTUs(nikshayDistrictID)
@@ -749,13 +757,15 @@ export class WorkLocationMappingComponent
           existingTUIDs.includes(t.nikshayTUID),
         );
         // "Select Block" is a single-select quick-add convenience over this
-        // same TU list (see onNikshayBlockChange) — it has no value of its
-        // own on the backend. Pre-fill it to match whenever there's exactly
-        // one saved TU (the common case), otherwise leave it blank since
-        // there's no single TU to show against a multi-TU row.
+        // same TU list (see onNikshayBlockChange), but the saved BlockID IS
+        // its own real value on the row (stamped there at save time) —
+        // independent of how many TUs ended up in NikshayTUID afterwards.
+        // Look it up directly instead of guessing off selectedNikshayTUs.
         this.selectedNikshayBlock =
-          this.selectedNikshayTUs.length === 1
-            ? this.selectedNikshayTUs[0]
+          savedBlockID && !isNaN(savedBlockID)
+            ? this.nikshayTUList.find(
+                (t: any) => t.nikshayTUID === savedBlockID,
+              ) || null
             : null;
         if (!this.selectedNikshayTUs.length) return; // old user: nothing to pre-select, but list is loaded and usable
 
