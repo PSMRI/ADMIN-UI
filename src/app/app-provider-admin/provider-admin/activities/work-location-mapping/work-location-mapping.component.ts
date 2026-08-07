@@ -2258,12 +2258,20 @@ export class WorkLocationMappingComponent
         // districtID — reading .districtID here always came back null.
         districtID: objectToBeAdded.district?.nikshayDistrictID || null,
         district: objectToBeAdded.district?.districtName || null,
-        // Block is a single-value legacy field (both ID and Name) — kept as
-        // just the first selected TU for backward compatibility with any
-        // generic block-comparison logic elsewhere. The full multi-TU list
-        // lives in NikshayTUID/NikshayTUName, not here.
-        blockID: tuIDArrTB.length ? tuIDArrTB[0] : null,
-        blockName: tuNameArrTB.length ? tuNameArrTB[0] : null,
+        // Block is a single-value legacy field (both ID and Name). Store
+        // whichever TU the admin actually picked via "Select Block"
+        // (selectedNikshayBlock) — not just whichever TU happened to land
+        // first in the multi-select array, which was order-dependent and
+        // didn't necessarily match what "Select Block" showed on screen.
+        // Falls back to the first selected TU only when Block was never
+        // touched (e.g. admin picked TUs solely via "Select TU"). The full
+        // multi-TU list lives in NikshayTUID/NikshayTUName, not here.
+        blockID:
+          this.selectedNikshayBlock?.nikshayTUID ??
+          (tuIDArrTB.length ? tuIDArrTB[0] : null),
+        blockName:
+          this.selectedNikshayBlock?.tUName ??
+          (tuNameArrTB.length ? tuNameArrTB[0] : null),
         nikshayTUID: tuIDArrTB.length ? tuIDArrTB.join(',') : null,
         nikshayTUName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
         nikshayFacilityID: facilityIDArrTB.length
@@ -5363,15 +5371,19 @@ export class WorkLocationMappingComponent
       ? (this.selectedNikshayVillages || []).map((v: any) => v.villageName)
       : [];
 
+    // Same as Create (setWorkLocationObject): store whichever TU the admin
+    // actually picked via "Select Block" (selectedNikshayBlock), not just
+    // whichever TU landed first in the multi-select array — otherwise a
+    // saved row's blockID silently drifts to array order instead of the
+    // admin's actual Block pick, and re-editing shows the wrong block.
+    // Falls back to the first selected TU only when Block was never touched.
     const blockIDToUse = this.isStopTBServicelineEdit
-      ? nikshayTUIDArr.length
-        ? nikshayTUIDArr[0]
-        : null
+      ? this.selectedNikshayBlock?.nikshayTUID ??
+        (nikshayTUIDArr.length ? nikshayTUIDArr[0] : null)
       : this.ServiceEditblock;
     const blockNameToUse = this.isStopTBServicelineEdit
-      ? nikshayTUNameArr.length
-        ? nikshayTUNameArr[0]
-        : null
+      ? this.selectedNikshayBlock?.tUName ??
+        (nikshayTUNameArr.length ? nikshayTUNameArr[0] : null)
       : this.blockname;
     const villageIDToUse = this.isStopTBServicelineEdit
       ? nikshayVillageIDArr.length
