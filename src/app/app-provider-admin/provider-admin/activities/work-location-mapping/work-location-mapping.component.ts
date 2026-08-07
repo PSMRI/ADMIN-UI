@@ -748,6 +748,15 @@ export class WorkLocationMappingComponent
         this.selectedNikshayTUs = this.nikshayTUList.filter((t: any) =>
           existingTUIDs.includes(t.nikshayTUID),
         );
+        // "Select Block" is a single-select quick-add convenience over this
+        // same TU list (see onNikshayBlockChange) — it has no value of its
+        // own on the backend. Pre-fill it to match whenever there's exactly
+        // one saved TU (the common case), otherwise leave it blank since
+        // there's no single TU to show against a multi-TU row.
+        this.selectedNikshayBlock =
+          this.selectedNikshayTUs.length === 1
+            ? this.selectedNikshayTUs[0]
+            : null;
         if (!this.selectedNikshayTUs.length) return; // old user: nothing to pre-select, but list is loaded and usable
 
         const tuIDs = this.selectedNikshayTUs.map((t: any) => t.nikshayTUID);
