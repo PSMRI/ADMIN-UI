@@ -571,6 +571,16 @@ export class WorkLocationMappingComponent
         const data = response?.data || {};
         const existingTUIDs = splitIDs(data.nikshayTUID);
         const existingFacilityIDs = splitIDs(data.nikshayFacilityID);
+        // BlockID/BlockName on m_userservicerolemapping ARE the saved
+        // "Select Block" value — stamped by onNikshayBlockChange() at save
+        // time, independent of how many TUs ended up in NikshayTUID.
+        // getNikshayUserMappingData's raw-table response does NOT include
+        // these two columns (verified against live UAT response — only
+        // nikshayTUID/nikshayFacilityID/districtID come back), so pull it
+        // from edit_Details instead — the row is already sitting there
+        // with blockID/blockName intact, sourced from getUserRoleMapped
+        // (v_userservicerolemapping) when the row was opened for Edit.
+        const savedBlockID = parseInt(this.edit_Details?.blockID, 10);
 
         // DistrictID is repurposed to hold the Nikshay district ID directly
         // for Stop TB rows (AMRIT's own DistrictID is never used for Stop
@@ -588,6 +598,7 @@ export class WorkLocationMappingComponent
             existingTUIDs,
             existingFacilityIDs,
             uniqueVillageIDs,
+            savedBlockID,
           );
           return;
         }
@@ -739,6 +750,7 @@ export class WorkLocationMappingComponent
     existingTUIDs: any[],
     existingFacilityIDs: any[],
     uniqueVillageIDs: any[],
+    savedBlockID?: number,
   ) {
     this.worklocationmapping
       .getNikshayTUs(nikshayDistrictID)
@@ -748,6 +760,17 @@ export class WorkLocationMappingComponent
         this.selectedNikshayTUs = this.nikshayTUList.filter((t: any) =>
           existingTUIDs.includes(t.nikshayTUID),
         );
+        // "Select Block" is a single-select quick-add convenience over this
+        // same TU list (see onNikshayBlockChange), but the saved BlockID IS
+        // its own real value on the row (stamped there at save time) —
+        // independent of how many TUs ended up in NikshayTUID afterwards.
+        // Look it up directly instead of guessing off selectedNikshayTUs.
+        this.selectedNikshayBlock =
+          savedBlockID && !isNaN(savedBlockID)
+            ? this.nikshayTUList.find(
+                (t: any) => t.nikshayTUID === savedBlockID,
+              ) || null
+            : null;
         if (!this.selectedNikshayTUs.length) return; // old user: nothing to pre-select, but list is loaded and usable
 
         const tuIDs = this.selectedNikshayTUs.map((t: any) => t.nikshayTUID);
@@ -2239,12 +2262,20 @@ export class WorkLocationMappingComponent
         // districtID — reading .districtID here always came back null.
         districtID: objectToBeAdded.district?.nikshayDistrictID || null,
         district: objectToBeAdded.district?.districtName || null,
-        // Block is a single-value legacy field (both ID and Name) — kept as
-        // just the first selected TU for backward compatibility with any
-        // generic block-comparison logic elsewhere. The full multi-TU list
-        // lives in NikshayTUID/NikshayTUName, not here.
-        blockID: tuIDArrTB.length ? tuIDArrTB[0] : null,
-        blockName: tuNameArrTB.length ? tuNameArrTB[0] : null,
+        // Block is a single-value legacy field (both ID and Name). Store
+        // whichever TU the admin actually picked via "Select Block"
+        // (selectedNikshayBlock) — not just whichever TU happened to land
+        // first in the multi-select array, which was order-dependent and
+        // didn't necessarily match what "Select Block" showed on screen.
+        // Falls back to the first selected TU only when Block was never
+        // touched (e.g. admin picked TUs solely via "Select TU"). The full
+        // multi-TU list lives in NikshayTUID/NikshayTUName, not here.
+        blockID:
+          this.selectedNikshayBlock?.nikshayTUID ??
+          (tuIDArrTB.length ? tuIDArrTB[0] : null),
+        blockName:
+          this.selectedNikshayBlock?.tUName ??
+          (tuNameArrTB.length ? tuNameArrTB[0] : null),
         nikshayTUID: tuIDArrTB.length ? tuIDArrTB.join(',') : null,
         nikshayTUName: tuNameArrTB.length ? tuNameArrTB.join(', ') : null,
         nikshayFacilityID: facilityIDArrTB.length
@@ -5344,15 +5375,19 @@ export class WorkLocationMappingComponent
       ? (this.selectedNikshayVillages || []).map((v: any) => v.villageName)
       : [];
 
+    // Same as Create (setWorkLocationObject): store whichever TU the admin
+    // actually picked via "Select Block" (selectedNikshayBlock), not just
+    // whichever TU landed first in the multi-select array — otherwise a
+    // saved row's blockID silently drifts to array order instead of the
+    // admin's actual Block pick, and re-editing shows the wrong block.
+    // Falls back to the first selected TU only when Block was never touched.
     const blockIDToUse = this.isStopTBServicelineEdit
-      ? nikshayTUIDArr.length
-        ? nikshayTUIDArr[0]
-        : null
+      ? this.selectedNikshayBlock?.nikshayTUID ??
+        (nikshayTUIDArr.length ? nikshayTUIDArr[0] : null)
       : this.ServiceEditblock;
     const blockNameToUse = this.isStopTBServicelineEdit
-      ? nikshayTUNameArr.length
-        ? nikshayTUNameArr[0]
-        : null
+      ? this.selectedNikshayBlock?.tUName ??
+        (nikshayTUNameArr.length ? nikshayTUNameArr[0] : null)
       : this.blockname;
     const villageIDToUse = this.isStopTBServicelineEdit
       ? nikshayVillageIDArr.length
