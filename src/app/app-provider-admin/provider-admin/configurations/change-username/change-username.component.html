@@ -1,0 +1,152 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>Change Username</h4>
+      <p class="screen-note">
+        Renaming a user also repoints the Created By and Modified By records
+        they own. Preview the change before applying it — it cannot be undone.
+      </p>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Select User</mat-label>
+        <mat-select
+          [(ngModel)]="user"
+          name="user"
+          (selectionChange)="onSelectionChange()"
+          required
+        >
+          <mat-option *ngFor="let item of userNamesList" [value]="item">
+            {{ item.userName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Current Username</mat-label>
+        <input matInput [value]="user?.userName || ''" disabled />
+      </mat-form-field>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>New Username</mat-label>
+        <input
+          matInput
+          [(ngModel)]="newUserName"
+          name="newUserName"
+          (ngModelChange)="onSelectionChange()"
+          [maxlength]="effectiveMaxLength"
+          required
+        />
+        <mat-hint>Maximum {{ effectiveMaxLength }} characters</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-6 m-t-10">
+      <mat-checkbox
+        [(ngModel)]="updateContactFields"
+        name="updateContactFields"
+        (ngModelChange)="onSelectionChange()"
+      >
+        Also update contact numbers
+      </mat-checkbox>
+      <p class="screen-note">
+        Only tick this where the username is the user's mobile number. It
+        overwrites Contact No and Emergency Contact No, which limits the new
+        username to {{ maxContactLength }} characters.
+      </p>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="validationMessage && user">
+    <div class="col-xs-12 col-sm-12">
+      <p class="validation-note">{{ validationMessage }}</p>
+    </div>
+  </div>
+
+  <div class="row m-t-10">
+    <div class="col-xs-12 col-sm-12">
+      <button
+        mat-raised-button
+        color="primary"
+        [disabled]="!canSubmit"
+        (click)="preview()"
+      >
+        Preview Impact
+      </button>
+      <button
+        mat-raised-button
+        color="warn"
+        class="m-l-10"
+        [disabled]="!canSubmit || !previewResult"
+        (click)="confirmAndRename()"
+      >
+        Apply Rename
+      </button>
+    </div>
+  </div>
+
+  <!-- Preview: what the rename would touch, nothing committed yet -->
+  <div class="row m-t-20" *ngIf="previewResult">
+    <div class="col-xs-12 col-sm-12">
+      <h5>
+        Preview — {{ previewResult.totalRowsAffected }} rows across
+        {{ previewResult.tablesAffected }} tables
+      </h5>
+      <div class="table-responsive">
+        <table
+          mat-table
+          class="table table-striped table-hover"
+          [dataSource]="asRows(previewResult)"
+        >
+          <ng-container matColumnDef="table">
+            <th mat-header-cell *matHeaderCellDef>Table</th>
+            <td mat-cell *matCellDef="let element">{{ element.table }}</td>
+          </ng-container>
+          <ng-container matColumnDef="rows">
+            <th mat-header-cell *matHeaderCellDef>Rows</th>
+            <td mat-cell *matCellDef="let element">{{ element.rows }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Result of a committed rename -->
+  <div class="row m-t-20" *ngIf="renameResult">
+    <div class="col-xs-12 col-sm-12">
+      <h5>
+        Renamed {{ renameResult.oldUserName }} to
+        {{ renameResult.newUserName }} —
+        {{ renameResult.totalRowsAffected }} rows updated across
+        {{ renameResult.tablesAffected }} tables
+      </h5>
+      <div class="table-responsive">
+        <table
+          mat-table
+          class="table table-striped table-hover"
+          [dataSource]="asRows(renameResult)"
+        >
+          <ng-container matColumnDef="table">
+            <th mat-header-cell *matHeaderCellDef>Table</th>
+            <td mat-cell *matCellDef="let element">{{ element.table }}</td>
+          </ng-container>
+          <ng-container matColumnDef="rows">
+            <th mat-header-cell *matHeaderCellDef>Rows</th>
+            <td mat-cell *matCellDef="let element">{{ element.rows }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
