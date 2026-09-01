@@ -38,7 +38,7 @@
           matInput
           [(ngModel)]="newUserName"
           name="newUserName"
-          (ngModelChange)="onSelectionChange()"
+          (ngModelChange)="onIdentifierChange()"
           [maxlength]="effectiveMaxLength"
           required
         />
@@ -52,7 +52,7 @@
       <mat-checkbox
         [(ngModel)]="updateEmployeeId"
         name="updateEmployeeId"
-        (ngModelChange)="onSelectionChange()"
+        (ngModelChange)="onIdentifierChange()"
       >
         Also update Employee ID
       </mat-checkbox>
@@ -78,7 +78,7 @@
           matInput
           [(ngModel)]="newEmployeeId"
           name="newEmployeeId"
-          (ngModelChange)="onSelectionChange()"
+          (ngModelChange)="onIdentifierChange()"
           [maxlength]="maxEmployeeIdLength"
           required
         />

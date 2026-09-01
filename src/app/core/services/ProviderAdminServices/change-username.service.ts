@@ -29,6 +29,7 @@ export class ChangeUsernameService {
   adminBaseUrl: any;
   getUserListUrl: any;
   getUserDetailUrl: any;
+  checkAvailabilityUrl: any;
   renameUsernameUrl: any;
 
   constructor(
@@ -40,6 +41,8 @@ export class ChangeUsernameService {
     this.getUserListUrl = this.adminBaseUrl + 'm/SearchEmployee4';
     this.getUserDetailUrl =
       this.adminBaseUrl + 'm/FindEmployeeDetailsByUserName';
+    this.checkAvailabilityUrl =
+      this.adminBaseUrl + 'username/checkAvailability';
     this.renameUsernameUrl = this.adminBaseUrl + 'username/renameUsername';
   }
 
@@ -52,6 +55,15 @@ export class ChangeUsernameService {
   /** SearchEmployee4 omits employeeID, so the current value is fetched per user. */
   getUserDetail(userName: any): Observable<any> {
     return this.http.post(this.getUserDetailUrl, { userName: userName });
+  }
+
+  /**
+   * Uses the rename API's own check rather than m/FindEmployeeByName, which
+   * filters out soft-deleted users — those still hold the UNIQUE key, so it
+   * would report a name as free that the rename then rejects.
+   */
+  checkAvailability(checkObject: any): Observable<any> {
+    return this.http.post(this.checkAvailabilityUrl, checkObject);
   }
 
   renameUsername(renameObject: any): Observable<any> {

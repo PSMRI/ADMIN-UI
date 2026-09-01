@@ -50,6 +50,11 @@ export class ChangeUsernameComponent implements OnInit {
   renameResult: any = null;
   submitting = false;
 
+  /** Set from the server's availability check, not inferred locally. */
+  userNameTaken = false;
+  employeeIdTaken = false;
+  checkingAvailability = false;
+
   /**
    * m_user.ContactNo is varchar(12) and the rename writes the username into it,
    * so the contact-field option tightens the limit from the UserName max of 20.
@@ -83,6 +88,44 @@ export class ChangeUsernameComponent implements OnInit {
   /** Clears the previous result so it can't be mistaken for the new selection. */
   onSelectionChange() {
     this.renameResult = null;
+  }
+
+  /**
+   * Re-checks against the server on every edit. Any pending verdict is cleared
+   * first so a stale "available" can never gate a submit.
+   */
+  onIdentifierChange() {
+    this.onSelectionChange();
+    this.userNameTaken = false;
+    this.employeeIdTaken = false;
+    if (!this.user) {
+      return;
+    }
+    const newUserName = (this.newUserName || '').trim();
+    const newEmployeeId = this.updateEmployeeId
+      ? (this.newEmployeeId || '').trim()
+      : '';
+    if (!newUserName && !newEmployeeId) {
+      return;
+    }
+    this.checkingAvailability = true;
+    this.changeUsernameService
+      .checkAvailability({
+        oldUserName: this.user.userName,
+        newUserName: newUserName,
+        newEmployeeId: newEmployeeId || null,
+      })
+      .subscribe(
+        (response: any) => {
+          this.checkingAvailability = false;
+          this.userNameTaken = response.data?.userNameAvailable === false;
+          this.employeeIdTaken = response.data?.employeeIdAvailable === false;
+        },
+        () => {
+          // Leave the flags clear — the rename re-validates server-side anyway.
+          this.checkingAvailability = false;
+        },
+      );
   }
 
   onUserChange() {
@@ -122,6 +165,9 @@ export class ChangeUsernameComponent implements OnInit {
         ? `Maximum ${this.maxContactLength} characters while contact numbers are being updated`
         : `Maximum ${this.maxUserNameLength} characters`;
     }
+    if (this.userNameTaken) {
+      return `Username ${trimmed} is already in use`;
+    }
     if (this.updateEmployeeId) {
       const employeeId = (this.newEmployeeId || '').trim();
       if (!employeeId) {
@@ -130,12 +176,19 @@ export class ChangeUsernameComponent implements OnInit {
       if (employeeId.length > this.maxEmployeeIdLength) {
         return `Employee ID: maximum ${this.maxEmployeeIdLength} characters`;
       }
+      if (this.employeeIdTaken) {
+        return `Employee ID ${employeeId} is already in use`;
+      }
     }
     return null;
   }
 
   get canSubmit(): boolean {
-    return this.validationMessage === null && !this.submitting;
+    return (
+      this.validationMessage === null &&
+      !this.submitting &&
+      !this.checkingAvailability
+    );
   }
 
   private buildRequest() {
@@ -180,6 +233,8 @@ export class ChangeUsernameComponent implements OnInit {
         this.newEmployeeId = '';
         this.currentEmployeeId = '';
         this.updateEmployeeId = false;
+        this.userNameTaken = false;
+        this.employeeIdTaken = false;
         this.user = null;
         this.getUserList();
       },
