@@ -28,6 +28,7 @@ import { ConfigService } from '../config/config.service';
 export class ChangeUsernameService {
   adminBaseUrl: any;
   getUserListUrl: any;
+  getUserDetailUrl: any;
   renameUsernameUrl: any;
 
   constructor(
@@ -37,6 +38,8 @@ export class ChangeUsernameService {
     this.adminBaseUrl = this.basepaths.getAdminBaseUrl();
 
     this.getUserListUrl = this.adminBaseUrl + 'm/SearchEmployee4';
+    this.getUserDetailUrl =
+      this.adminBaseUrl + 'm/FindEmployeeDetailsByUserName';
     this.renameUsernameUrl = this.adminBaseUrl + 'username/renameUsername';
   }
 
@@ -44,6 +47,11 @@ export class ChangeUsernameService {
     return this.http.post(this.getUserListUrl, {
       serviceProviderID: serviceProviderID,
     });
+  }
+
+  /** SearchEmployee4 omits employeeID, so the current value is fetched per user. */
+  getUserDetail(userName: any): Observable<any> {
+    return this.http.post(this.getUserDetailUrl, { userName: userName });
   }
 
   renameUsername(renameObject: any): Observable<any> {

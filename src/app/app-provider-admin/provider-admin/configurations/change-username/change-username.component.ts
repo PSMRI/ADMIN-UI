@@ -34,6 +34,11 @@ export class ChangeUsernameComponent implements OnInit {
   user: any;
   newUserName = '';
 
+  /** Employee ID is left untouched unless the admin opts in. */
+  updateEmployeeId = false;
+  currentEmployeeId = '';
+  newEmployeeId = '';
+
   userNamesList: any = [];
 
   /**
@@ -51,6 +56,7 @@ export class ChangeUsernameComponent implements OnInit {
    */
   readonly maxUserNameLength = 20;
   readonly maxContactLength = 12;
+  readonly maxEmployeeIdLength = 20;
 
   displayedColumns = ['table', 'rows'];
 
@@ -79,6 +85,21 @@ export class ChangeUsernameComponent implements OnInit {
     this.renameResult = null;
   }
 
+  onUserChange() {
+    this.onSelectionChange();
+    this.currentEmployeeId = '';
+    this.newEmployeeId = '';
+    if (!this.user) {
+      return;
+    }
+    this.changeUsernameService.getUserDetail(this.user.userName).subscribe(
+      (response: any) => {
+        this.currentEmployeeId = response.data?.employeeID || '';
+      },
+      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+    );
+  }
+
   get effectiveMaxLength(): number {
     return this.updateContactFields
       ? this.maxContactLength
@@ -101,6 +122,15 @@ export class ChangeUsernameComponent implements OnInit {
         ? `Maximum ${this.maxContactLength} characters while contact numbers are being updated`
         : `Maximum ${this.maxUserNameLength} characters`;
     }
+    if (this.updateEmployeeId) {
+      const employeeId = (this.newEmployeeId || '').trim();
+      if (!employeeId) {
+        return 'Enter the new employee ID';
+      }
+      if (employeeId.length > this.maxEmployeeIdLength) {
+        return `Employee ID: maximum ${this.maxEmployeeIdLength} characters`;
+      }
+    }
     return null;
   }
 
@@ -112,6 +142,10 @@ export class ChangeUsernameComponent implements OnInit {
     return {
       oldUserName: this.user.userName,
       newUserName: (this.newUserName || '').trim(),
+      updateEmployeeId: this.updateEmployeeId,
+      newEmployeeId: this.updateEmployeeId
+        ? (this.newEmployeeId || '').trim()
+        : null,
       updateContactFields: this.updateContactFields,
     };
   }
@@ -143,6 +177,9 @@ export class ChangeUsernameComponent implements OnInit {
         this.renameResult = response.data;
         this.alertService.alert('Username updated successfully', 'success');
         this.newUserName = '';
+        this.newEmployeeId = '';
+        this.currentEmployeeId = '';
+        this.updateEmployeeId = false;
         this.user = null;
         this.getUserList();
       },
