@@ -28,7 +28,6 @@ import { ConfigService } from '../config/config.service';
 export class ChangeUsernameService {
   adminBaseUrl: any;
   getUserListUrl: any;
-  previewRenameUrl: any;
   renameUsernameUrl: any;
 
   constructor(
@@ -38,8 +37,6 @@ export class ChangeUsernameService {
     this.adminBaseUrl = this.basepaths.getAdminBaseUrl();
 
     this.getUserListUrl = this.adminBaseUrl + 'm/SearchEmployee4';
-    this.previewRenameUrl =
-      this.adminBaseUrl + 'username/renameUsername/preview';
     this.renameUsernameUrl = this.adminBaseUrl + 'username/renameUsername';
   }
 
@@ -47,11 +44,6 @@ export class ChangeUsernameService {
     return this.http.post(this.getUserListUrl, {
       serviceProviderID: serviceProviderID,
     });
-  }
-
-  /** Reports what the rename would touch. Commits nothing. */
-  previewRename(renameObject: any): Observable<any> {
-    return this.http.post(this.previewRenameUrl, renameObject);
   }
 
   renameUsername(renameObject: any): Observable<any> {

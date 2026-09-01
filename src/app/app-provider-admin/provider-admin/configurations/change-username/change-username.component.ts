@@ -42,7 +42,6 @@ export class ChangeUsernameComponent implements OnInit {
    */
   updateContactFields = true;
 
-  previewResult: any = null;
   renameResult: any = null;
   submitting = false;
 
@@ -75,9 +74,8 @@ export class ChangeUsernameComponent implements OnInit {
     );
   }
 
-  /** Clears any previous run so a stale preview can't be confirmed. */
+  /** Clears the previous result so it can't be mistaken for the new selection. */
   onSelectionChange() {
-    this.previewResult = null;
     this.renameResult = null;
   }
 
@@ -118,28 +116,8 @@ export class ChangeUsernameComponent implements OnInit {
     };
   }
 
-  preview() {
-    if (!this.canSubmit) {
-      return;
-    }
-    this.submitting = true;
-    this.renameResult = null;
-    this.changeUsernameService.previewRename(this.buildRequest()).subscribe(
-      (response: any) => {
-        this.submitting = false;
-        this.previewResult = response.data;
-      },
-      (err: any) => {
-        this.submitting = false;
-        this.previewResult = null;
-        this.alertService.alert(err.errorMessage, 'error');
-      },
-    );
-  }
-
-  /** Requires a preview first, so the row counts are always seen before committing. */
   confirmAndRename() {
-    if (!this.canSubmit || !this.previewResult) {
+    if (!this.canSubmit) {
       return;
     }
     const request = this.buildRequest();
@@ -147,7 +125,8 @@ export class ChangeUsernameComponent implements OnInit {
       .confirm(
         'Confirm',
         `Rename ${request.oldUserName} to ${request.newUserName}? ` +
-          `This will repoint ${this.previewResult.totalRowsAffected} audit rows and cannot be undone.`,
+          `This also repoints the Created By and Modified By records they own, ` +
+          `and cannot be undone.`,
       )
       .subscribe((accept: any) => {
         if (accept) {
@@ -162,7 +141,6 @@ export class ChangeUsernameComponent implements OnInit {
       (response: any) => {
         this.submitting = false;
         this.renameResult = response.data;
-        this.previewResult = null;
         this.alertService.alert('Username updated successfully', 'success');
         this.newUserName = '';
         this.user = null;
