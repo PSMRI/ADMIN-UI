@@ -4,7 +4,8 @@
       <h4>Change Username</h4>
       <p class="screen-note">
         Renaming a user also repoints the Created By and Modified By records
-        they own. This cannot be undone.
+        they own. Fill in only what you want to change — leave a field blank to
+        keep its current value. This cannot be undone.
       </p>
     </div>
 
@@ -38,9 +39,8 @@
           matInput
           [(ngModel)]="newUserName"
           name="newUserName"
-          (ngModelChange)="onIdentifierChange()"
+          (keyup)="checkUserNameAvailability()"
           [maxlength]="effectiveMaxLength"
-          required
         />
         <mat-hint>Maximum {{ effectiveMaxLength }} characters</mat-hint>
       </mat-form-field>
@@ -48,22 +48,6 @@
   </div>
 
   <div class="row">
-    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-6 m-t-10">
-      <mat-checkbox
-        [(ngModel)]="updateEmployeeId"
-        name="updateEmployeeId"
-        (ngModelChange)="onIdentifierChange()"
-      >
-        Also update Employee ID
-      </mat-checkbox>
-      <p class="screen-note">
-        Leave this unticked to change the username only — the Employee ID keeps
-        its current value.
-      </p>
-    </div>
-  </div>
-
-  <div class="row" *ngIf="updateEmployeeId">
     <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
       <mat-form-field [style.width]="'100%'">
         <mat-label>Current Employee ID</mat-label>
@@ -78,9 +62,8 @@
           matInput
           [(ngModel)]="newEmployeeId"
           name="newEmployeeId"
-          (ngModelChange)="onIdentifierChange()"
+          (keyup)="checkEmployeeIdAvailability()"
           [maxlength]="maxEmployeeIdLength"
-          required
         />
         <mat-hint>Maximum {{ maxEmployeeIdLength }} characters</mat-hint>
       </mat-form-field>

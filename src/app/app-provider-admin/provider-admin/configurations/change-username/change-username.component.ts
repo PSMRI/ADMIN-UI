@@ -34,8 +34,6 @@ export class ChangeUsernameComponent implements OnInit {
   user: any;
   newUserName = '';
 
-  /** Employee ID is left untouched unless the admin opts in. */
-  updateEmployeeId = false;
   currentEmployeeId = '';
   newEmployeeId = '';
 
@@ -53,7 +51,6 @@ export class ChangeUsernameComponent implements OnInit {
   /** Set from the server's availability check, not inferred locally. */
   userNameTaken = false;
   employeeIdTaken = false;
-  checkingAvailability = false;
 
   /**
    * m_user.ContactNo is varchar(12) and the rename writes the username into it,
@@ -90,48 +87,14 @@ export class ChangeUsernameComponent implements OnInit {
     this.renameResult = null;
   }
 
-  /**
-   * Re-checks against the server on every edit. Any pending verdict is cleared
-   * first so a stale "available" can never gate a submit.
-   */
-  onIdentifierChange() {
-    this.onSelectionChange();
-    this.userNameTaken = false;
-    this.employeeIdTaken = false;
-    if (!this.user) {
-      return;
-    }
-    const newUserName = (this.newUserName || '').trim();
-    const newEmployeeId = this.updateEmployeeId
-      ? (this.newEmployeeId || '').trim()
-      : '';
-    if (!newUserName && !newEmployeeId) {
-      return;
-    }
-    this.checkingAvailability = true;
-    this.changeUsernameService
-      .checkAvailability({
-        oldUserName: this.user.userName,
-        newUserName: newUserName,
-        newEmployeeId: newEmployeeId || null,
-      })
-      .subscribe(
-        (response: any) => {
-          this.checkingAvailability = false;
-          this.userNameTaken = response.data?.userNameAvailable === false;
-          this.employeeIdTaken = response.data?.employeeIdAvailable === false;
-        },
-        () => {
-          // Leave the flags clear — the rename re-validates server-side anyway.
-          this.checkingAvailability = false;
-        },
-      );
-  }
-
+  /** Loads the picked user's current Employee ID and clears any prior entry. */
   onUserChange() {
     this.onSelectionChange();
     this.currentEmployeeId = '';
+    this.newUserName = '';
     this.newEmployeeId = '';
+    this.userNameTaken = false;
+    this.employeeIdTaken = false;
     if (!this.user) {
       return;
     }
@@ -143,6 +106,41 @@ export class ChangeUsernameComponent implements OnInit {
     );
   }
 
+  /**
+   * Mirrors the Employee Master screen: check on each edit, and skip the check
+   * when the value still equals the user's own current one — that would always
+   * come back "exists" and wrongly block the save.
+   */
+  checkUserNameAvailability() {
+    this.onSelectionChange();
+    this.userNameTaken = false;
+    const newUserName = (this.newUserName || '').trim();
+    if (!this.user || !newUserName || newUserName === this.user.userName) {
+      return;
+    }
+    this.changeUsernameService.checkUserAvailability(newUserName).subscribe(
+      (response: any) => {
+        this.userNameTaken = response.data?.response === 'userexist';
+      },
+      (err: any) => console.log('error', err),
+    );
+  }
+
+  checkEmployeeIdAvailability() {
+    this.onSelectionChange();
+    this.employeeIdTaken = false;
+    const newEmployeeId = (this.newEmployeeId || '').trim();
+    if (!newEmployeeId || newEmployeeId === this.currentEmployeeId) {
+      return;
+    }
+    this.changeUsernameService.checkEmpIdAvailability(newEmployeeId).subscribe(
+      (response: any) => {
+        this.employeeIdTaken = response.data?.response === 'true';
+      },
+      (err: any) => console.log('error', err),
+    );
+  }
+
   get effectiveMaxLength(): number {
     return this.updateContactFields
       ? this.maxContactLength
@@ -150,55 +148,51 @@ export class ChangeUsernameComponent implements OnInit {
   }
 
   get validationMessage(): string | null {
-    const trimmed = (this.newUserName || '').trim();
     if (!this.user) {
       return 'Select a user';
     }
-    if (!trimmed) {
-      return 'Enter the new username';
+    const newUserName = (this.newUserName || '').trim();
+    const newEmployeeId = (this.newEmployeeId || '').trim();
+
+    const userNameChanged = !!newUserName && newUserName !== this.user.userName;
+    const employeeIdChanged =
+      !!newEmployeeId && newEmployeeId !== this.currentEmployeeId;
+
+    if (!userNameChanged && !employeeIdChanged) {
+      return 'Enter a new username or a new employee ID';
     }
-    if (trimmed === this.user.userName) {
-      return 'New username is the same as the current username';
-    }
-    if (trimmed.length > this.effectiveMaxLength) {
-      return this.updateContactFields
-        ? `Maximum ${this.maxContactLength} characters while contact numbers are being updated`
-        : `Maximum ${this.maxUserNameLength} characters`;
-    }
-    if (this.userNameTaken) {
-      return `Username ${trimmed} is already in use`;
-    }
-    if (this.updateEmployeeId) {
-      const employeeId = (this.newEmployeeId || '').trim();
-      if (!employeeId) {
-        return 'Enter the new employee ID';
+    if (userNameChanged) {
+      if (newUserName.length > this.effectiveMaxLength) {
+        return this.updateContactFields
+          ? `Maximum ${this.maxContactLength} characters while contact numbers are being updated`
+          : `Maximum ${this.maxUserNameLength} characters`;
       }
-      if (employeeId.length > this.maxEmployeeIdLength) {
+      if (this.userNameTaken) {
+        return `Username ${newUserName} is already in use`;
+      }
+    }
+    if (employeeIdChanged) {
+      if (newEmployeeId.length > this.maxEmployeeIdLength) {
         return `Employee ID: maximum ${this.maxEmployeeIdLength} characters`;
       }
       if (this.employeeIdTaken) {
-        return `Employee ID ${employeeId} is already in use`;
+        return `Employee ID ${newEmployeeId} is already in use`;
       }
     }
     return null;
   }
 
   get canSubmit(): boolean {
-    return (
-      this.validationMessage === null &&
-      !this.submitting &&
-      !this.checkingAvailability
-    );
+    return this.validationMessage === null && !this.submitting;
   }
 
   private buildRequest() {
+    const newUserName = (this.newUserName || '').trim();
+    const newEmployeeId = (this.newEmployeeId || '').trim();
     return {
       oldUserName: this.user.userName,
-      newUserName: (this.newUserName || '').trim(),
-      updateEmployeeId: this.updateEmployeeId,
-      newEmployeeId: this.updateEmployeeId
-        ? (this.newEmployeeId || '').trim()
-        : null,
+      newUserName: newUserName || null,
+      newEmployeeId: newEmployeeId || null,
       updateContactFields: this.updateContactFields,
     };
   }
@@ -209,17 +203,31 @@ export class ChangeUsernameComponent implements OnInit {
     }
     const request = this.buildRequest();
     this.alertService
-      .confirm(
-        'Confirm',
-        `Rename ${request.oldUserName} to ${request.newUserName}? ` +
-          `This also repoints the Created By and Modified By records they own, ` +
-          `and cannot be undone.`,
-      )
+      .confirm('Confirm', this.confirmMessage(request))
       .subscribe((accept: any) => {
         if (accept) {
           this.rename(request);
         }
       });
+  }
+
+  /** Describes only what is actually changing, since either field may be skipped. */
+  private confirmMessage(request: any): string {
+    const changes: string[] = [];
+    if (request.newUserName) {
+      changes.push(
+        `username from ${request.oldUserName} to ${request.newUserName}`,
+      );
+    }
+    if (request.newEmployeeId) {
+      changes.push(
+        `employee ID from ${this.currentEmployeeId || 'not set'} to ${request.newEmployeeId}`,
+      );
+    }
+    const audit = request.newUserName
+      ? ' This also repoints the Created By and Modified By records they own.'
+      : '';
+    return `Change ${changes.join(' and ')}?${audit} This cannot be undone.`;
   }
 
   private rename(request: any) {
@@ -232,7 +240,6 @@ export class ChangeUsernameComponent implements OnInit {
         this.newUserName = '';
         this.newEmployeeId = '';
         this.currentEmployeeId = '';
-        this.updateEmployeeId = false;
         this.userNameTaken = false;
         this.employeeIdTaken = false;
         this.user = null;

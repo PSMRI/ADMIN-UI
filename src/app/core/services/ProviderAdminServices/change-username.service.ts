@@ -29,7 +29,8 @@ export class ChangeUsernameService {
   adminBaseUrl: any;
   getUserListUrl: any;
   getUserDetailUrl: any;
-  checkAvailabilityUrl: any;
+  checkUserAvailabilityUrl: any;
+  checkEmpIdAvailabilityUrl: any;
   renameUsernameUrl: any;
 
   constructor(
@@ -41,8 +42,9 @@ export class ChangeUsernameService {
     this.getUserListUrl = this.adminBaseUrl + 'm/SearchEmployee4';
     this.getUserDetailUrl =
       this.adminBaseUrl + 'm/FindEmployeeDetailsByUserName';
-    this.checkAvailabilityUrl =
-      this.adminBaseUrl + 'username/checkAvailability';
+    this.checkUserAvailabilityUrl = this.adminBaseUrl + 'm/FindEmployeeByName';
+    this.checkEmpIdAvailabilityUrl =
+      this.adminBaseUrl + 'm/FindEmployeeDetails';
     this.renameUsernameUrl = this.adminBaseUrl + 'username/renameUsername';
   }
 
@@ -57,13 +59,17 @@ export class ChangeUsernameService {
     return this.http.post(this.getUserDetailUrl, { userName: userName });
   }
 
-  /**
-   * Uses the rename API's own check rather than m/FindEmployeeByName, which
-   * filters out soft-deleted users — those still hold the UNIQUE key, so it
-   * would report a name as free that the rename then rejects.
-   */
-  checkAvailability(checkObject: any): Observable<any> {
-    return this.http.post(this.checkAvailabilityUrl, checkObject);
+  /** Same endpoints the Employee Master screen uses for its availability hints. */
+  checkUserAvailability(userName: any): Observable<any> {
+    return this.http.post(this.checkUserAvailabilityUrl, {
+      userName: userName,
+    });
+  }
+
+  checkEmpIdAvailability(employeeId: any): Observable<any> {
+    return this.http.post(this.checkEmpIdAvailabilityUrl, {
+      employeeID: employeeId,
+    });
   }
 
   renameUsername(renameObject: any): Observable<any> {
