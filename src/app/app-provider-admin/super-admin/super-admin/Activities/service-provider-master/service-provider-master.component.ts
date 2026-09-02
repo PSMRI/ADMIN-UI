@@ -28,7 +28,6 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 
-
 @Component({
   selector: 'app-service-provider-master',
   templateUrl: './service-provider-master.component.html',
@@ -105,16 +104,24 @@ export class ServiceProviderMasterComponent implements OnInit {
     this.createdBy = this.commonDataService.uname;
     this.today = new Date();
     this.validFrom = this.today;
-    this.validTill = this.today;
+    this.validTill = this.getDefaultValidTill();
 
     this.getAllProviders();
   }
 
+  /* Defaults Valid Till to 5 years out so a provider isn't accidentally
+   * created with an expiry of "today", which locks out login the next day. */
+  getDefaultValidTill(): Date {
+    const defaultValidTill = new Date(this.today);
+    defaultValidTill.setFullYear(defaultValidTill.getFullYear() + 5);
+    return defaultValidTill;
+  }
+
   @ViewChild(MatSort) sort!: MatSort;
   ngAfterViewInit() {
-  this.filteredsearchResult.sort = this.sort;
+    this.filteredsearchResult.sort = this.sort;
   }
-  
+
   showTable() {
     if (this.editMode) {
       this.tableMode = true;
@@ -127,7 +134,7 @@ export class ServiceProviderMasterComponent implements OnInit {
       /* resetting date if moving BACK from edit mode */
       this.today = new Date();
       this.validFrom = this.today;
-      this.validTill = this.today;
+      this.validTill = this.getDefaultValidTill();
     } else {
       this.tableMode = true;
       this.formMode = false;
@@ -427,6 +434,6 @@ export class ServiceProviderMasterComponent implements OnInit {
   resetDates() {
     this.today = new Date();
     this.validFrom = this.today;
-    this.validTill = this.today;
+    this.validTill = this.getDefaultValidTill();
   }
 }

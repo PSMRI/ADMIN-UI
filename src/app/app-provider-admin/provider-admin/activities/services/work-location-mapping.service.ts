@@ -127,4 +127,43 @@ export class WorkLocationMapping {
   getTaluks(districtId: number) {
     return this.http.get(environment._getTalukListURL + districtId);
   }
+
+  // Nikshay location master (Stop TB) — read-only cascading lookups
+  getNikshayStates() {
+    return this.http.get(environment.nikshayStates_url);
+  }
+
+  getNikshayDistricts(stateID: any) {
+    return this.http.get(
+      `${environment.nikshayDistricts_url}?stateID=${stateID}`,
+    );
+  }
+
+  getNikshayTUs(districtID: any) {
+    return this.http.get(
+      `${environment.nikshayTUs_url}?districtID=${districtID}`,
+    );
+  }
+
+  getNikshayFacilities(tuIDs: any[]) {
+    return this.http.get(
+      `${environment.nikshayFacilities_url}?tuIDs=${tuIDs.join(',')}`,
+    );
+  }
+
+  getNikshayVillages(facilityIDs: any[]) {
+    return this.http.get(
+      `${environment.nikshayVillages_url}?facilityIDs=${facilityIDs.join(',')}`,
+    );
+  }
+
+  // Stop TB Edit: v_userservicerolemapping (backing mappedWorkLocationsList)
+  // never exposes DistrictID/NikshayTUID/NikshayFacilityID, so Edit can't
+  // read back what was saved from that list alone — this reads the raw
+  // table directly for just those fields, by USRMappingID.
+  getNikshayUserMappingData(usrMappingID: any) {
+    return this.http.get(
+      `${environment.nikshayUserMapping_url}?usrMappingID=${usrMappingID}`,
+    );
+  }
 }
