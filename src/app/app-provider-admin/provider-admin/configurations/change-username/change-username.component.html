@@ -109,10 +109,7 @@
   <!-- Result of a committed rename -->
   <div class="row m-t-20" *ngIf="renameResult">
     <div class="col-xs-12 col-sm-12">
-      <h5>
-        {{ renameResult.totalRowsAffected }} rows updated across
-        {{ renameResult.tablesAffected }} tables
-      </h5>
+      <h5>Update complete</h5>
       <p class="screen-note" *ngIf="renameResult.userNameUpdated">
         Username: {{ renameResult.oldUserName }} &rarr;
         {{ renameResult.newUserName }}
@@ -124,24 +121,6 @@
       <p class="screen-note" *ngIf="!renameResult.employeeIdUpdated">
         Employee ID unchanged ({{ renameResult.oldEmployeeId || "not set" }})
       </p>
-      <div class="table-responsive">
-        <table
-          mat-table
-          class="table table-striped table-hover"
-          [dataSource]="asRows(renameResult)"
-        >
-          <ng-container matColumnDef="table">
-            <th mat-header-cell *matHeaderCellDef>Table</th>
-            <td mat-cell *matCellDef="let element">{{ element.table }}</td>
-          </ng-container>
-          <ng-container matColumnDef="rows">
-            <th mat-header-cell *matHeaderCellDef>Rows</th>
-            <td mat-cell *matCellDef="let element">{{ element.rows }}</td>
-          </ng-container>
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-        </table>
-      </div>
     </div>
   </div>
 </div>

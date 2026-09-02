@@ -60,8 +60,6 @@ export class ChangeUsernameComponent implements OnInit {
   readonly maxContactLength = 12;
   readonly maxEmployeeIdLength = 20;
 
-  displayedColumns = ['table', 'rows'];
-
   constructor(
     private changeUsernameService: ChangeUsernameService,
     private alertService: ConfirmationDialogsService,
@@ -251,16 +249,5 @@ export class ChangeUsernameComponent implements OnInit {
         this.alertService.alert(err.errorMessage, 'error');
       },
     );
-  }
-
-  /** Turns the rowsPerTable map into rows the table can render. */
-  asRows(result: any): any[] {
-    if (!result || !result.rowsPerTable) {
-      return [];
-    }
-    return Object.keys(result.rowsPerTable).map((table) => ({
-      table: table,
-      rows: result.rowsPerTable[table],
-    }));
   }
 }
