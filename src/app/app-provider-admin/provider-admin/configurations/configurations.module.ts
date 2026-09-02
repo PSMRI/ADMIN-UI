@@ -24,8 +24,10 @@ import { UserRoleAgentID_MappingService } from './services/user-role-agentID-map
 import { HospitalInstituteDirectorySubdirectoryMappingComponent } from './hospital-institute-directory-subdirectory-mapping/hospital-institute-directory-subdirectory-mapping.component';
 import { HospitalInstituteMappingService } from '../activities/services/hospital-institute-mapping-service.service';
 import { ResetUserPasswordService } from 'src/app/core/services/ProviderAdminServices/reset-user-password.service';
+import { ChangeUsernameService } from 'src/app/core/services/ProviderAdminServices/change-username.service';
 import { UtcDatePipe } from './utc-date.pipe';
 import { ResetUserPasswordComponent } from './reset-user-password/reset-user-password.component';
+import { ChangeUsernameComponent } from './change-username/change-username.component';
 import { SwymedUserMappingComponent } from './swymed-user-mapping/swymed-user-mapping.component';
 import { SwymedUserConfigurationService } from './services/swymed-user-service';
 import { ServicePointVillageMapComponent } from './service-point-village-mapping/service-point-village-mapping.component';
@@ -63,6 +65,7 @@ import { MatInputModule } from '@angular/material/input';
     AgentIDMappingModalComponent,
     HospitalInstituteDirectorySubdirectoryMappingComponent,
     ResetUserPasswordComponent,
+    ChangeUsernameComponent,
     SwymedUserMappingComponent,
     UtcDatePipe,
     ServicePointVillageMapComponent,
@@ -98,6 +101,7 @@ import { MatInputModule } from '@angular/material/input';
     UserRoleAgentID_MappingService,
     HospitalInstituteMappingService,
     ResetUserPasswordService,
+    ChangeUsernameService,
     SwymedUserConfigurationService,
     ServicePointVillageMapService,
     VanServicePointMappingService,
@@ -120,6 +124,7 @@ import { MatInputModule } from '@angular/material/input';
     AgentIDMappingModalComponent,
     HospitalInstituteDirectorySubdirectoryMappingComponent,
     ResetUserPasswordComponent,
+    ChangeUsernameComponent,
     SwymedUserMappingComponent,
     UtcDatePipe,
     ServicePointVillageMapComponent,
