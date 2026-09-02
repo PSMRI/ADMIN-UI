@@ -39,23 +39,14 @@ export class ChangeUsernameComponent implements OnInit {
 
   userNamesList: any = [];
 
-  /**
-   * Only meaningful where the username is the user's mobile number — it also
-   * rewrites ContactNo and EmergencyContactNo on m_user.
-   */
   updateContactFields = true;
 
   renameResult: any = null;
   submitting = false;
 
-  /** Set from the server's availability check, not inferred locally. */
   userNameTaken = false;
   employeeIdTaken = false;
 
-  /**
-   * m_user.ContactNo is varchar(12) and the rename writes the username into it,
-   * so the contact-field option tightens the limit from the UserName max of 20.
-   */
   readonly maxUserNameLength = 20;
   readonly maxContactLength = 12;
   readonly maxEmployeeIdLength = 20;
@@ -80,12 +71,10 @@ export class ChangeUsernameComponent implements OnInit {
     );
   }
 
-  /** Clears the previous result so it can't be mistaken for the new selection. */
   onSelectionChange() {
     this.renameResult = null;
   }
 
-  /** Loads the picked user's current Employee ID and clears any prior entry. */
   onUserChange() {
     this.onSelectionChange();
     this.currentEmployeeId = '';
@@ -104,11 +93,6 @@ export class ChangeUsernameComponent implements OnInit {
     );
   }
 
-  /**
-   * Mirrors the Employee Master screen: check on each edit, and skip the check
-   * when the value still equals the user's own current one — that would always
-   * come back "exists" and wrongly block the save.
-   */
   checkUserNameAvailability() {
     this.onSelectionChange();
     this.userNameTaken = false;
@@ -210,7 +194,6 @@ export class ChangeUsernameComponent implements OnInit {
       });
   }
 
-  /** Describes only what is actually changing, since either field may be skipped. */
   private confirmMessage(request: any): string {
     const changes: string[] = [];
     if (request.newUserName) {

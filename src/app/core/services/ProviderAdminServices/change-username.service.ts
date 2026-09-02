@@ -54,12 +54,10 @@ export class ChangeUsernameService {
     });
   }
 
-  /** SearchEmployee4 omits employeeID, so the current value is fetched per user. */
   getUserDetail(userName: any): Observable<any> {
     return this.http.post(this.getUserDetailUrl, { userName: userName });
   }
 
-  /** Same endpoints the Employee Master screen uses for its availability hints. */
   checkUserAvailability(userName: any): Observable<any> {
     return this.http.post(this.checkUserAvailabilityUrl, {
       userName: userName,
