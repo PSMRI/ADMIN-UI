@@ -190,6 +190,7 @@ export class ChangeUsernameComponent implements OnInit {
     const newUserName = (this.newUserName || '').trim();
     const newEmployeeId = (this.newEmployeeId || '').trim();
     return {
+      userID: this.user.userID,
       oldUserName: this.user.userName,
       newUserName: newUserName || null,
       newEmployeeId: newEmployeeId || null,
