@@ -110,11 +110,20 @@
   <div class="row m-t-20" *ngIf="renameResult">
     <div class="col-xs-12 col-sm-12">
       <h5>
-        Renamed {{ renameResult.oldUserName }} to
-        {{ renameResult.newUserName }} —
         {{ renameResult.totalRowsAffected }} rows updated across
         {{ renameResult.tablesAffected }} tables
       </h5>
+      <p class="screen-note" *ngIf="renameResult.userNameUpdated">
+        Username: {{ renameResult.oldUserName }} &rarr;
+        {{ renameResult.newUserName }}
+      </p>
+      <p class="screen-note" *ngIf="renameResult.employeeIdUpdated">
+        Employee ID: {{ renameResult.oldEmployeeId || "not set" }} &rarr;
+        {{ renameResult.newEmployeeId }}
+      </p>
+      <p class="screen-note" *ngIf="!renameResult.employeeIdUpdated">
+        Employee ID unchanged ({{ renameResult.oldEmployeeId || "not set" }})
+      </p>
       <div class="table-responsive">
         <table
           mat-table
