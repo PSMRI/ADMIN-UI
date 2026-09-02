@@ -8,10 +8,6 @@ import { dataService } from './services/dataService/data.service';
 import { ConfirmationDialogsService } from './services/dialog/confirmation.service';
 import { HttpServices } from './services/http-services/http_services.service';
 import { SpinnerService } from './services/spinnerService/spinner.service';
-import { LanguageService } from './services/adminServices/AdminLanguage/language.service';
-import { RoleService } from './services/adminServices/AdminRole/role.service';
-import { ScreenService } from './services/adminServices/AdminScreen/screen.service';
-import { ServicemasterService } from './services/adminServices/AdminService/servicemaster.service';
 import { ViewVersionDetailsComponent } from './components/view-version-details/view-version-details.component';
 import { MaterialModule } from './material.module';
 import { AuthService } from './services/authentication/auth.service';
@@ -160,10 +156,6 @@ import { SpinnerComponent } from './components/spinner/spinner.component';
     SpinnerService,
     AuthGuard,
     DashboardHttpServices,
-    LanguageService,
-    RoleService,
-    ScreenService,
-    ServicemasterService,
     CommonServices,
     VanMasterService,
   ],
@@ -181,7 +173,6 @@ export class CoreModule {
         dataService,
         HttpServices,
         DashboardHttpServices,
-        LanguageService,
       ],
     };
   }
