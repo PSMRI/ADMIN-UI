@@ -5477,14 +5477,22 @@ export class WorkLocationMappingComponent
       }
     }
 
-    // CREATE new rows for added roles
-    for (const rid of rolesToAdd) {
-      const roleName = this.getRoleNameById(rid);
+    // CREATE new rows for added roles.
+    // Batched into a single SaveWorkLocationMapping call (one previleges
+    // entry, ID array holding every added role) instead of one call per
+    // role. Firing them separately let the backend treat each create as
+    // the sole active role for this user+serviceline+block, so parallel
+    // creates raced and only the last commit stayed active — dropping
+    // roles added alongside others (reproduced with StopTB Counsellor/
+    // Nurse). Location fields (incl. StopTB's nikshayTUID/nikshayFacilityID)
+    // are per-group, not per-role, so batching them here is unchanged.
+    if (rolesToAdd.length > 0) {
       const newObj: any = {
         previleges: [
           {
-            ID: [
-              {
+            ID: rolesToAdd.map((rid) => {
+              const roleName = this.getRoleNameById(rid);
+              return {
                 roleID: rid,
                 teleConsultation:
                   group.serviceName === 'HWC' &&
@@ -5502,8 +5510,8 @@ export class WorkLocationMappingComponent
                   roleName?.toLowerCase() !== 'supervisor'
                     ? this.isOutboundEdit
                     : null,
-              },
-            ],
+              };
+            }),
             providerServiceMapID: this.providerServiceMapID_duringEdit,
             workingLocationID: this.isFacilityServicelineEdit
               ? null
