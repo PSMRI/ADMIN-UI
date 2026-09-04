@@ -5321,10 +5321,12 @@ export class WorkLocationMappingComponent
       ...new Set(
         group.roles
           .filter((r) => !r.userServciceRoleDeleted)
-          .map((r) => r.roleID),
+          .map((r) => Number(r.roleID)),
       ),
     ];
-    const newRoleIDs: number[] = this.roleIDs_duringEdit;
+    const newRoleIDs: number[] = (this.roleIDs_duringEdit || []).map(
+      (rid: any) => Number(rid),
+    );
 
     const rolesToAdd = newRoleIDs.filter(
       (rid) => !existingRoleIDs.includes(rid),
