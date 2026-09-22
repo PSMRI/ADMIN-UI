@@ -173,7 +173,7 @@ export class CoreModule {
         dataService,
         HttpServices,
         DashboardHttpServices,
-          ],
+      ],
     };
   }
 }

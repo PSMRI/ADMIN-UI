@@ -125,6 +125,7 @@
         Email and Contact Number Configuration
       </button>
       <button mat-menu-item (click)="show('55')">Reset User Password</button>
+      <button mat-menu-item (click)="show('82')">Change Username</button>
       <button mat-menu-item (click)="show('60')">User Swymed Mapping</button>
       <button mat-menu-item (click)="show('61')">
         Wrapup Time Configuration
@@ -284,6 +285,7 @@
           *ngSwitchCase="23"
         ></app-hospital-institute-directory-subdirectory-mapping>
         <app-reset-user-password *ngSwitchCase="55"></app-reset-user-password>
+        <app-change-username *ngSwitchCase="82"></app-change-username>
         <app-swymed-user-mapping *ngSwitchCase="60"></app-swymed-user-mapping>
         <app-component-master *ngSwitchCase="30"></app-component-master>
         <app-item-master *ngSwitchCase="38"></app-item-master>
