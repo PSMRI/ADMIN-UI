@@ -37,8 +37,8 @@ import { WorkLocationMapping } from '../services/work-location-mapping.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
 import { MatOption } from '@angular/material/core';
-import { forkJoin, of, Subject } from 'rxjs';
-import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
+import { EMPTY, forkJoin, of, Subject, timer } from 'rxjs';
+import { catchError, debounce, switchMap, takeUntil } from 'rxjs/operators';
 
 interface RoleEntry {
   roleID: number;
@@ -276,9 +276,11 @@ export class WorkLocationMappingComponent
 
   // Ticking facilities/TUs one by one used to fire one request per click,
   // and a slow earlier response could overwrite a newer one. Wait for the
-  // user to pause, then keep only the latest request.
-  private nikshayTUSelection$ = new Subject<number[]>();
-  private nikshayFacilitySelection$ = new Subject<number[]>();
+  // user to pause, then keep only the latest request. null cancels any
+  // pending request without touching the lists, so a late response can't
+  // overwrite a reset or an Edit prefill.
+  private nikshayTUSelection$ = new Subject<number[] | null>();
+  private nikshayFacilitySelection$ = new Subject<number[] | null>();
   selectedNikshayBlock: any = null;
   selectedNikshayTUs: any[] = [];
   selectedNikshayFacilities: any[] = [];
@@ -546,9 +548,8 @@ export class WorkLocationMappingComponent
     const tuIDs = (this.selectedNikshayTUs || []).map(
       (t: any) => t.nikshayTUID,
     );
-    // Always emit (even when empty) so a pending request is cancelled
-    this.nikshayTUSelection$.next(tuIDs);
-    this.nikshayFacilitySelection$.next([]);
+    this.nikshayTUSelection$.next(tuIDs.length ? tuIDs : null);
+    this.nikshayFacilitySelection$.next(null);
   }
 
   // Called whenever the Facility multi-select changes
@@ -558,16 +559,19 @@ export class WorkLocationMappingComponent
     const facilityIDs = (this.selectedNikshayFacilities || []).map(
       (f: any) => f.nikshayFacilityID,
     );
-    this.nikshayFacilitySelection$.next(facilityIDs);
+    this.nikshayFacilitySelection$.next(
+      facilityIDs.length ? facilityIDs : null,
+    );
   }
 
   private initNikshayCascade() {
     this.nikshayTUSelection$
       .pipe(
-        debounceTime(400),
-        switchMap((tuIDs: number[]) =>
-          !tuIDs.length
-            ? of(null)
+        // cancels (null) go through at once; selections wait for a pause
+        debounce((ids: number[] | null) => (ids ? timer(400) : of(0))),
+        switchMap((tuIDs: number[] | null) =>
+          !tuIDs
+            ? EMPTY
             : this.worklocationmapping.getNikshayFacilities(tuIDs).pipe(
                 catchError(() => {
                   this.alertService.alert(
@@ -581,15 +585,16 @@ export class WorkLocationMappingComponent
         takeUntil(this.destroy$),
       )
       .subscribe((response: any) => {
-        this.nikshayFacilityList = response?.data || [];
+        if (response) this.nikshayFacilityList = response.data || [];
       });
 
     this.nikshayFacilitySelection$
       .pipe(
-        debounceTime(400),
-        switchMap((facilityIDs: number[]) =>
-          !facilityIDs.length
-            ? of(null)
+        // cancels (null) go through at once; selections wait for a pause
+        debounce((ids: number[] | null) => (ids ? timer(400) : of(0))),
+        switchMap((facilityIDs: number[] | null) =>
+          !facilityIDs
+            ? EMPTY
             : this.worklocationmapping.getNikshayVillages(facilityIDs).pipe(
                 catchError(() => {
                   this.alertService.alert(
@@ -603,11 +608,13 @@ export class WorkLocationMappingComponent
         takeUntil(this.destroy$),
       )
       .subscribe((response: any) => {
-        this.nikshayVillageList = response?.data || [];
+        if (response) this.nikshayVillageList = response.data || [];
       });
   }
 
   resetNikshaySelection() {
+    this.nikshayTUSelection$.next(null);
+    this.nikshayFacilitySelection$.next(null);
     this.nikshayStateList = [];
     this.nikshayDistrictList = [];
     this.nikshayTUList = [];
