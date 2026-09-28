@@ -19,25 +19,74 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { of } from 'rxjs';
 import { ResetUserPasswordComponent } from './reset-user-password.component';
+import { ResetUserPasswordService } from 'src/app/core/services/ProviderAdminServices/reset-user-password.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
-describe('ResetUserPasswordComponent', () => {
-  let component: ResetUserPasswordComponent;
-  let fixture: ComponentFixture<ResetUserPasswordComponent>;
+let component: ResetUserPasswordComponent;
+let fixture: ComponentFixture<ResetUserPasswordComponent>;
 
-  beforeEach(async(() => {
+const FakeResetUserPasswordService = {
+  getUserList: (_serviceProviderID: any) => of({ data: [] }),
+  getUserDetail: (_userName: any) => of({ data: {} }),
+  resetUserPassword: (_obj: any) => of({ data: { response: 'ok' } }),
+};
+
+const FakeDataService = {
+  uid: 'uid1',
+  uname: 'admin',
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+};
+
+const sessionValues: Record<string, any> = {
+  service_providerID: 'serviceProviderID',
+};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
+};
+
+function InitializeAdminTestBed() {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ResetUserPasswordComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      providers: [
+        {
+          provide: ResetUserPasswordService,
+          useValue: FakeResetUserPasswordService,
+        },
+        { provide: dataService, useValue: FakeDataService },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
+      ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on mat-table/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic, not
+    // the rendered DOM. ngOnInit is run explicitly instead.
     fixture = TestBed.createComponent(ResetUserPasswordComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
+}
+
+describe('ResetUserPasswordComponent', () => {
+  InitializeAdminTestBed();
 
   it('should be created', () => {
     expect(component).toBeTruthy();

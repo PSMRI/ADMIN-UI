@@ -19,17 +19,52 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { of } from 'rxjs';
 
 import { DataMappingBlockSubcenterComponent } from './data-mapping-block-subcenter.component';
+import { BlockSubcenterMappingService } from '../services/block-subcenter-mapping-service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+
+const FakeBlockSubcenterMappingService = {
+  uploadData: (_reqObj?: any) => of({ statusCode: 200 }),
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+};
+
+const FakeDataService = {
+  uid: 'U1',
+  uname: 'admin',
+  userPriveliges: [],
+  providerServiceMapID_104: 'PSM104',
+};
 
 describe('DataMappingBlockSubcenterComponent', () => {
   let component: DataMappingBlockSubcenterComponent;
   let fixture: ComponentFixture<DataMappingBlockSubcenterComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [DataMappingBlockSubcenterComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      imports: [FormsModule],
+      providers: [
+        {
+          provide: BlockSubcenterMappingService,
+          useValue: FakeBlockSubcenterMappingService,
+        },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: dataService, useValue: FakeDataService },
+      ],
     }).compileComponents();
   }));
 

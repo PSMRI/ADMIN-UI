@@ -20,8 +20,34 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { Router } from '@angular/router';
 
 import { SetPasswordComponent } from './set-password.component';
+import { ConfigService } from 'src/app/core/services/config/config.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { loginService } from '../loginService/login.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => undefined,
+};
+
+const FakeLoginService = {
+  transactionId: 'txn-1',
+  removeTokenFromRedis: () => ({ subscribe: (_cb?: any) => undefined }),
+};
+
+const FakeDataService = {
+  userNameForReset: 'testuser',
+};
+
+const fakeRouterService = {
+  navigate: jasmine.createSpy('navigate'),
+};
 
 describe('SetPasswordComponent', () => {
   let component: SetPasswordComponent;
@@ -30,6 +56,18 @@ describe('SetPasswordComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [SetPasswordComponent],
+      imports: [HttpClientTestingModule, FormsModule],
+      schemas: [NO_ERRORS_SCHEMA],
+      providers: [
+        ConfigService,
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: loginService, useValue: FakeLoginService },
+        { provide: dataService, useValue: FakeDataService },
+        { provide: Router, useValue: fakeRouterService },
+      ],
     }).compileComponents();
   }));
 

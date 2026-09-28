@@ -19,24 +19,89 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 
 import { LocationServicelineMappingComponent } from './location-serviceline-mapping.component';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { LocationServicelineMapping } from '../services/location-serviceline-mapping.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+
+const FakeLocationServicelineMapping = {
+  getAbdmFacilities: () => of({ statusCode: 200, data: [] }),
+  getStatesNew: (_obj?: any) => of({ data: [] }),
+  getServiceLinesNew: (_userID?: any) => of({ data: [] }),
+  getDistricts: (_serviceProviderID?: any, _stateID?: any) => of({ data: [] }),
+  getServiceLines: (_serviceProviderID?: any, _stateID?: any) =>
+    of({ data: [] }),
+  getWorkLocations: (_reqObj?: any) => of({ data: [] }),
+  addWorkLocation: (_reqObj?: any) => of({ data: {} }),
+  editWorkLocation: (_reqObj?: any) => of({}),
+  deleteWorkLocation: (_obj?: any) => of({}),
+  getWorklocationOnProviderArray: (_arr?: any) => of({ data: [] }),
+};
+
+const FakeDataService = {
+  uname: 'admin',
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+  notify: (_msg?: any, _type?: any) => undefined,
+};
+
+const FakeMatDialog = {
+  open: (_component?: any, _config?: any) => ({
+    afterClosed: () => of(undefined),
+  }),
+};
+
+const sessionValues: Record<string, any> = {
+  uid: 'U1',
+  service_providerID: 'serviceProviderID',
+};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
+};
 
 describe('LocationServicelineMappingComponent', () => {
   let component: LocationServicelineMappingComponent;
   let fixture: ComponentFixture<LocationServicelineMappingComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [LocationServicelineMappingComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      imports: [FormsModule],
+      providers: [
+        {
+          provide: LocationServicelineMapping,
+          useValue: FakeLocationServicelineMapping,
+        },
+        { provide: dataService, useValue: FakeDataService },
+        { provide: MatDialog, useValue: FakeMatDialog },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
+      ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on mat-table/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic, not
+    // the rendered DOM. ngOnInit is run explicitly instead.
     fixture = TestBed.createComponent(LocationServicelineMappingComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
 
   it('should be created', () => {

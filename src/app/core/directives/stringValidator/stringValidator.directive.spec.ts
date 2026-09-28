@@ -19,11 +19,46 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { DecimalDirective } from './stringValidator.directive';
+import { StringValidatorDirective } from './stringValidator.directive';
 
-describe('DecimalDirective', () => {
+describe('StringValidatorDirective', () => {
+  let directive: StringValidatorDirective;
+
+  beforeEach(() => {
+    directive = new StringValidatorDirective({} as any);
+  });
+
   it('should create an instance', () => {
-    const directive = new DecimalDirective();
     expect(directive).toBeTruthy();
+  });
+
+  it('should validate alphabet-only strings correctly', () => {
+    directive.allowText = 'alphabet';
+    expect(directive.validate('abcXYZ')).toBe(true);
+    expect(directive.validate('abc123')).toBe(false);
+  });
+
+  it('should validate decimal strings correctly', () => {
+    directive.allowText = 'decimal';
+    expect(directive.validate('12.34')).toBe(true);
+    expect(directive.validate('12.345')).toBe(false);
+    expect(directive.validate('12')).toBe(true);
+  });
+
+  it('should validate numeric strings correctly', () => {
+    directive.allowText = 'number';
+    expect(directive.validate('12345')).toBe(true);
+    expect(directive.validate('12a45')).toBe(false);
+  });
+
+  it('should return false for null or empty input', () => {
+    directive.allowText = 'alphabet';
+    expect(directive.validate(null)).toBe(false);
+    expect(directive.validate('')).toBe(false);
+  });
+
+  it('should return false for an unrecognized pattern code', () => {
+    directive.allowText = 'unknownPattern';
+    expect(directive.validate('anything')).toBe(false);
   });
 });

@@ -19,100 +19,73 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-
-import { MappingProviderAdminToProviderComponent } from './mapping-provider-admin-to-provider.component';
-
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import { Md2Module } from 'md2';
 import { FormsModule } from '@angular/forms';
-import { fakeAsync } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { tick } from '@angular/core/testing';
-import { ConfirmationDialogsService } from '../services/dialog/confirmation.service';
-import { dataService } from '../services/dataService/data.service';
-import { SuperAdmin_ServiceProvider_Service } from '../services/adminServices/AdminServiceProvider/superadmin_serviceprovider.service';
+import { of } from 'rxjs';
+import { MappingProviderAdminToProviderComponent } from './mapping-provider-admin-to-provider.component';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+import { SuperAdmin_ServiceProvider_Service } from 'src/app/core/services/adminServices/AdminServiceProvider/superadmin_serviceprovider.service';
 
 let component: MappingProviderAdminToProviderComponent;
 let fixture: ComponentFixture<MappingProviderAdminToProviderComponent>;
 
 const FakeDataService = {
-  current_service: { serviceID: '123' },
+  uname: 'admin',
+  service_providerID: 'SP1',
 };
 
-const providerForFakeDataService = {
-  provide: dataService,
-  useValue: FakeDataService,
-};
 const FakeConfirmationDialogsService = {
-  current_service: { serviceID: '123' },
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
 };
 
-const providerForFakeConfirmationDialogsService = {
-  provide: ConfirmationDialogsService,
-  useValue: FakeConfirmationDialogsService,
+const FakeSuperAdmin_ServiceProvider_Service = {
+  getAllMappedProviders: () => of({ data: [{ userID: '1', userName: 'RO' }] }),
+  getAllProviderAdmins: () => of({ data: [{ userID: '1', userName: 'RO' }] }),
+  getAllProvider: () =>
+    of({ data: [{ serviceProviderID: '1', serviceProviderName: 'RO' }] }),
+  createMappingProviderAdmin: (_data: any) => of({}),
+  activateProviderAdmin: (_data: any) => of({}),
+  deactivateProviderAdmin: (_data: any) => of({}),
+  updateProviderAdminDetails: (_data: any) => of({}),
+  getProviderServices: (_serviceProviderID: any) => of({ data: [] }),
+  getProviderStatesInService: (_serviceProviderID: any, _serviceID: any) =>
+    of({ data: [] }),
 };
-class FakeSuperAdmin_ServiceProvider_Service {
-  getAllMappedProviders(data) {
-    return Observable.of([
-      {
-        data: {
-          RoleName: 'RO',
-        },
-      },
-    ]);
-  }
 
-  getAllProviderAdmins(data) {
-    return Observable.of([
-      {
-        data: {
-          RoleName: 'RO',
-        },
-      },
-    ]);
-  }
-
-  getAllProvider(data) {
-    return Observable.of([
-      {
-        data: {
-          RoleName: 'RO',
-        },
-      },
-    ]);
-  }
-}
-
-const providerForFakeSuperAdmin_ServiceProvider_Service = {
-  provide: SuperAdmin_ServiceProvider_Service,
-  useClass: FakeSuperAdmin_ServiceProvider_Service,
-};
 function Initialize104TestBed() {
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [MappingProviderAdminToProviderComponent],
       schemas: [NO_ERRORS_SCHEMA],
-      imports: [Md2Module, FormsModule],
+      imports: [FormsModule],
       providers: [
-        providerForFakeDataService,
-        providerForFakeSuperAdmin_ServiceProvider_Service,
-        providerForFakeConfirmationDialogsService,
+        { provide: dataService, useValue: FakeDataService },
+        {
+          provide: SuperAdmin_ServiceProvider_Service,
+          useValue: FakeSuperAdmin_ServiceProvider_Service,
+        },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
       ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on mat-table/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic.
     fixture = TestBed.createComponent(MappingProviderAdminToProviderComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
 }
 describe('Mapping-Provider-Admin-To-Provider', () => {
-  fdescribe('When the component is getting loaded, then ngOninit', () => {
+  describe('When the component is getting loaded, then ngOnInit', () => {
     Initialize104TestBed();
 
     it('should be created', () => {
@@ -121,14 +94,14 @@ describe('Mapping-Provider-Admin-To-Provider', () => {
     it('should be defined', () => {
       expect(component).toBeDefined();
     });
-    it('checking the value of Providers list array should not be null and shoul have some value', () => {
-      expect(component.service_provider_array).not.toBe('');
+    it('checking the value of Providers list array should not be null and should have some value', () => {
+      expect(component.service_provider_array).not.toEqual([]);
     });
-    it('checking the value of service_provider_admin_array should not be null and shoul have some value', () => {
-      expect(component.service_provider_admin_array).not.toBe('');
+    it('checking the value of service_provider_admin_array should not be null and should have some value', () => {
+      expect(component.service_provider_admin_array).not.toEqual([]);
     });
-    it('checking the value of providerAdminList should not be null and shoul have some value', () => {
-      expect(component.providerAdminList).not.toBe('');
+    it('checking the value of providerAdminList should not be null and should have some value', () => {
+      expect(component.providerAdminList).not.toEqual([]);
     });
   });
 });
