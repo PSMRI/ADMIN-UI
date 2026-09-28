@@ -25,9 +25,11 @@ import { HospitalInstituteDirectorySubdirectoryMappingComponent } from './hospit
 import { HospitalInstituteMappingService } from '../activities/services/hospital-institute-mapping-service.service';
 import { ResetUserPasswordService } from 'src/app/core/services/ProviderAdminServices/reset-user-password.service';
 import { ChangeUsernameService } from 'src/app/core/services/ProviderAdminServices/change-username.service';
+import { UpdateVillageService } from 'src/app/core/services/ProviderAdminServices/update-village.service';
 import { UtcDatePipe } from './utc-date.pipe';
 import { ResetUserPasswordComponent } from './reset-user-password/reset-user-password.component';
 import { ChangeUsernameComponent } from './change-username/change-username.component';
+import { UpdateVillageComponent } from './update-village/update-village.component';
 import { SwymedUserMappingComponent } from './swymed-user-mapping/swymed-user-mapping.component';
 import { SwymedUserConfigurationService } from './services/swymed-user-service';
 import { ServicePointVillageMapComponent } from './service-point-village-mapping/service-point-village-mapping.component';
@@ -66,6 +68,7 @@ import { MatInputModule } from '@angular/material/input';
     HospitalInstituteDirectorySubdirectoryMappingComponent,
     ResetUserPasswordComponent,
     ChangeUsernameComponent,
+    UpdateVillageComponent,
     SwymedUserMappingComponent,
     UtcDatePipe,
     ServicePointVillageMapComponent,
@@ -102,6 +105,7 @@ import { MatInputModule } from '@angular/material/input';
     HospitalInstituteMappingService,
     ResetUserPasswordService,
     ChangeUsernameService,
+    UpdateVillageService,
     SwymedUserConfigurationService,
     ServicePointVillageMapService,
     VanServicePointMappingService,
@@ -125,6 +129,7 @@ import { MatInputModule } from '@angular/material/input';
     HospitalInstituteDirectorySubdirectoryMappingComponent,
     ResetUserPasswordComponent,
     ChangeUsernameComponent,
+    UpdateVillageComponent,
     SwymedUserMappingComponent,
     UtcDatePipe,
     ServicePointVillageMapComponent,

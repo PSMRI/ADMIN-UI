@@ -1,0 +1,23 @@
+.screen-note {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+  margin: 4px 0 0 0;
+}
+
+.validation-note {
+  font-size: 12px;
+  color: #d32f2f;
+  margin: 4px 0 0 0;
+}
+
+.warning-note {
+  color: #ef6c00;
+}
+
+.mapping-table {
+  width: 100%;
+}
+
+.selected-row {
+  background-color: rgba(76, 175, 80, 0.12);
+}
