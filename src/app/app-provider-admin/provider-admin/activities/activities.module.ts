@@ -26,6 +26,9 @@ import { ServicelineCdssMappingComponent } from './serviceline-cdss-mapping/serv
 import { SpecialistMappingComponent } from './specialist-mapping/specialist-mapping.component';
 import { WorkLocationMappingComponent } from './work-location-mapping/work-location-mapping.component';
 import { UserFacilityMappingComponent } from './work-location-mapping/user-facility-mapping/user-facility-mapping.component';
+import { VirtualMultiSelectComponent } from './work-location-mapping/virtual-multi-select/virtual-multi-select.component';
+import { OverlayModule } from '@angular/cdk/overlay';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { VillageMasterService } from 'src/app/core/services/adminServices/AdminVillage/village-master-service.service';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
 import { CallTypeSubtypeService } from './services/calltype-subtype-master-service.service';
@@ -107,6 +110,7 @@ import { CoreModule } from 'src/app/core/core.module';
 
 @NgModule({
   declarations: [
+    VirtualMultiSelectComponent,
     LocationServicelineMappingComponent,
     EditLocationModalComponent,
     EmployeeMasterNewComponent,
@@ -166,6 +170,8 @@ import { CoreModule } from 'src/app/core/core.module';
     ReactiveFormsModule,
     MatChipsModule,
     CoreModule,
+    OverlayModule,
+    ScrollingModule,
   ],
   providers: [
     ProviderAdminRoleService,

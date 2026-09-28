@@ -1,0 +1,76 @@
+<div
+  #originEl
+  cdkOverlayOrigin
+  #origin="cdkOverlayOrigin"
+  class="vms-origin"
+  (click)="open(originEl)"
+>
+  <mat-form-field [style.width]="'100%'">
+    <mat-label>{{ label }}</mat-label>
+    <input
+      matInput
+      readonly
+      class="vms-trigger"
+      [value]="summary"
+      [title]="summary"
+      [required]="isRequired"
+      [disabled]="disabled"
+      (keydown.enter)="open(originEl)"
+      (keydown.space)="$event.preventDefault(); open(originEl)"
+    />
+    <mat-icon matSuffix class="vms-arrow">arrow_drop_down</mat-icon>
+  </mat-form-field>
+</div>
+
+<ng-template
+  cdkConnectedOverlay
+  [cdkConnectedOverlayOrigin]="origin"
+  [cdkConnectedOverlayOpen]="isOpen"
+  [cdkConnectedOverlayWidth]="panelWidth"
+  [cdkConnectedOverlayHasBackdrop]="true"
+  cdkConnectedOverlayBackdropClass="cdk-overlay-transparent-backdrop"
+  (backdropClick)="close()"
+  (detach)="close()"
+  (attach)="onAttach()"
+  (overlayKeydown)="onOverlayKeydown($event)"
+>
+  <div class="vms-panel mat-elevation-z8">
+    <div class="vms-search">
+      <mat-icon>search</mat-icon>
+      <input
+        #searchBox
+        placeholder="Search..."
+        autocomplete="off"
+        [value]="search"
+        (input)="onSearch(searchBox.value)"
+      />
+    </div>
+    <div class="vms-actions">
+      <a (click)="toggleAll()" *ngIf="filtered.length">{{
+        allFilteredSelected ? 'Deselect All' : 'Select All'
+      }}</a>
+      <span class="vms-count">{{ selectedCount }} selected</span>
+    </div>
+    <cdk-virtual-scroll-viewport
+      [itemSize]="itemSize"
+      class="vms-viewport"
+      [style.height.px]="viewportHeight"
+    >
+      <div
+        *cdkVirtualFor="let item of filtered; trackBy: trackById"
+        class="vms-option"
+        [class.vms-selected]="isSelected(item)"
+        (click)="toggle(item)"
+      >
+        <input
+          type="checkbox"
+          tabindex="-1"
+          [checked]="isSelected(item)"
+          (click)="$event.preventDefault()"
+        />
+        <span class="vms-label">{{ item[labelKey] }}</span>
+      </div>
+      <div *ngIf="!filtered.length" class="vms-empty">No matches</div>
+    </cdk-virtual-scroll-viewport>
+  </div>
+</ng-template>

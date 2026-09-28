@@ -225,34 +225,20 @@ export class WorkLocationMappingComponent
   isStopTBServiceline = false;
   nikshayStateList: any[] = [];
   nikshayDistrictList: any[] = [];
-  // TU/Facility/Village lists can hold thousands of entries (e.g. Pune MC:
-  // 5,327 facilities, Ganganagar: 3,058 villages). Each setter records every
-  // item's position once so nikshayOptionOrder can sort mat-select's selection
-  // cheaply — see sortNikshayOptions.
+  // Health Facility/Village lists can hold thousands of entries (e.g. Pune
+  // MC: 5,327 facilities), so they use app-virtual-multi-select instead of
+  // mat-select. TU stays a mat-select; its setter records each item's
+  // position for sortNikshayOptions.
   private _nikshayTUList: any[] = [];
-  private _nikshayFacilityList: any[] = [];
-  private _nikshayVillageList: any[] = [];
   private nikshayOptionOrder = new WeakMap<object, number>();
+  nikshayFacilityList: any[] = [];
+  nikshayVillageList: any[] = [];
 
   get nikshayTUList(): any[] {
     return this._nikshayTUList;
   }
   set nikshayTUList(list: any[]) {
     this._nikshayTUList = this.indexNikshayOptions(list);
-  }
-
-  get nikshayFacilityList(): any[] {
-    return this._nikshayFacilityList;
-  }
-  set nikshayFacilityList(list: any[]) {
-    this._nikshayFacilityList = this.indexNikshayOptions(list);
-  }
-
-  get nikshayVillageList(): any[] {
-    return this._nikshayVillageList;
-  }
-  set nikshayVillageList(list: any[]) {
-    this._nikshayVillageList = this.indexNikshayOptions(list);
   }
 
   private indexNikshayOptions(list: any[]): any[] {
@@ -288,8 +274,6 @@ export class WorkLocationMappingComponent
 
   nikshayBlockSearch = '';
   nikshayTUSearch = '';
-  nikshayFacilitySearch = '';
-  nikshayVillageSearch = '';
 
   get filteredNikshayBlockList(): any[] {
     if (!this.nikshayBlockSearch) return this.nikshayTUList;
@@ -312,34 +296,6 @@ export class WorkLocationMappingComponent
     );
   }
 
-  get filteredNikshayFacilityList(): any[] {
-    if (!this.nikshayFacilitySearch) return this.nikshayFacilityList;
-    const s = this.nikshayFacilitySearch.toLowerCase();
-    const selectedIDs = new Set(
-      (this.selectedNikshayFacilities || []).map(
-        (f: any) => f.nikshayFacilityID,
-      ),
-    );
-    return this.nikshayFacilityList.filter(
-      (f: any) =>
-        selectedIDs.has(f.nikshayFacilityID) ||
-        (f.facilityName || '').toLowerCase().includes(s),
-    );
-  }
-
-  get filteredNikshayVillageList(): any[] {
-    if (!this.nikshayVillageSearch) return this.nikshayVillageList;
-    const s = this.nikshayVillageSearch.toLowerCase();
-    const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
-    );
-    return this.nikshayVillageList.filter(
-      (v: any) =>
-        selectedIDs.has(v.nikshayVillageID) ||
-        (v.villageName || '').toLowerCase().includes(s),
-    );
-  }
-
   get allNikshayTUsSelected(): boolean {
     if (!this.nikshayTUList?.length) return false;
     // Runs on every change detection — skip the Set build unless the counts
@@ -357,55 +313,6 @@ export class WorkLocationMappingComponent
       ? []
       : [...this.nikshayTUList];
     this.onNikshayTUChange();
-  }
-
-  get allNikshayFacilitiesSelected(): boolean {
-    if (!this.nikshayFacilityList?.length) return false;
-    // Runs on every change detection — skip the Set build unless the counts
-    // could actually match.
-    if (
-      (this.selectedNikshayFacilities?.length || 0) <
-      this.nikshayFacilityList.length
-    )
-      return false;
-    const selectedIDs = new Set(
-      (this.selectedNikshayFacilities || []).map(
-        (f: any) => f.nikshayFacilityID,
-      ),
-    );
-    return this.nikshayFacilityList.every((f: any) =>
-      selectedIDs.has(f.nikshayFacilityID),
-    );
-  }
-
-  toggleSelectAllNikshayFacilities() {
-    this.selectedNikshayFacilities = this.allNikshayFacilitiesSelected
-      ? []
-      : [...this.nikshayFacilityList];
-    this.onNikshayFacilityChange();
-  }
-
-  get allNikshayVillagesSelected(): boolean {
-    if (!this.nikshayVillageList?.length) return false;
-    // Runs on every change detection — skip the Set build unless the counts
-    // could actually match.
-    if (
-      (this.selectedNikshayVillages?.length || 0) <
-      this.nikshayVillageList.length
-    )
-      return false;
-    const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
-    );
-    return this.nikshayVillageList.every((v: any) =>
-      selectedIDs.has(v.nikshayVillageID),
-    );
-  }
-
-  toggleSelectAllNikshayVillages() {
-    this.selectedNikshayVillages = this.allNikshayVillagesSelected
-      ? []
-      : [...this.nikshayVillageList];
   }
 
   // Called on District's selectionChange — Stop TB loads the Nikshay TU list
@@ -626,8 +533,6 @@ export class WorkLocationMappingComponent
     this.selectedNikshayVillages = [];
     this.nikshayBlockSearch = '';
     this.nikshayTUSearch = '';
-    this.nikshayFacilitySearch = '';
-    this.nikshayVillageSearch = '';
   }
 
   /**

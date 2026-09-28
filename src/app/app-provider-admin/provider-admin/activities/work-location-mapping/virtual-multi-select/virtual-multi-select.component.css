@@ -1,0 +1,84 @@
+.vms-origin {
+  width: 100%;
+  cursor: pointer;
+}
+
+.vms-trigger {
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.vms-arrow {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.vms-panel {
+  background: #fff;
+  border-radius: 4px;
+  overflow: hidden;
+  font-size: 14px;
+}
+
+.vms-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.vms-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+}
+
+.vms-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.vms-actions a {
+  cursor: pointer;
+  color: #1565c0;
+}
+
+.vms-count {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+.vms-viewport {
+  width: 100%;
+}
+
+.vms-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.vms-option:hover {
+  background: #f5f5f5;
+}
+
+.vms-option.vms-selected {
+  background: #e8f0fe;
+}
+
+.vms-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vms-empty {
+  padding: 8px 12px;
+  color: rgba(0, 0, 0, 0.54);
+}

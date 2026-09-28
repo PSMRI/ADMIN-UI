@@ -456,64 +456,28 @@
             </div>
 
             <div class="col-3">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Select Health Facility</mat-label>
-                <mat-select
-                  multiple
-                  [style.width]="'100%'"
-                  [(ngModel)]="selectedNikshayFacilities"
-                  [sortComparator]="sortNikshayOptions"
-                  name="nikshayFacilities"
-                  (selectionChange)="onNikshayFacilityChange()"
-                  (openedChange)="$event ? null : nikshayFacilitySearch = ''"
-                  required
-                >
-                  <div class="select-search-box">
-                    <mat-icon>search</mat-icon>
-                    <input matInput placeholder="Search..." [(ngModel)]="nikshayFacilitySearch"
-                      [ngModelOptions]="{ standalone: true }"
-                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
-                  </div>
-                  <div class="select-search-box">
-                    <a (click)="toggleSelectAllNikshayFacilities()">{{
-                      allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
-                    }}</a>
-                  </div>
-                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
-                    {{ item.facilityName }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+              <app-virtual-multi-select
+                label="Select Health Facility"
+                [items]="nikshayFacilityList"
+                idKey="nikshayFacilityID"
+                labelKey="facilityName"
+                [(ngModel)]="selectedNikshayFacilities"
+                name="nikshayFacilities"
+                (selectionChange)="onNikshayFacilityChange()"
+                required
+              ></app-virtual-multi-select>
             </div>
 
             <div class="col-3">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Select Village</mat-label>
-                <mat-select
-                  multiple
-                  [style.width]="'100%'"
-                  [(ngModel)]="selectedNikshayVillages"
-                  [sortComparator]="sortNikshayOptions"
-                  name="nikshayVillages"
-                  (openedChange)="$event ? null : nikshayVillageSearch = ''"
-                  required
-                >
-                  <div class="select-search-box">
-                    <mat-icon>search</mat-icon>
-                    <input matInput placeholder="Search..." [(ngModel)]="nikshayVillageSearch"
-                      [ngModelOptions]="{ standalone: true }"
-                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
-                  </div>
-                  <div class="select-search-box">
-                    <a (click)="toggleSelectAllNikshayVillages()">{{
-                      allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
-                    }}</a>
-                  </div>
-                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
-                    {{ item.villageName }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+              <app-virtual-multi-select
+                label="Select Village"
+                [items]="nikshayVillageList"
+                idKey="nikshayVillageID"
+                labelKey="villageName"
+                [(ngModel)]="selectedNikshayVillages"
+                name="nikshayVillages"
+                required
+              ></app-virtual-multi-select>
             </div>
           </div>
 
@@ -1044,63 +1008,27 @@
               </mat-form-field>
             </div>
             <div class="col-3">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Select Health Facility</mat-label>
-                <mat-select
-                  multiple
-                  [style.width]="'100%'"
-                  [(ngModel)]="selectedNikshayFacilities"
-                  [sortComparator]="sortNikshayOptions"
-                  name="nikshayFacilitiesEdit"
-                  (selectionChange)="onNikshayFacilityChange()"
-                  (openedChange)="$event ? null : nikshayFacilitySearch = ''"
-                  required
-                >
-                  <div class="select-search-box">
-                    <mat-icon>search</mat-icon>
-                    <input matInput placeholder="Search..." [(ngModel)]="nikshayFacilitySearch"
-                      [ngModelOptions]="{ standalone: true }"
-                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
-                  </div>
-                  <div class="select-search-box">
-                    <a (click)="toggleSelectAllNikshayFacilities()">{{
-                      allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
-                    }}</a>
-                  </div>
-                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
-                    {{ item.facilityName }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+              <app-virtual-multi-select
+                label="Select Health Facility"
+                [items]="nikshayFacilityList"
+                idKey="nikshayFacilityID"
+                labelKey="facilityName"
+                [(ngModel)]="selectedNikshayFacilities"
+                name="nikshayFacilitiesEdit"
+                (selectionChange)="onNikshayFacilityChange()"
+                required
+              ></app-virtual-multi-select>
             </div>
             <div class="col-3">
-              <mat-form-field [style.width]="'100%'">
-                <mat-label>Select Village</mat-label>
-                <mat-select
-                  multiple
-                  [style.width]="'100%'"
-                  [(ngModel)]="selectedNikshayVillages"
-                  [sortComparator]="sortNikshayOptions"
-                  name="nikshayVillagesEdit"
-                  (openedChange)="$event ? null : nikshayVillageSearch = ''"
-                  required
-                >
-                  <div class="select-search-box">
-                    <mat-icon>search</mat-icon>
-                    <input matInput placeholder="Search..." [(ngModel)]="nikshayVillageSearch"
-                      [ngModelOptions]="{ standalone: true }"
-                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()" autocomplete="off" />
-                  </div>
-                  <div class="select-search-box">
-                    <a (click)="toggleSelectAllNikshayVillages()">{{
-                      allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
-                    }}</a>
-                  </div>
-                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
-                    {{ item.villageName }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
+              <app-virtual-multi-select
+                label="Select Village"
+                [items]="nikshayVillageList"
+                idKey="nikshayVillageID"
+                labelKey="villageName"
+                [(ngModel)]="selectedNikshayVillages"
+                name="nikshayVillagesEdit"
+                required
+              ></app-virtual-multi-select>
             </div>
           </ng-container>
 
