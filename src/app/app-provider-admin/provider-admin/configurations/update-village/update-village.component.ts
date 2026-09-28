@@ -57,6 +57,11 @@ export class UpdateVillageComponent implements OnInit {
   block: any = null;
   newVillage: any = null;
 
+  // districtBranchIDs mapped to the selected mapping's facility; null when the
+  // mapping has no facility or they have not loaded.
+  facilityVillageIDs: Set<string> | null = null;
+  private pendingPrefill: any = null;
+
   updateResult: any = null;
   submitting = false;
 
@@ -89,7 +94,14 @@ export class UpdateVillageComponent implements OnInit {
       (response: any) => {
         this.userNamesList = response.data;
       },
-      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+      (err: any) => this.showError(err),
+    );
+  }
+
+  showError(err: any) {
+    this.alertService.alert(
+      err?.errorMessage || err?.error?.errorMessage || 'Something went wrong',
+      'error',
     );
   }
 
@@ -97,8 +109,13 @@ export class UpdateVillageComponent implements OnInit {
     this.updateVillageService.getStates(this.countryID).subscribe(
       (response: any) => {
         this.statesList = response.data || [];
+        if (this.pendingPrefill) {
+          const mapping = this.pendingPrefill;
+          this.pendingPrefill = null;
+          this.prefillLocation(mapping);
+        }
       },
-      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+      (err: any) => this.showError(err),
     );
   }
 
@@ -111,11 +128,14 @@ export class UpdateVillageComponent implements OnInit {
     if (!this.user) {
       return;
     }
+    const userID = this.user.userID;
     this.updateVillageService.getUserDetail(this.user.userName).subscribe(
       (response: any) => {
-        this.userDetail = response.data || null;
+        if (this.user?.userID === userID) {
+          this.userDetail = response.data || null;
+        }
       },
-      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+      (err: any) => this.showError(err),
     );
     this.getUserMappings(this.user.userID);
   }
@@ -125,23 +145,40 @@ export class UpdateVillageComponent implements OnInit {
       .getUserRoleMapped(this.serviceProviderID)
       .subscribe(
         (response: any) => {
+          if (this.user?.userID !== userID) {
+            return;
+          }
           const rows = Array.isArray(response.data) ? response.data : [];
           this.userMappings = rows
-            .filter((row: any) => row.userID === userID)
+            .filter((row: any) => this.isEditableMapping(row, userID))
             .map((row: any) => ({
               ...row,
               mappedVillages: this.toMappedVillages(row),
             }));
           this.mappingsLoaded = true;
-          if (this.userMappings.length === 1) {
-            this.onMappingChange(this.userMappings[0]);
+          if (this.mappingsWithVillages.length === 1) {
+            this.onMappingChange(this.mappingsWithVillages[0]);
           }
         },
         (err: any) => {
+          if (this.user?.userID !== userID) {
+            return;
+          }
           this.mappingsLoaded = true;
-          this.alertService.alert(err.errorMessage, 'error');
+          this.showError(err);
         },
       );
+  }
+
+  // Databases before the V100 view change still return deactivated rows, and
+  // Stop TB mappings hold Nikshay village IDs rather than AMRIT villages.
+  isEditableMapping(row: any, userID: any): boolean {
+    return (
+      row.userID === userID &&
+      row.userServciceRoleDeleted !== true &&
+      row.userDeleted !== true &&
+      row.serviceName !== 'Stop TB'
+    );
   }
 
   // getUserRoleMapped returns villageID/villageName as parallel arrays split
@@ -173,6 +210,8 @@ export class UpdateVillageComponent implements OnInit {
   clearMappingSelection() {
     this.selectedMapping = null;
     this.oldVillage = null;
+    this.facilityVillageIDs = null;
+    this.pendingPrefill = null;
     this.clearLocation();
   }
 
@@ -196,12 +235,44 @@ export class UpdateVillageComponent implements OnInit {
     this.oldVillage =
       mapping.mappedVillages.length === 1 ? mapping.mappedVillages[0] : null;
     this.clearLocation();
+    this.loadFacilityVillages(mapping);
     this.prefillLocation(mapping);
+  }
+
+  loadFacilityVillages(mapping: any) {
+    this.facilityVillageIDs = null;
+    if (mapping.facilityID == null) {
+      return;
+    }
+    this.updateVillageService.getFacilityVillages(mapping.facilityID).subscribe(
+      (response: any) => {
+        if (this.selectedMapping !== mapping) {
+          return;
+        }
+        const villages = Array.isArray(response.data) ? response.data : [];
+        this.facilityVillageIDs = new Set(
+          villages.map((village: any) => String(village.districtBranchID)),
+        );
+      },
+      (err: any) => this.showError(err),
+    );
+  }
+
+  isOutsideFacility(village: any): boolean {
+    return (
+      !!village &&
+      !!this.facilityVillageIDs &&
+      !this.facilityVillageIDs.has(String(village.districtBranchID))
+    );
   }
 
   // Start the hierarchy at the mapping's current state/district/block, since
   // a correction is usually to a village in the same block.
   prefillLocation(mapping: any) {
+    if (this.statesList.length === 0) {
+      this.pendingPrefill = mapping;
+      return;
+    }
     const state = this.statesList.find(
       (item: any) => item.stateID === mapping.stateID,
     );
@@ -260,6 +331,9 @@ export class UpdateVillageComponent implements OnInit {
   ) {
     this.updateVillageService.getDistricts(stateID).subscribe(
       (response: any) => {
+        if (this.state?.stateID !== stateID) {
+          return;
+        }
         this.districtsList = response.data || [];
         if (preselectDistrictID == null) {
           return;
@@ -273,13 +347,16 @@ export class UpdateVillageComponent implements OnInit {
           this.loadBlocks(district.districtID, preselectBlockID);
         }
       },
-      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+      (err: any) => this.showError(err),
     );
   }
 
   loadBlocks(districtID: any, preselectBlockID?: any) {
     this.updateVillageService.getBlocks(districtID).subscribe(
       (response: any) => {
+        if (this.district?.districtID !== districtID) {
+          return;
+        }
         this.blocksList = response.data || [];
         if (preselectBlockID == null) {
           return;
@@ -292,16 +369,19 @@ export class UpdateVillageComponent implements OnInit {
           this.loadVillages(block.blockID);
         }
       },
-      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+      (err: any) => this.showError(err),
     );
   }
 
   loadVillages(blockID: any) {
     this.updateVillageService.getVillages(blockID).subscribe(
       (response: any) => {
+        if (this.block?.blockID !== blockID) {
+          return;
+        }
         this.villagesList = response.data || [];
       },
-      (err: any) => this.alertService.alert(err.errorMessage, 'error'),
+      (err: any) => this.showError(err),
     );
   }
 
@@ -385,10 +465,13 @@ export class UpdateVillageComponent implements OnInit {
     const blockNote = this.blockChanged
       ? ` The new village is in a different block (${request.newBlockName}).`
       : '';
+    const facilityNote = this.isOutsideFacility(this.newVillage)
+      ? ` It is not mapped to facility ${this.selectedMapping.facilityName || this.selectedMapping.facilityID}, so Work Location Mapping will drop it on the next edit unless the facility's villages are updated.`
+      : '';
     return (
       `Change village for ${request.userName} (mapping ${request.uSRMappingID}) ` +
       `from ${request.oldVillageName} to ${request.newVillageName}?` +
-      `${blockNote} This cannot be undone.`
+      `${blockNote}${facilityNote} This cannot be undone.`
     );
   }
 
@@ -397,14 +480,14 @@ export class UpdateVillageComponent implements OnInit {
     this.updateVillageService.updateVillage(request).subscribe(
       (response: any) => {
         this.submitting = false;
-        this.updateResult = response.data || request;
+        this.updateResult = { ...request, ...(response?.data || {}) };
         this.alertService.alert('Village updated successfully', 'success');
         this.clearMappingSelection();
         this.getUserMappings(this.user.userID);
       },
       (err: any) => {
         this.submitting = false;
-        this.alertService.alert(err.errorMessage, 'error');
+        this.showError(err);
       },
     );
   }

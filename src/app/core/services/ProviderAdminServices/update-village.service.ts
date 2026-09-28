@@ -35,6 +35,7 @@ export class UpdateVillageService {
   getDistrictsUrl: any;
   getBlocksUrl: any;
   getVillagesUrl: any;
+  getFacilityVillagesUrl: any;
   updateVillageUrl: any;
 
   constructor(
@@ -52,8 +53,8 @@ export class UpdateVillageService {
     this.getDistrictsUrl = this.commonBaseUrl + 'location/districts/';
     this.getBlocksUrl = this.commonBaseUrl + 'location/taluks/';
     this.getVillagesUrl = this.commonBaseUrl + 'location/village/';
-    // Not yet implemented in Admin-API — see UpdateVillageComponent.buildRequest
-    // for the request contract this page sends.
+    this.getFacilityVillagesUrl =
+      this.adminBaseUrl + 'getVillageMappingsByFacility';
     this.updateVillageUrl = this.adminBaseUrl + 'villageMapping/updateVillage';
   }
 
@@ -87,6 +88,12 @@ export class UpdateVillageService {
 
   getVillages(blockID: any): Observable<any> {
     return this.http.get(this.getVillagesUrl + blockID);
+  }
+
+  getFacilityVillages(facilityID: any): Observable<any> {
+    return this.http.post(this.getFacilityVillagesUrl, {
+      facilityID: facilityID,
+    });
   }
 
   updateVillage(updateObject: any): Observable<any> {

@@ -257,9 +257,18 @@
               [disabled]="isAlreadyMapped(item)"
             >
               {{ item.villageName }} ({{ item.districtBranchID }})
+              <span *ngIf="isOutsideFacility(item)" class="warning-note">
+                - not in facility</span
+              >
             </mat-option>
           </mat-select>
-          <mat-hint *ngIf="blockChanged" class="warning-note">
+          <mat-hint *ngIf="isOutsideFacility(newVillage)" class="warning-note">
+            Not mapped to facility {{ selectedMapping.facilityName }}
+          </mat-hint>
+          <mat-hint
+            *ngIf="blockChanged && !isOutsideFacility(newVillage)"
+            class="warning-note"
+          >
             Different block from the current mapping
           </mat-hint>
         </mat-form-field>
@@ -293,6 +302,14 @@
         Mapping {{ updateResult.uSRMappingID }}:
         {{ updateResult.oldVillageName }} &rarr;
         {{ updateResult.newVillageName }}
+      </p>
+      <p
+        class="screen-note"
+        *ngIf="updateResult.permanentAddressesUpdated != null"
+      >
+        Beneficiary addresses moved:
+        {{ updateResult.permanentAddressesUpdated }} permanent,
+        {{ updateResult.currentAddressesUpdated }} current
       </p>
     </div>
   </div>

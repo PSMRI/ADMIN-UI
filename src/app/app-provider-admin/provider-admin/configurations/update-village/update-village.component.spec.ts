@@ -19,7 +19,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { UpdateVillageComponent } from './update-village.component';
 
 describe('UpdateVillageComponent', () => {
@@ -52,6 +52,7 @@ describe('UpdateVillageComponent', () => {
       'getDistricts',
       'getBlocks',
       'getVillages',
+      'getFacilityVillages',
       'updateVillage',
     ]);
     alertService = jasmine.createSpyObj('ConfirmationDialogsService', [
@@ -154,7 +155,11 @@ describe('UpdateVillageComponent', () => {
     component.oldVillage = component.selectedMapping.mappedVillages[1];
     component.newVillage = component.villagesList[1];
     alertService.confirm.and.returnValue(of(true));
-    service.updateVillage.and.returnValue(of({ data: null }));
+    service.updateVillage.and.returnValue(
+      of({
+        data: { permanentAddressesUpdated: 12, currentAddressesUpdated: 11 },
+      }),
+    );
 
     component.confirmAndUpdate();
 
@@ -180,6 +185,7 @@ describe('UpdateVillageComponent', () => {
       'success',
     );
     expect(component.updateResult.newVillageName).toBe('Village C');
+    expect(component.updateResult.permanentAddressesUpdated).toBe(12);
     expect(component.submitting).toBeFalse();
   });
 
@@ -227,5 +233,96 @@ describe('UpdateVillageComponent', () => {
     component.onStateChange();
     expect(component.district).toBeNull();
     expect(component.districtsList).toEqual([]);
+  });
+
+  it('skips deactivated, Stop TB and village-less mappings', () => {
+    service.getUserRoleMapped.and.returnValue(
+      of({
+        data: [
+          { ...mapping, uSRMappingID: 1, userServciceRoleDeleted: true },
+          { ...mapping, uSRMappingID: 2, serviceName: 'Stop TB' },
+          { ...mapping, uSRMappingID: 3, villageID: [], villageName: [] },
+          { ...mapping, uSRMappingID: 4 },
+        ],
+      }),
+    );
+    component.user = user;
+    component.onUserChange();
+
+    expect(component.mappingsWithVillages.map((m) => m.uSRMappingID)).toEqual([
+      4,
+    ]);
+    // the one selectable mapping is auto-selected, not the village-less one
+    expect(component.selectedMapping.uSRMappingID).toBe(4);
+  });
+
+  it('ignores a mappings response for a previously selected user', () => {
+    const pending = new Subject<any>();
+    service.getUserRoleMapped.and.returnValue(pending);
+    component.user = user;
+    component.onUserChange();
+    component.user = { userID: 8, userName: 'asha02' };
+
+    pending.next({ data: [mapping] });
+
+    expect(component.userMappings).toEqual([]);
+    expect(component.selectedMapping).toBeNull();
+  });
+
+  it('pre-fills the hierarchy once states arrive after the mapping', () => {
+    const states = new Subject<any>();
+    service.getStates.and.returnValue(states);
+    component.statesList = [];
+    component.user = user;
+    component.onUserChange();
+    expect(component.state).toBeNull();
+
+    component.getStates();
+    states.next({ data: [{ stateID: 5, stateName: 'State' }] });
+
+    expect(component.state.stateID).toBe(5);
+    expect(component.block.blockID).toBe(500);
+  });
+
+  it('ignores district results for a state that is no longer selected', () => {
+    const districts = new Subject<any>();
+    service.getDistricts.and.returnValue(districts);
+    component.user = user;
+    component.onUserChange();
+    component.state = { stateID: 6, stateName: 'Other' };
+
+    districts.next({ data: [{ districtID: 50, districtName: 'District' }] });
+
+    expect(component.districtsList).toEqual([]);
+    expect(component.district).toBeNull();
+  });
+
+  it('warns when the new village is outside the mapping facility', () => {
+    service.getUserRoleMapped.and.returnValue(
+      of({ data: [{ ...mapping, facilityID: 44, facilityName: 'SC One' }] }),
+    );
+    service.getFacilityVillages.and.returnValue(
+      of({ data: [{ districtBranchID: 9001 }, { districtBranchID: 9002 }] }),
+    );
+    component.user = user;
+    component.onUserChange();
+
+    expect(service.getFacilityVillages).toHaveBeenCalledWith(44);
+    component.oldVillage = component.selectedMapping.mappedVillages[0];
+    component.newVillage = component.villagesList[1];
+    expect(component.isOutsideFacility(component.newVillage)).toBeTrue();
+    expect(component.isOutsideFacility(component.villagesList[0])).toBeFalse();
+    expect(component.confirmMessage(component.buildRequest())).toContain(
+      'not mapped to facility SC One',
+    );
+  });
+
+  it('falls back to a generic message when an error has no text', () => {
+    service.getUserList.and.returnValue(throwError(() => ({ status: 404 })));
+    component.getUserList();
+    expect(alertService.alert).toHaveBeenCalledWith(
+      'Something went wrong',
+      'error',
+    );
   });
 });
