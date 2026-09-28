@@ -36,8 +36,9 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { WorkLocationMapping } from '../services/work-location-mapping.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { MatOption } from '@angular/material/core';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 
 interface RoleEntry {
   roleID: number;
@@ -224,9 +225,60 @@ export class WorkLocationMappingComponent
   isStopTBServiceline = false;
   nikshayStateList: any[] = [];
   nikshayDistrictList: any[] = [];
-  nikshayTUList: any[] = [];
-  nikshayFacilityList: any[] = [];
-  nikshayVillageList: any[] = [];
+  // TU/Facility/Village lists can hold thousands of entries (e.g. Pune MC:
+  // 5,327 facilities, Ganganagar: 3,058 villages). Each setter records every
+  // item's position once so nikshayOptionOrder can sort mat-select's selection
+  // cheaply — see sortNikshayOptions.
+  private _nikshayTUList: any[] = [];
+  private _nikshayFacilityList: any[] = [];
+  private _nikshayVillageList: any[] = [];
+  private nikshayOptionOrder = new WeakMap<object, number>();
+
+  get nikshayTUList(): any[] {
+    return this._nikshayTUList;
+  }
+  set nikshayTUList(list: any[]) {
+    this._nikshayTUList = this.indexNikshayOptions(list);
+  }
+
+  get nikshayFacilityList(): any[] {
+    return this._nikshayFacilityList;
+  }
+  set nikshayFacilityList(list: any[]) {
+    this._nikshayFacilityList = this.indexNikshayOptions(list);
+  }
+
+  get nikshayVillageList(): any[] {
+    return this._nikshayVillageList;
+  }
+  set nikshayVillageList(list: any[]) {
+    this._nikshayVillageList = this.indexNikshayOptions(list);
+  }
+
+  private indexNikshayOptions(list: any[]): any[] {
+    const items = list || [];
+    items.forEach((item: any, i: number) => {
+      if (item && typeof item === 'object') {
+        this.nikshayOptionOrder.set(item, i);
+      }
+    });
+    return items;
+  }
+
+  // mat-select (multiple) re-sorts its selection on every click, Select All
+  // and Edit prefill. Its default comparator calls options.indexOf() inside
+  // the sort — O(n^2 log n) — which freezes low-end PCs once a list reaches a
+  // few thousand entries. Sorting by the position recorded above keeps the
+  // same order at O(n log n).
+  sortNikshayOptions = (a: MatOption, b: MatOption): number =>
+    (this.nikshayOptionOrder.get(a.value) ?? 0) -
+    (this.nikshayOptionOrder.get(b.value) ?? 0);
+
+  // Ticking facilities/TUs one by one used to fire one request per click,
+  // and a slow earlier response could overwrite a newer one. Wait for the
+  // user to pause, then keep only the latest request.
+  private nikshayTUSelection$ = new Subject<number[]>();
+  private nikshayFacilitySelection$ = new Subject<number[]>();
   selectedNikshayBlock: any = null;
   selectedNikshayTUs: any[] = [];
   selectedNikshayFacilities: any[] = [];
@@ -288,6 +340,10 @@ export class WorkLocationMappingComponent
 
   get allNikshayTUsSelected(): boolean {
     if (!this.nikshayTUList?.length) return false;
+    // Runs on every change detection — skip the Set build unless the counts
+    // could actually match.
+    if ((this.selectedNikshayTUs?.length || 0) < this.nikshayTUList.length)
+      return false;
     const selectedIDs = new Set(
       (this.selectedNikshayTUs || []).map((t: any) => t.nikshayTUID),
     );
@@ -303,6 +359,13 @@ export class WorkLocationMappingComponent
 
   get allNikshayFacilitiesSelected(): boolean {
     if (!this.nikshayFacilityList?.length) return false;
+    // Runs on every change detection — skip the Set build unless the counts
+    // could actually match.
+    if (
+      (this.selectedNikshayFacilities?.length || 0) <
+      this.nikshayFacilityList.length
+    )
+      return false;
     const selectedIDs = new Set(
       (this.selectedNikshayFacilities || []).map(
         (f: any) => f.nikshayFacilityID,
@@ -322,6 +385,13 @@ export class WorkLocationMappingComponent
 
   get allNikshayVillagesSelected(): boolean {
     if (!this.nikshayVillageList?.length) return false;
+    // Runs on every change detection — skip the Set build unless the counts
+    // could actually match.
+    if (
+      (this.selectedNikshayVillages?.length || 0) <
+      this.nikshayVillageList.length
+    )
+      return false;
     const selectedIDs = new Set(
       (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
     );
@@ -476,18 +546,9 @@ export class WorkLocationMappingComponent
     const tuIDs = (this.selectedNikshayTUs || []).map(
       (t: any) => t.nikshayTUID,
     );
-    if (!tuIDs.length) return;
-    this.worklocationmapping
-      .getNikshayFacilities(tuIDs)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(
-        (response: any) => {
-          this.nikshayFacilityList = response.data || [];
-        },
-        () => {
-          this.alertService.alert('Failed to load Nikshay facilities', 'error');
-        },
-      );
+    // Always emit (even when empty) so a pending request is cancelled
+    this.nikshayTUSelection$.next(tuIDs);
+    this.nikshayFacilitySelection$.next([]);
   }
 
   // Called whenever the Facility multi-select changes
@@ -497,18 +558,53 @@ export class WorkLocationMappingComponent
     const facilityIDs = (this.selectedNikshayFacilities || []).map(
       (f: any) => f.nikshayFacilityID,
     );
-    if (!facilityIDs.length) return;
-    this.worklocationmapping
-      .getNikshayVillages(facilityIDs)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(
-        (response: any) => {
-          this.nikshayVillageList = response.data || [];
-        },
-        () => {
-          this.alertService.alert('Failed to load Nikshay villages', 'error');
-        },
-      );
+    this.nikshayFacilitySelection$.next(facilityIDs);
+  }
+
+  private initNikshayCascade() {
+    this.nikshayTUSelection$
+      .pipe(
+        debounceTime(400),
+        switchMap((tuIDs: number[]) =>
+          !tuIDs.length
+            ? of(null)
+            : this.worklocationmapping.getNikshayFacilities(tuIDs).pipe(
+                catchError(() => {
+                  this.alertService.alert(
+                    'Failed to load Nikshay facilities',
+                    'error',
+                  );
+                  return of(null);
+                }),
+              ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((response: any) => {
+        this.nikshayFacilityList = response?.data || [];
+      });
+
+    this.nikshayFacilitySelection$
+      .pipe(
+        debounceTime(400),
+        switchMap((facilityIDs: number[]) =>
+          !facilityIDs.length
+            ? of(null)
+            : this.worklocationmapping.getNikshayVillages(facilityIDs).pipe(
+                catchError(() => {
+                  this.alertService.alert(
+                    'Failed to load Nikshay villages',
+                    'error',
+                  );
+                  return of(null);
+                }),
+              ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((response: any) => {
+        this.nikshayVillageList = response?.data || [];
+      });
   }
 
   resetNikshaySelection() {
@@ -939,6 +1035,7 @@ export class WorkLocationMappingComponent
     this.getProviderServices(this.userID);
     this.getAllMappedWorkLocations();
     this.getUserName(this.serviceProviderID);
+    this.initNikshayCascade();
   }
 
   ngOnDestroy() {

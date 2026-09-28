@@ -431,6 +431,7 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayTUs"
+                  [sortComparator]="sortNikshayOptions"
                   name="nikshayTUs"
                   (selectionChange)="onNikshayTUChange()"
                   (openedChange)="$event ? null : nikshayTUSearch = ''"
@@ -461,6 +462,7 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayFacilities"
+                  [sortComparator]="sortNikshayOptions"
                   name="nikshayFacilities"
                   (selectionChange)="onNikshayFacilityChange()"
                   (openedChange)="$event ? null : nikshayFacilitySearch = ''"
@@ -491,6 +493,7 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
+                  [sortComparator]="sortNikshayOptions"
                   name="nikshayVillages"
                   (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required
@@ -1017,6 +1020,7 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayTUs"
+                  [sortComparator]="sortNikshayOptions"
                   name="nikshayTUsEdit"
                   (selectionChange)="onNikshayTUChange()"
                   (openedChange)="$event ? null : nikshayTUSearch = ''"
@@ -1046,6 +1050,7 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayFacilities"
+                  [sortComparator]="sortNikshayOptions"
                   name="nikshayFacilitiesEdit"
                   (selectionChange)="onNikshayFacilityChange()"
                   (openedChange)="$event ? null : nikshayFacilitySearch = ''"
@@ -1075,6 +1080,7 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
+                  [sortComparator]="sortNikshayOptions"
                   name="nikshayVillagesEdit"
                   (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required
