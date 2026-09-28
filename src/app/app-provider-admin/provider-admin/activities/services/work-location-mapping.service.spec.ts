@@ -25,6 +25,7 @@ import {
   HttpTestingController,
 } from '@angular/common/http/testing';
 import { environment } from 'src/environments/environment';
+import { ConfigService } from 'src/app/core/services/config/config.service';
 import { WorkLocationMapping } from './work-location-mapping.service';
 
 // Covers the villages batching fix: a "select all" facility pick can pass
@@ -40,7 +41,11 @@ describe('WorkLocationMapping - getNikshayVillages batching', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule],
-      providers: [WorkLocationMapping],
+      providers: [
+        WorkLocationMapping,
+        // Injected by the service but unused by the Nikshay lookups
+        { provide: ConfigService, useValue: {} },
+      ],
     });
     service = TestBed.inject(WorkLocationMapping);
     httpMock = TestBed.inject(HttpTestingController);
