@@ -50,11 +50,14 @@ export class UpdateVillageComponent implements OnInit {
   statesList: any[] = [];
   districtsList: any[] = [];
   blocksList: any[] = [];
+  facilitiesList: any[] = [];
+  facilityVillagesLoaded = false;
   villagesList: any[] = [];
 
   state: any = null;
   district: any = null;
   block: any = null;
+  facility: any = null;
   newVillage: any = null;
 
   // districtBranchIDs mapped to the selected mapping's facility; null when the
@@ -222,6 +225,13 @@ export class UpdateVillageComponent implements OnInit {
     this.newVillage = null;
     this.districtsList = [];
     this.blocksList = [];
+    this.clearFacilities();
+  }
+
+  clearFacilities() {
+    this.facility = null;
+    this.facilitiesList = [];
+    this.facilityVillagesLoaded = false;
     this.villagesList = [];
   }
 
@@ -284,6 +294,7 @@ export class UpdateVillageComponent implements OnInit {
       state.stateID,
       mapping.workingDistrictID,
       mapping.blockID,
+      mapping.facilityID,
     );
   }
 
@@ -294,7 +305,7 @@ export class UpdateVillageComponent implements OnInit {
     this.newVillage = null;
     this.districtsList = [];
     this.blocksList = [];
-    this.villagesList = [];
+    this.clearFacilities();
     if (this.state) {
       this.loadDistricts(this.state.stateID);
     }
@@ -305,7 +316,7 @@ export class UpdateVillageComponent implements OnInit {
     this.block = null;
     this.newVillage = null;
     this.blocksList = [];
-    this.villagesList = [];
+    this.clearFacilities();
     if (this.district) {
       this.loadBlocks(this.district.districtID);
     }
@@ -314,8 +325,19 @@ export class UpdateVillageComponent implements OnInit {
   onBlockChange() {
     this.updateResult = null;
     this.newVillage = null;
-    this.villagesList = [];
+    this.clearFacilities();
     if (this.block) {
+      this.loadFacilities(this.block.blockID);
+    }
+  }
+
+  onFacilityChange() {
+    this.updateResult = null;
+    this.newVillage = null;
+    this.villagesList = [];
+    if (this.facility) {
+      this.loadFacilityVillageList(this.facility.facilityID);
+    } else if (this.block) {
       this.loadVillages(this.block.blockID);
     }
   }
@@ -328,6 +350,7 @@ export class UpdateVillageComponent implements OnInit {
     stateID: any,
     preselectDistrictID?: any,
     preselectBlockID?: any,
+    preselectFacilityID?: any,
   ) {
     this.updateVillageService.getDistricts(stateID).subscribe(
       (response: any) => {
@@ -344,14 +367,22 @@ export class UpdateVillageComponent implements OnInit {
         );
         if (district) {
           this.district = district;
-          this.loadBlocks(district.districtID, preselectBlockID);
+          this.loadBlocks(
+            district.districtID,
+            preselectBlockID,
+            preselectFacilityID,
+          );
         }
       },
       (err: any) => this.showError(err),
     );
   }
 
-  loadBlocks(districtID: any, preselectBlockID?: any) {
+  loadBlocks(
+    districtID: any,
+    preselectBlockID?: any,
+    preselectFacilityID?: any,
+  ) {
     this.updateVillageService.getBlocks(districtID).subscribe(
       (response: any) => {
         if (this.district?.districtID !== districtID) {
@@ -366,17 +397,75 @@ export class UpdateVillageComponent implements OnInit {
         );
         if (block) {
           this.block = block;
-          this.loadVillages(block.blockID);
+          this.loadFacilities(block.blockID, preselectFacilityID);
         }
       },
       (err: any) => this.showError(err),
     );
   }
 
+  // Facility is optional: without one the Village list is the whole block,
+  // with one it narrows to that facility's villages.
+  loadFacilities(blockID: any, preselectFacilityID?: any) {
+    this.updateVillageService.getFacilitiesByBlock(blockID).subscribe(
+      (response: any) => {
+        if (this.block?.blockID !== blockID) {
+          return;
+        }
+        this.facilitiesList = Array.isArray(response.data) ? response.data : [];
+        const facility = this.facilitiesList.find(
+          (item: any) =>
+            preselectFacilityID != null &&
+            String(item.facilityID) === String(preselectFacilityID),
+        );
+        if (facility) {
+          this.facility = facility;
+          this.loadFacilityVillageList(facility.facilityID);
+        } else {
+          this.loadVillages(blockID);
+        }
+      },
+      (err: any) => {
+        if (this.block?.blockID !== blockID) {
+          return;
+        }
+        this.showError(err);
+        this.loadVillages(blockID);
+      },
+    );
+  }
+
+  loadFacilityVillageList(facilityID: any) {
+    this.facilityVillagesLoaded = false;
+    this.updateVillageService.getFacilityVillages(facilityID).subscribe(
+      (response: any) => {
+        if (this.facility?.facilityID !== facilityID) {
+          return;
+        }
+        this.villagesList = Array.isArray(response.data) ? response.data : [];
+        this.facilityVillagesLoaded = true;
+      },
+      (err: any) => {
+        if (this.facility?.facilityID === facilityID) {
+          this.facilityVillagesLoaded = true;
+        }
+        this.showError(err);
+      },
+    );
+  }
+
+  get hasFacilities(): boolean {
+    return this.facilitiesList.length > 0;
+  }
+
+  get villageSelectDisabled(): boolean {
+    return !this.block;
+  }
+
   loadVillages(blockID: any) {
     this.updateVillageService.getVillages(blockID).subscribe(
       (response: any) => {
-        if (this.block?.blockID !== blockID) {
+        if (this.block?.blockID !== blockID || this.facility) {
           return;
         }
         this.villagesList = response.data || [];
@@ -468,10 +557,14 @@ export class UpdateVillageComponent implements OnInit {
     const facilityNote = this.isOutsideFacility(this.newVillage)
       ? ` It is not mapped to facility ${this.selectedMapping.facilityName || this.selectedMapping.facilityID}, so Work Location Mapping will drop it on the next edit unless the facility's villages are updated.`
       : '';
+    const addressNote =
+      this.selectedMapping.mappedVillages.length === 1
+        ? ` All beneficiary addresses registered by ${request.userName} will be moved to ${request.newVillageName}.`
+        : ` Beneficiary addresses registered by ${request.userName} in ${request.oldVillageName} will be moved to ${request.newVillageName}.`;
     return (
       `Change village for ${request.userName} (mapping ${request.uSRMappingID}) ` +
       `from ${request.oldVillageName} to ${request.newVillageName}?` +
-      `${blockNote}${facilityNote} This cannot be undone.`
+      `${addressNote}${blockNote}${facilityNote} This cannot be undone.`
     );
   }
 

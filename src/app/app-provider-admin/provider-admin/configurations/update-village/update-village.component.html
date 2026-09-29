@@ -241,6 +241,24 @@
           </mat-select>
         </mat-form-field>
       </div>
+      <div
+        class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10"
+        *ngIf="hasFacilities"
+      >
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Facility (optional)</mat-label>
+          <mat-select
+            [(ngModel)]="facility"
+            name="facility"
+            (selectionChange)="onFacilityChange()"
+          >
+            <mat-option [value]="null">All villages in block</mat-option>
+            <mat-option *ngFor="let item of facilitiesList" [value]="item">
+              {{ item.facilityName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
       <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
         <mat-form-field [style.width]="'100%'">
           <mat-label>Village</mat-label>
@@ -248,7 +266,7 @@
             [(ngModel)]="newVillage"
             name="newVillage"
             (selectionChange)="onVillageChange()"
-            [disabled]="!block"
+            [disabled]="villageSelectDisabled"
             required
           >
             <mat-option
@@ -262,6 +280,14 @@
               >
             </mat-option>
           </mat-select>
+          <mat-hint
+            *ngIf="
+              facility && facilityVillagesLoaded && villagesList.length === 0
+            "
+            class="warning-note"
+          >
+            No villages are mapped to this facility
+          </mat-hint>
           <mat-hint *ngIf="isOutsideFacility(newVillage)" class="warning-note">
             Not mapped to facility {{ selectedMapping.facilityName }}
           </mat-hint>
@@ -303,14 +329,17 @@
         {{ updateResult.oldVillageName }} &rarr;
         {{ updateResult.newVillageName }}
       </p>
-      <p
-        class="screen-note"
-        *ngIf="updateResult.permanentAddressesUpdated != null"
-      >
-        Beneficiary addresses moved:
-        {{ updateResult.permanentAddressesUpdated }} permanent,
-        {{ updateResult.currentAddressesUpdated }} current
-      </p>
+      <ng-container *ngIf="updateResult.permanentAddressesUpdated != null">
+        <p class="screen-note" *ngIf="updateResult.allAddressesUpdated">
+          Beneficiary addresses updated:
+          {{ updateResult.permanentAddressesUpdated }}
+        </p>
+        <p class="screen-note" *ngIf="!updateResult.allAddressesUpdated">
+          Beneficiary addresses moved from {{ updateResult.oldVillageName }}:
+          {{ updateResult.permanentAddressesUpdated }} permanent,
+          {{ updateResult.currentAddressesUpdated }} current
+        </p>
+      </ng-container>
     </div>
   </div>
 </div>

@@ -52,6 +52,7 @@ describe('UpdateVillageComponent', () => {
       'getDistricts',
       'getBlocks',
       'getVillages',
+      'getFacilitiesByBlock',
       'getFacilityVillages',
       'updateVillage',
     ]);
@@ -83,6 +84,7 @@ describe('UpdateVillageComponent', () => {
         ],
       }),
     );
+    service.getFacilitiesByBlock.and.returnValue(of({ data: [] }));
     service.getVillages.and.returnValue(
       of({
         data: [
@@ -324,5 +326,102 @@ describe('UpdateVillageComponent', () => {
       'Something went wrong',
       'error',
     );
+  });
+
+  it('tells the admin which beneficiary addresses will move', () => {
+    component.user = user;
+    component.onUserChange();
+    component.oldVillage = component.selectedMapping.mappedVillages[0];
+    component.newVillage = component.villagesList[1];
+    expect(component.confirmMessage(component.buildRequest())).toContain(
+      'registered by asha01 in Village A will be moved to Village C',
+    );
+
+    component.selectedMapping = {
+      ...component.selectedMapping,
+      mappedVillages: [component.selectedMapping.mappedVillages[0]],
+    };
+    expect(component.confirmMessage(component.buildRequest())).toContain(
+      'All beneficiary addresses registered by asha01 will be moved',
+    );
+  });
+
+  describe('when the block has facilities', () => {
+    const facilities = [
+      { facilityID: 44, facilityName: 'SC One' },
+      { facilityID: 45, facilityName: 'SC Two' },
+    ];
+
+    beforeEach(() => {
+      service.getFacilitiesByBlock.and.returnValue(of({ data: facilities }));
+      service.getFacilityVillages.and.callFake((facilityID: number) =>
+        of({
+          data:
+            facilityID === 44
+              ? [{ districtBranchID: 9001, villageName: 'Village A' }]
+              : [{ districtBranchID: 9004, villageName: 'Village D' }],
+        }),
+      );
+    });
+
+    it('lists block villages until a facility is chosen', () => {
+      component.user = user;
+      component.onUserChange();
+      component.oldVillage = component.selectedMapping.mappedVillages[0];
+
+      expect(service.getFacilitiesByBlock).toHaveBeenCalledWith(500);
+      expect(component.hasFacilities).toBeTrue();
+      expect(component.facility).toBeNull();
+      expect(component.villageSelectDisabled).toBeFalse();
+      expect(component.villagesList.length).toBe(2);
+
+      component.newVillage = component.villagesList[1];
+      expect(component.validationMessage).toBeNull();
+
+      component.facility = facilities[1];
+      component.onFacilityChange();
+
+      expect(service.getFacilityVillages).toHaveBeenCalledWith(45);
+      expect(component.newVillage).toBeNull();
+      expect(component.villagesList).toEqual([
+        { districtBranchID: 9004, villageName: 'Village D' },
+      ]);
+
+      component.facility = null;
+      component.onFacilityChange();
+
+      expect(component.villagesList.length).toBe(2);
+    });
+
+    it("pre-selects the mapping's own facility", () => {
+      service.getUserRoleMapped.and.returnValue(
+        of({ data: [{ ...mapping, facilityID: 44 }] }),
+      );
+      component.user = user;
+      component.onUserChange();
+
+      expect(component.facility.facilityID).toBe(44);
+      expect(component.villagesList[0].districtBranchID).toBe(9001);
+    });
+
+    it('lists block villages when facilities fail to load', () => {
+      service.getFacilitiesByBlock.and.returnValue(
+        throwError(() => ({ errorMessage: 'down' })),
+      );
+      component.user = user;
+      component.onUserChange();
+
+      expect(service.getVillages).toHaveBeenCalledWith(500);
+      expect(component.villagesList.length).toBe(2);
+    });
+  });
+
+  it('lists block villages directly when the block has no facilities', () => {
+    component.user = user;
+    component.onUserChange();
+
+    expect(component.hasFacilities).toBeFalse();
+    expect(service.getVillages).toHaveBeenCalledWith(500);
+    expect(component.villageSelectDisabled).toBeFalse();
   });
 });

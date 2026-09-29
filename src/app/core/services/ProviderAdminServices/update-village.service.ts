@@ -36,6 +36,7 @@ export class UpdateVillageService {
   getBlocksUrl: any;
   getVillagesUrl: any;
   getFacilityVillagesUrl: any;
+  getFacilitiesByBlockUrl: any;
   updateVillageUrl: any;
 
   constructor(
@@ -53,6 +54,7 @@ export class UpdateVillageService {
     this.getDistrictsUrl = this.commonBaseUrl + 'location/districts/';
     this.getBlocksUrl = this.commonBaseUrl + 'location/taluks/';
     this.getVillagesUrl = this.commonBaseUrl + 'location/village/';
+    this.getFacilitiesByBlockUrl = this.adminBaseUrl + 'getFacilitiesByBlock';
     this.getFacilityVillagesUrl =
       this.adminBaseUrl + 'getVillageMappingsByFacility';
     this.updateVillageUrl = this.adminBaseUrl + 'villageMapping/updateVillage';
@@ -88,6 +90,10 @@ export class UpdateVillageService {
 
   getVillages(blockID: any): Observable<any> {
     return this.http.get(this.getVillagesUrl + blockID);
+  }
+
+  getFacilitiesByBlock(blockID: any): Observable<any> {
+    return this.http.post(this.getFacilitiesByBlockUrl, { blockID: blockID });
   }
 
   getFacilityVillages(facilityID: any): Observable<any> {
