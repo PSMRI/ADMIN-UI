@@ -1,0 +1,345 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>Update Village</h4>
+      <p class="screen-note">
+        Select a user, pick the work location mapping and the village to
+        replace, then choose the new village by State, District and Block. This
+        cannot be undone.
+      </p>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Select User</mat-label>
+        <mat-select
+          [(ngModel)]="user"
+          name="user"
+          (selectionChange)="onUserChange()"
+          required
+        >
+          <mat-option *ngFor="let item of userNamesList" [value]="item">
+            {{ item.userName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <ng-container *ngIf="user">
+    <div class="row">
+      <div class="col-xs-12 col-sm-12">
+        <h5>User Details</h5>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>User ID</mat-label>
+          <input matInput [value]="user.userID" disabled />
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Username</mat-label>
+          <input matInput [value]="user.userName" disabled />
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Name</mat-label>
+          <input matInput [value]="displayName" disabled />
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Employee ID</mat-label>
+          <input
+            matInput
+            [value]="userDetail?.employeeID || 'Not set'"
+            disabled
+          />
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="row m-t-10">
+      <div class="col-xs-12 col-sm-12">
+        <h5>Current Village Mappings</h5>
+        <p class="screen-note" *ngIf="!mappingsLoaded">Loading mappings...</p>
+        <p
+          class="screen-note"
+          *ngIf="mappingsLoaded && mappingsWithVillages.length === 0"
+        >
+          This user has no active work location mapping with villages.
+        </p>
+      </div>
+
+      <div
+        class="col-xs-12 col-sm-12 table-responsive"
+        *ngIf="mappingsWithVillages.length > 0"
+      >
+        <table
+          mat-table
+          [dataSource]="mappingsWithVillages"
+          class="mat-elevation-z2 mapping-table"
+          aria-describedby="Current village mappings of the selected user"
+        >
+          <ng-container matColumnDef="select">
+            <th mat-header-cell *matHeaderCellDef>Select</th>
+            <td mat-cell *matCellDef="let element">
+              <mat-radio-button
+                [checked]="
+                  selectedMapping?.uSRMappingID === element.uSRMappingID
+                "
+                (change)="selectMapping(element)"
+                [attr.aria-label]="'Select mapping ' + element.uSRMappingID"
+              ></mat-radio-button>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="uSRMappingID">
+            <th mat-header-cell *matHeaderCellDef>User Mapping ID</th>
+            <td mat-cell *matCellDef="let element">
+              {{ element.uSRMappingID }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="role">
+            <th mat-header-cell *matHeaderCellDef>Role (ID)</th>
+            <td mat-cell *matCellDef="let element">
+              {{ element.roleName }} ({{ element.roleID }})
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="serviceName">
+            <th mat-header-cell *matHeaderCellDef>Service Line</th>
+            <td mat-cell *matCellDef="let element">
+              {{ element.serviceName }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="stateName">
+            <th mat-header-cell *matHeaderCellDef>State</th>
+            <td mat-cell *matCellDef="let element">{{ element.stateName }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="districtName">
+            <th mat-header-cell *matHeaderCellDef>District</th>
+            <td mat-cell *matCellDef="let element">
+              {{ element.workingDistrictName }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="blockName">
+            <th mat-header-cell *matHeaderCellDef>Block (ID)</th>
+            <td mat-cell *matCellDef="let element">
+              {{ element.blockName }} ({{ element.blockID }})
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="facilityName">
+            <th mat-header-cell *matHeaderCellDef>Facility</th>
+            <td mat-cell *matCellDef="let element">
+              {{ element.facilityName || "-" }}
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="villages">
+            <th mat-header-cell *matHeaderCellDef>Mapped Villages (ID)</th>
+            <td mat-cell *matCellDef="let element">
+              <div *ngFor="let village of element.mappedVillages">
+                {{ village.villageName }} ({{ village.villageID }})
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr
+            mat-row
+            *matRowDef="let row; columns: displayedColumns"
+            [class.selected-row]="
+              selectedMapping?.uSRMappingID === row.uSRMappingID
+            "
+          ></tr>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="selectedMapping">
+    <div class="row m-t-20">
+      <div class="col-xs-12 col-sm-12">
+        <h5>Village to Replace</h5>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Old Village</mat-label>
+          <mat-select
+            [(ngModel)]="oldVillage"
+            name="oldVillage"
+            (selectionChange)="onVillageChange()"
+            required
+          >
+            <mat-option
+              *ngFor="let village of selectedMapping.mappedVillages"
+              [value]="village"
+            >
+              {{ village.villageName }} ({{ village.villageID }})
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col-xs-12 col-sm-12">
+        <h5>New Village</h5>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>State</mat-label>
+          <mat-select
+            [(ngModel)]="state"
+            name="state"
+            (selectionChange)="onStateChange()"
+            required
+          >
+            <mat-option *ngFor="let item of statesList" [value]="item">
+              {{ item.stateName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>District</mat-label>
+          <mat-select
+            [(ngModel)]="district"
+            name="district"
+            (selectionChange)="onDistrictChange()"
+            [disabled]="!state"
+            required
+          >
+            <mat-option *ngFor="let item of districtsList" [value]="item">
+              {{ item.districtName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Block</mat-label>
+          <mat-select
+            [(ngModel)]="block"
+            name="block"
+            (selectionChange)="onBlockChange()"
+            [disabled]="!district"
+            required
+          >
+            <mat-option *ngFor="let item of blocksList" [value]="item">
+              {{ item.blockName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div
+        class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10"
+        *ngIf="hasFacilities"
+      >
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Facility (optional)</mat-label>
+          <mat-select
+            [(ngModel)]="facility"
+            name="facility"
+            (selectionChange)="onFacilityChange()"
+          >
+            <mat-option [value]="null">All villages in block</mat-option>
+            <mat-option *ngFor="let item of facilitiesList" [value]="item">
+              {{ item.facilityName }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Village</mat-label>
+          <mat-select
+            [(ngModel)]="newVillage"
+            name="newVillage"
+            (selectionChange)="onVillageChange()"
+            [disabled]="villageSelectDisabled"
+            required
+          >
+            <mat-option
+              *ngFor="let item of villagesList"
+              [value]="item"
+              [disabled]="isAlreadyMapped(item)"
+            >
+              {{ item.villageName }} ({{ item.districtBranchID }})
+              <span *ngIf="isOutsideFacility(item)" class="warning-note">
+                - not in facility</span
+              >
+            </mat-option>
+          </mat-select>
+          <mat-hint
+            *ngIf="
+              facility && facilityVillagesLoaded && villagesList.length === 0
+            "
+            class="warning-note"
+          >
+            No villages are mapped to this facility
+          </mat-hint>
+          <mat-hint *ngIf="isOutsideFacility(newVillage)" class="warning-note">
+            Not mapped to facility {{ selectedMapping.facilityName }}
+          </mat-hint>
+          <mat-hint
+            *ngIf="blockChanged && !isOutsideFacility(newVillage)"
+            class="warning-note"
+          >
+            Different block from the current mapping
+          </mat-hint>
+        </mat-form-field>
+      </div>
+    </div>
+  </ng-container>
+
+  <div class="row" *ngIf="validationMessage && selectedMapping">
+    <div class="col-xs-12 col-sm-12">
+      <p class="validation-note">{{ validationMessage }}</p>
+    </div>
+  </div>
+
+  <div class="row m-t-10" *ngIf="user">
+    <div class="col-xs-12 col-sm-12">
+      <button
+        mat-raised-button
+        class="mat_green"
+        [disabled]="!canSubmit"
+        (click)="confirmAndUpdate()"
+      >
+        Update
+      </button>
+    </div>
+  </div>
+
+  <div class="row m-t-20" *ngIf="updateResult">
+    <div class="col-xs-12 col-sm-12">
+      <h5>Update complete</h5>
+      <p class="screen-note">
+        Mapping {{ updateResult.uSRMappingID }}:
+        {{ updateResult.oldVillageName }} &rarr;
+        {{ updateResult.newVillageName }}
+      </p>
+      <ng-container *ngIf="updateResult.permanentAddressesUpdated != null">
+        <p class="screen-note" *ngIf="updateResult.allAddressesUpdated">
+          Beneficiary addresses updated:
+          {{ updateResult.permanentAddressesUpdated }}
+        </p>
+        <p class="screen-note" *ngIf="!updateResult.allAddressesUpdated">
+          Beneficiary addresses moved from {{ updateResult.oldVillageName }}:
+          {{ updateResult.permanentAddressesUpdated }} permanent,
+          {{ updateResult.currentAddressesUpdated }} current
+        </p>
+      </ng-container>
+    </div>
+  </div>
+</div>
