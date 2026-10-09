@@ -432,6 +432,7 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayTUs"
                   [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayTUs"
                   (selectionChange)="onNikshayTUChange()"
                   (openedChange)="$event ? null : nikshayTUSearch = ''"
@@ -463,6 +464,7 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayFacilities"
                   [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayFacilities"
                   (selectionChange)="onNikshayFacilityChange()"
                   (openedChange)="$event ? null : nikshayFacilitySearch = ''"
@@ -494,6 +496,7 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
                   [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayVillages"
                   (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required
@@ -1021,6 +1024,7 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayTUs"
                   [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayTUsEdit"
                   (selectionChange)="onNikshayTUChange()"
                   (openedChange)="$event ? null : nikshayTUSearch = ''"
@@ -1051,6 +1055,7 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayFacilities"
                   [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayFacilitiesEdit"
                   (selectionChange)="onNikshayFacilityChange()"
                   (openedChange)="$event ? null : nikshayFacilitySearch = ''"
@@ -1081,6 +1086,7 @@
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
                   [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayVillagesEdit"
                   (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required

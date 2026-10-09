@@ -25,6 +25,7 @@ import { RoleMasterComponent } from './role-master/provider-admin-role-master.co
 import { ServicelineCdssMappingComponent } from './serviceline-cdss-mapping/servicelineCdssMapping.component';
 import { SpecialistMappingComponent } from './specialist-mapping/specialist-mapping.component';
 import { WorkLocationMappingComponent } from './work-location-mapping/work-location-mapping.component';
+import { FastBulkSelectDirective } from './work-location-mapping/fast-bulk-select.directive';
 import { UserFacilityMappingComponent } from './work-location-mapping/user-facility-mapping/user-facility-mapping.component';
 import { VillageMasterService } from 'src/app/core/services/adminServices/AdminVillage/village-master-service.service';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
@@ -123,6 +124,7 @@ import { CoreModule } from 'src/app/core/core.module';
     InstituteDirectoryMasterComponent,
     EditInstituteDirectoryComponent,
     WorkLocationMappingComponent,
+    FastBulkSelectDirective,
     FeedbackComplaintNatureMasterComponent,
     EditFeedbackNatureModalComponent,
     NatureOfComplaintCategoryMappingComponent,
