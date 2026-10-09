@@ -481,9 +481,16 @@
                       allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
-                    {{ item.facilityName }}
-                  </mat-option>
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayFacilities, 'facilityName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayFacilityList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item">
+                      {{ item.facilityName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -512,9 +519,16 @@
                       allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
-                    {{ item.villageName }}
-                  </mat-option>
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayVillages, 'villageName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayVillageList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item">
+                      {{ item.villageName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -1072,9 +1086,16 @@
                       allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
-                    {{ item.facilityName }}
-                  </mat-option>
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayFacilities, 'facilityName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayFacilityList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item">
+                      {{ item.facilityName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -1102,9 +1123,16 @@
                       allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
-                    {{ item.villageName }}
-                  </mat-option>
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayVillages, 'villageName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayVillageList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item">
+                      {{ item.villageName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
                 </mat-select>
               </mat-form-field>
             </div>

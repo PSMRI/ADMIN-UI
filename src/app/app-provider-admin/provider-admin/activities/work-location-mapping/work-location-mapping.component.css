@@ -131,3 +131,7 @@
 ::ng-deep .select-search-box input:focus {
   border-color: #3f51b5;
 }
+/* Nikshay Facility/Village options: virtual scroll list inside the select panel */
+::ng-deep .nikshay-option-viewport {
+  width: 100%;
+}

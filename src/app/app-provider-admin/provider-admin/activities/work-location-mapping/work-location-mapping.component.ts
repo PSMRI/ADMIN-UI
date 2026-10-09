@@ -312,32 +312,83 @@ export class WorkLocationMappingComponent
     );
   }
 
+  // The getters below run on every change detection. With 1 lakh+ villages
+  // the filter/Set work is cached until the list, selection or search text
+  // changes (all three are always replaced, never mutated in place).
+  private nikshayMemo = new Map<string, { deps: any[]; value: any }>();
+  private memoNikshay<T>(key: string, deps: any[], compute: () => T): T {
+    const hit = this.nikshayMemo.get(key);
+    if (hit && hit.deps.every((d, i) => d === deps[i])) return hit.value;
+    const value = compute();
+    this.nikshayMemo.set(key, { deps, value });
+    return value;
+  }
+
   get filteredNikshayFacilityList(): any[] {
     if (!this.nikshayFacilitySearch) return this.nikshayFacilityList;
-    const s = this.nikshayFacilitySearch.toLowerCase();
-    const selectedIDs = new Set(
-      (this.selectedNikshayFacilities || []).map(
-        (f: any) => f.nikshayFacilityID,
-      ),
-    );
-    return this.nikshayFacilityList.filter(
-      (f: any) =>
-        selectedIDs.has(f.nikshayFacilityID) ||
-        (f.facilityName || '').toLowerCase().includes(s),
+    return this.memoNikshay(
+      'filteredFacilities',
+      [
+        this.nikshayFacilityList,
+        this.selectedNikshayFacilities,
+        this.nikshayFacilitySearch,
+      ],
+      () => {
+        const s = this.nikshayFacilitySearch.toLowerCase();
+        const selectedIDs = new Set(
+          (this.selectedNikshayFacilities || []).map(
+            (f: any) => f.nikshayFacilityID,
+          ),
+        );
+        return this.nikshayFacilityList.filter(
+          (f: any) =>
+            selectedIDs.has(f.nikshayFacilityID) ||
+            (f.facilityName || '').toLowerCase().includes(s),
+        );
+      },
     );
   }
 
   get filteredNikshayVillageList(): any[] {
     if (!this.nikshayVillageSearch) return this.nikshayVillageList;
-    const s = this.nikshayVillageSearch.toLowerCase();
-    const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
+    return this.memoNikshay(
+      'filteredVillages',
+      [
+        this.nikshayVillageList,
+        this.selectedNikshayVillages,
+        this.nikshayVillageSearch,
+      ],
+      () => {
+        const s = this.nikshayVillageSearch.toLowerCase();
+        const selectedIDs = new Set(
+          (this.selectedNikshayVillages || []).map(
+            (v: any) => v.nikshayVillageID,
+          ),
+        );
+        return this.nikshayVillageList.filter(
+          (v: any) =>
+            selectedIDs.has(v.nikshayVillageID) ||
+            (v.villageName || '').toLowerCase().includes(s),
+        );
+      },
     );
-    return this.nikshayVillageList.filter(
-      (v: any) =>
-        selectedIDs.has(v.nikshayVillageID) ||
-        (v.villageName || '').toLowerCase().includes(s),
-    );
+  }
+
+  // Text shown in a closed Facility/Village field: the selected names joined
+  // like mat-select's own label. The field shows one line, so only the first
+  // names are joined.
+  nikshayTriggerText(selected: any[], nameKey: string): string {
+    return (selected || [])
+      .slice(0, 50)
+      .map((item: any) => item?.[nameKey])
+      .join(', ');
+  }
+
+  // Facility/Village options are drawn in a virtual scroll list (only the
+  // rows on screen exist), sized like the panel's normal list area.
+  readonly nikshayOptionHeight = 48;
+  nikshayViewportHeight(count: number): number {
+    return Math.min(count * this.nikshayOptionHeight, 180);
   }
 
   get allNikshayTUsSelected(): boolean {
@@ -368,13 +419,19 @@ export class WorkLocationMappingComponent
       this.nikshayFacilityList.length
     )
       return false;
-    const selectedIDs = new Set(
-      (this.selectedNikshayFacilities || []).map(
-        (f: any) => f.nikshayFacilityID,
-      ),
-    );
-    return this.nikshayFacilityList.every((f: any) =>
-      selectedIDs.has(f.nikshayFacilityID),
+    return this.memoNikshay(
+      'allFacilitiesSelected',
+      [this.nikshayFacilityList, this.selectedNikshayFacilities],
+      () => {
+        const selectedIDs = new Set(
+          (this.selectedNikshayFacilities || []).map(
+            (f: any) => f.nikshayFacilityID,
+          ),
+        );
+        return this.nikshayFacilityList.every((f: any) =>
+          selectedIDs.has(f.nikshayFacilityID),
+        );
+      },
     );
   }
 
@@ -394,11 +451,19 @@ export class WorkLocationMappingComponent
       this.nikshayVillageList.length
     )
       return false;
-    const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
-    );
-    return this.nikshayVillageList.every((v: any) =>
-      selectedIDs.has(v.nikshayVillageID),
+    return this.memoNikshay(
+      'allVillagesSelected',
+      [this.nikshayVillageList, this.selectedNikshayVillages],
+      () => {
+        const selectedIDs = new Set(
+          (this.selectedNikshayVillages || []).map(
+            (v: any) => v.nikshayVillageID,
+          ),
+        );
+        return this.nikshayVillageList.every((v: any) =>
+          selectedIDs.has(v.nikshayVillageID),
+        );
+      },
     );
   }
 

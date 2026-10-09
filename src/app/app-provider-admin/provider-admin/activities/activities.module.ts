@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ProviderAdminRoleService } from './services/state-serviceline-role.service';
 import { MaterialModule } from 'src/app/core/material.module';
@@ -163,6 +164,7 @@ import { CoreModule } from 'src/app/core/core.module';
   ],
   imports: [
     CommonModule,
+    ScrollingModule,
     MaterialModule,
     FormsModule,
     ReactiveFormsModule,
