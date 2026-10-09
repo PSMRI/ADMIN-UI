@@ -860,8 +860,11 @@ export class WorkLocationMappingComponent
       .pipe(takeUntil(this.destroy$))
       .subscribe((tuResponse: any) => {
         this.nikshayTUList = tuResponse.data || [];
+        // Set lookups: a district can have thousands of saved facilities and
+        // villages, and includes() inside filter() is quadratic.
+        const tuIDSet = new Set(existingTUIDs);
         this.selectedNikshayTUs = this.nikshayTUList.filter((t: any) =>
-          existingTUIDs.includes(t.nikshayTUID),
+          tuIDSet.has(t.nikshayTUID),
         );
         // "Select Block" is a single-select quick-add convenience over this
         // same TU list (see onNikshayBlockChange), but the saved BlockID IS
@@ -882,8 +885,9 @@ export class WorkLocationMappingComponent
           .pipe(takeUntil(this.destroy$))
           .subscribe((facResponse: any) => {
             this.nikshayFacilityList = facResponse.data || [];
+            const facilityIDSet = new Set(existingFacilityIDs);
             this.selectedNikshayFacilities = this.nikshayFacilityList.filter(
-              (f: any) => existingFacilityIDs.includes(f.nikshayFacilityID),
+              (f: any) => facilityIDSet.has(f.nikshayFacilityID),
             );
             if (!this.selectedNikshayFacilities.length) return;
 
@@ -895,8 +899,9 @@ export class WorkLocationMappingComponent
               .pipe(takeUntil(this.destroy$))
               .subscribe((villResponse: any) => {
                 this.nikshayVillageList = villResponse.data || [];
+                const villageIDSet = new Set(uniqueVillageIDs);
                 this.selectedNikshayVillages = this.nikshayVillageList.filter(
-                  (v: any) => uniqueVillageIDs.includes(v.nikshayVillageID),
+                  (v: any) => villageIDSet.has(v.nikshayVillageID),
                 );
               });
           });
