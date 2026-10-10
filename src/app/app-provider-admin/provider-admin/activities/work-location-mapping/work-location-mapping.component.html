@@ -487,7 +487,7 @@
                     [itemSize]="nikshayOptionHeight"
                     [style.height.px]="nikshayViewportHeight(filteredNikshayFacilityList.length)"
                   >
-                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item">
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item" [title]="item.facilityName">
                       {{ item.facilityName }}
                     </mat-option>
                   </cdk-virtual-scroll-viewport>
@@ -525,7 +525,7 @@
                     [itemSize]="nikshayOptionHeight"
                     [style.height.px]="nikshayViewportHeight(filteredNikshayVillageList.length)"
                   >
-                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item">
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item" [title]="item.villageName">
                       {{ item.villageName }}
                     </mat-option>
                   </cdk-virtual-scroll-viewport>
@@ -1092,7 +1092,7 @@
                     [itemSize]="nikshayOptionHeight"
                     [style.height.px]="nikshayViewportHeight(filteredNikshayFacilityList.length)"
                   >
-                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item">
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item" [title]="item.facilityName">
                       {{ item.facilityName }}
                     </mat-option>
                   </cdk-virtual-scroll-viewport>
@@ -1129,7 +1129,7 @@
                     [itemSize]="nikshayOptionHeight"
                     [style.height.px]="nikshayViewportHeight(filteredNikshayVillageList.length)"
                   >
-                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item">
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item" [title]="item.villageName">
                       {{ item.villageName }}
                     </mat-option>
                   </cdk-virtual-scroll-viewport>

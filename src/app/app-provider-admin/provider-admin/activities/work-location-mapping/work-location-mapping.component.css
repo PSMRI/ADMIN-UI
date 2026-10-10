@@ -131,7 +131,25 @@
 ::ng-deep .select-search-box input:focus {
   border-color: #3f51b5;
 }
-/* Nikshay Facility/Village options: virtual scroll list inside the select panel */
+/* Nikshay Facility/Village options: virtual scroll list inside the select
+   panel. Every row must be the same height for the list to scroll correctly,
+   so long names stay on one line ("...") with the full name on hover. */
 ::ng-deep .nikshay-option-viewport {
   width: 100%;
+  overflow-x: hidden;
+}
+
+::ng-deep .nikshay-option-viewport .cdk-virtual-scroll-content-wrapper {
+  width: 100%;
+}
+
+::ng-deep .nikshay-option-viewport .mat-mdc-option {
+  height: 48px;
+  min-height: 48px;
+}
+
+::ng-deep .nikshay-option-viewport .mat-mdc-option .mdc-list-item__primary-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
