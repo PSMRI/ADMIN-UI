@@ -175,7 +175,6 @@ export const environment = {
   stopTBTeams_url: `${adminBaseUrl}stoptb/team/vans`,
   stopTBUserTeam_url: `${adminBaseUrl}stoptb/team/user`,
   stopTBTeamMembers_url: `${adminBaseUrl}stoptb/team/members`,
-  stopTBTeamAssign_url: `${adminBaseUrl}stoptb/team/assign`,
   update_facilities_Url: `${adminBaseUrl}editFacility`,
   delete_facilities_Url: `${adminBaseUrl}deleteFacility`,
   get_FacilityLevels_Url: `${adminBaseUrl}getFacilityLevels`,

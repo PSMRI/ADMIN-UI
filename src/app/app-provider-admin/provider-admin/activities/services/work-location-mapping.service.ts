@@ -215,19 +215,4 @@ export class WorkLocationMapping {
       `${environment.stopTBTeamMembers_url}?vanID=${vanID}&providerServiceMapID=${providerServiceMapID}`,
     );
   }
-
-  // vanID null takes the user out of their team.
-  assignStopTBTeam(
-    userID: any,
-    providerServiceMapID: any,
-    vanID: any,
-    modifiedBy: any,
-  ) {
-    return this.http.post(environment.stopTBTeamAssign_url, {
-      userID,
-      providerServiceMapID,
-      vanID,
-      modifiedBy,
-    });
-  }
 }
