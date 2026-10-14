@@ -544,7 +544,7 @@
                 >
                   <mat-option [value]="null">No team</mat-option>
                   <mat-option *ngFor="let team of stopTBTeamList" [value]="team.vanID">
-                    {{ team.vanName }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
+                    {{ team.vanName }} – {{ team.vanID }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
                   </mat-option>
                 </mat-select>
                 <mat-hint *ngIf="stopTBTeamMembers" class="stoptb-team-members" [title]="stopTBTeamMembers">
@@ -1168,7 +1168,7 @@
                 >
                   <mat-option [value]="null">No team</mat-option>
                   <mat-option *ngFor="let team of stopTBTeamList" [value]="team.vanID">
-                    {{ team.vanName }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
+                    {{ team.vanName }} – {{ team.vanID }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
                   </mat-option>
                 </mat-select>
                 <mat-hint *ngIf="stopTBTeamMembers" class="stoptb-team-members" [title]="stopTBTeamMembers">
