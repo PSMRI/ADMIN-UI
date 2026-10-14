@@ -1,0 +1,125 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>Change Username</h4>
+      <p class="screen-note">
+        Renaming a user also repoints the Created By and Modified By records
+        they own. Fill in only what you want to change — leave a field blank to
+        keep its current value. This cannot be undone.
+      </p>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Select User</mat-label>
+        <mat-select
+          [(ngModel)]="user"
+          name="user"
+          (selectionChange)="onUserChange()"
+          required
+        >
+          <mat-option *ngFor="let item of userNamesList" [value]="item">
+            {{ item.userName }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Current Username</mat-label>
+        <input matInput [value]="user?.userName || ''" disabled />
+      </mat-form-field>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>New Username</mat-label>
+        <input
+          matInput
+          [(ngModel)]="newUserName"
+          name="newUserName"
+          (keyup)="checkUserNameAvailability()"
+          [maxlength]="effectiveMaxLength"
+        />
+        <mat-hint>Maximum {{ effectiveMaxLength }} characters</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Current Employee ID</mat-label>
+        <input matInput [value]="currentEmployeeId || 'Not set'" disabled />
+      </mat-form-field>
+    </div>
+
+    <div class="col-xs-12 col-sm-6 col-md-4 col-lg-3 m-t-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>New Employee ID</mat-label>
+        <input
+          matInput
+          [(ngModel)]="newEmployeeId"
+          name="newEmployeeId"
+          (keyup)="checkEmployeeIdAvailability()"
+          [maxlength]="maxEmployeeIdLength"
+        />
+        <mat-hint>Maximum {{ maxEmployeeIdLength }} characters</mat-hint>
+      </mat-form-field>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-8 col-lg-6 m-t-10">
+      <mat-checkbox
+        [(ngModel)]="updateContactFields"
+        name="updateContactFields"
+        (ngModelChange)="onSelectionChange()"
+      >
+        Also update contact numbers
+      </mat-checkbox>
+      <p class="screen-note">
+        Only tick this where the username is the user's mobile number. It
+        overwrites Contact No and Emergency Contact No, which limits the new
+        username to {{ maxContactLength }} characters.
+      </p>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="validationMessage && user">
+    <div class="col-xs-12 col-sm-12">
+      <p class="validation-note">{{ validationMessage }}</p>
+    </div>
+  </div>
+
+  <div class="row m-t-10">
+    <div class="col-xs-12 col-sm-12">
+      <button
+        mat-raised-button
+        class="mat_green"
+        [disabled]="!canSubmit"
+        (click)="confirmAndRename()"
+      >
+        Update
+      </button>
+    </div>
+  </div>
+
+  <div class="row m-t-20" *ngIf="renameResult">
+    <div class="col-xs-12 col-sm-12">
+      <h5>Update complete</h5>
+      <p class="screen-note" *ngIf="renameResult.userNameUpdated">
+        Username: {{ renameResult.oldUserName }} &rarr;
+        {{ renameResult.newUserName }}
+      </p>
+      <p class="screen-note" *ngIf="renameResult.employeeIdUpdated">
+        Employee ID: {{ renameResult.oldEmployeeId || "not set" }} &rarr;
+        {{ renameResult.newEmployeeId }}
+      </p>
+      <p class="screen-note" *ngIf="!renameResult.employeeIdUpdated">
+        Employee ID unchanged ({{ renameResult.oldEmployeeId || "not set" }})
+      </p>
+    </div>
+  </div>
+</div>
