@@ -1788,6 +1788,8 @@ export class EmployeeMasterNewComponent implements OnInit {
     this.employeeMasterUpload = false;
     this.tableMode = true;
     this.formMode = false;
+    // Show users created by the upload.
+    this.getAllUserDetails();
   }
 
   private refreshFilteredData(rows: any[]) {
