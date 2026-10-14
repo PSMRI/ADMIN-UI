@@ -153,3 +153,11 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Stop TB team members under the Team field (AMM-2496) */
+.stoptb-team-members {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

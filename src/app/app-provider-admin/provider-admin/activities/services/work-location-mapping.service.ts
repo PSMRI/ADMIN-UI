@@ -196,4 +196,38 @@ export class WorkLocationMapping {
       `${environment.nikshayUserMapping_url}?usrMappingID=${usrMappingID}`,
     );
   }
+
+  // Stop TB teams are the MMU vans of the user's state (AMM-2496).
+  getStopTBTeams(stateID: any, serviceProviderID: any) {
+    return this.http.get(
+      `${environment.stopTBTeams_url}?stateID=${stateID}&serviceProviderID=${serviceProviderID}`,
+    );
+  }
+
+  getStopTBUserTeam(userID: any, providerServiceMapID: any) {
+    return this.http.get(
+      `${environment.stopTBUserTeam_url}?userID=${userID}&providerServiceMapID=${providerServiceMapID}`,
+    );
+  }
+
+  getStopTBTeamMembers(vanID: any, providerServiceMapID: any) {
+    return this.http.get(
+      `${environment.stopTBTeamMembers_url}?vanID=${vanID}&providerServiceMapID=${providerServiceMapID}`,
+    );
+  }
+
+  // vanID null takes the user out of their team.
+  assignStopTBTeam(
+    userID: any,
+    providerServiceMapID: any,
+    vanID: any,
+    modifiedBy: any,
+  ) {
+    return this.http.post(environment.stopTBTeamAssign_url, {
+      userID,
+      providerServiceMapID,
+      vanID,
+      modifiedBy,
+    });
+  }
 }

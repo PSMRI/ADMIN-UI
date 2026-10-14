@@ -37,8 +37,14 @@ import { WorkLocationMapping } from '../services/work-location-mapping.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
 import { MatOption } from '@angular/material/core';
-import { EMPTY, forkJoin, of, Subject, timer } from 'rxjs';
-import { catchError, debounce, switchMap, takeUntil } from 'rxjs/operators';
+import { EMPTY, forkJoin, Observable, of, Subject, timer } from 'rxjs';
+import {
+  catchError,
+  debounce,
+  map,
+  switchMap,
+  takeUntil,
+} from 'rxjs/operators';
 
 interface RoleEntry {
   roleID: number;
@@ -500,6 +506,9 @@ export class WorkLocationMappingComponent
     this.selectedNikshayTUs = [];
     this.selectedNikshayFacilities = [];
     this.selectedNikshayVillages = [];
+    this.selectedStopTBTeamID = null;
+    this.stopTBTeamMembers = '';
+    this.loadStopTBTeams(state?.stateID, state?.providerServiceMapID);
     if (!state?.stateName) return;
 
     // AMRIT's m_state spells this "Chattisgarh" (one 'h'); Nikshay's own data
@@ -677,7 +686,114 @@ export class WorkLocationMappingComponent
       });
   }
 
+  // ── Stop TB team (AMM-2496) ──
+  // A team is an MMU van of the user's state. A team has many users; a user
+  // is in one team per Stop TB service line, so picking a new team moves them.
+  stopTBTeamList: any[] = [];
+  selectedStopTBTeamID: number | null = null;
+  stopTBTeamMembers = '';
+  private stopTBTeamPSM: any = null;
+  // Team the user had when Edit opened; Update only reassigns on a change.
+  private stopTBTeamOriginalID: number | null = null;
+
+  get stopTBTeamName(): string | null {
+    const team = this.stopTBTeamList.find(
+      (t: any) => t.vanID === this.selectedStopTBTeamID,
+    );
+    return team ? team.vanName : null;
+  }
+
+  resetStopTBTeam() {
+    this.stopTBTeamList = [];
+    this.selectedStopTBTeamID = null;
+    this.stopTBTeamMembers = '';
+    this.stopTBTeamPSM = null;
+    this.stopTBTeamOriginalID = null;
+  }
+
+  loadStopTBTeams(stateID: any, providerServiceMapID: any) {
+    this.stopTBTeamList = [];
+    this.stopTBTeamPSM = providerServiceMapID;
+    if (!stateID) return;
+    this.worklocationmapping
+      .getStopTBTeams(stateID, this.serviceProviderID)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(
+        (response: any) => {
+          this.stopTBTeamList = response?.data || [];
+        },
+        () => {
+          this.alertService.alert('Failed to load teams', 'error');
+        },
+      );
+  }
+
+  onStopTBTeamChange() {
+    this.stopTBTeamMembers = '';
+    if (!this.selectedStopTBTeamID || !this.stopTBTeamPSM) return;
+    this.worklocationmapping
+      .getStopTBTeamMembers(this.selectedStopTBTeamID, this.stopTBTeamPSM)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        this.stopTBTeamMembers = (response?.data || [])
+          .map((m: any) => {
+            const name = [m.firstName, m.lastName].filter(Boolean).join(' ');
+            return name ? `${name} [${m.userName}]` : m.userName;
+          })
+          .join(', ');
+      });
+  }
+
+  // Edit: load the state's teams and pre-select the user's current team.
+  loadStopTBTeamForEdit() {
+    this.loadStopTBTeams(
+      this.stateID_duringEdit,
+      this.providerServiceMapID_duringEdit,
+    );
+    if (!this.userID_duringEdit || !this.providerServiceMapID_duringEdit)
+      return;
+    this.worklocationmapping
+      .getStopTBUserTeam(
+        this.userID_duringEdit,
+        this.providerServiceMapID_duringEdit,
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        const vanID = response?.data?.vanID ?? null;
+        this.selectedStopTBTeamID = vanID;
+        this.stopTBTeamOriginalID = vanID;
+        this.onStopTBTeamChange();
+      });
+  }
+
+  // Assigns teams one user at a time; emits the first error message, or null.
+  private assignStopTBTeams(
+    assignments: { userID: any; providerServiceMapID: any; vanID: any }[],
+  ): Observable<string | null> {
+    if (!assignments.length) return of(null);
+    return forkJoin(
+      assignments.map((a) =>
+        this.worklocationmapping
+          .assignStopTBTeam(
+            a.userID,
+            a.providerServiceMapID,
+            a.vanID,
+            this.createdBy,
+          )
+          .pipe(
+            map((r: any) =>
+              r && r.statusCode !== 200
+                ? r.errorMessage || 'Team could not be assigned'
+                : null,
+            ),
+            catchError(() => of('Team could not be assigned')),
+          ),
+      ),
+    ).pipe(map((errors) => errors.find((e) => !!e) || null));
+  }
+
   resetNikshaySelection() {
+    this.resetStopTBTeam();
     this.nikshayTUSelection$.next(null);
     this.nikshayFacilitySelection$.next(null);
     this.nikshayStateList = [];
@@ -702,6 +818,7 @@ export class WorkLocationMappingComponent
    */
   loadNikshayEditSelections() {
     this.resetNikshaySelection();
+    this.loadStopTBTeamForEdit();
 
     const splitIDs = (value: any): number[] =>
       String(value || '')
@@ -2481,6 +2598,9 @@ export class WorkLocationMappingComponent
         Inbound: 'N/A',
         Outbound: 'N/A',
         teleConsultation: [null],
+        // Not part of the mapping request; assigned after Save (AMM-2496).
+        stopTBTeamVanID: this.selectedStopTBTeamID,
+        stopTBTeamName: this.stopTBTeamName,
       };
       this.bufferArray.data.push(stopTBWorkLocationObj);
       if (this.paginatorSecond) {
@@ -2808,12 +2928,35 @@ export class WorkLocationMappingComponent
   }
 
   saveWorkLocationOnly(requestArray: any) {
+    // One team per user: collect each saved Stop TB user's chosen team.
+    const teamAssignments = new Map<string, any>();
+    (this.bufferArray.data || []).forEach((row: any) => {
+      if (row?.stopTBTeamVanID) {
+        teamAssignments.set(`${row.userID}-${row.providerServiceMapID}`, {
+          userID: row.userID,
+          providerServiceMapID: row.providerServiceMapID,
+          vanID: row.stopTBTeamVanID,
+        });
+      }
+    });
     this.worklocationmapping
       .SaveWorkLocationMapping(requestArray)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        switchMap(() =>
+          this.assignStopTBTeams(Array.from(teamAssignments.values())),
+        ),
+        takeUntil(this.destroy$),
+      )
       .subscribe(
-        () => {
-          this.alertService.alert('Mapping saved successfully', 'success');
+        (teamError: string | null) => {
+          if (teamError) {
+            this.alertService.alert(
+              'Mapping saved, but the team could not be assigned: ' + teamError,
+              'error',
+            );
+          } else {
+            this.alertService.alert('Mapping saved successfully', 'success');
+          }
           this.cleanupAfterSave();
         },
         (err: any) => {
@@ -5774,11 +5917,37 @@ export class WorkLocationMappingComponent
       return;
     }
 
+    const teamChanged =
+      this.isStopTBServicelineEdit &&
+      this.selectedStopTBTeamID !== this.stopTBTeamOriginalID;
     forkJoin(allRequests)
-      .pipe(takeUntil(this.destroy$))
+      .pipe(
+        switchMap(() =>
+          this.assignStopTBTeams(
+            teamChanged
+              ? [
+                  {
+                    userID: this.userID_duringEdit,
+                    providerServiceMapID: this.providerServiceMapID_duringEdit,
+                    vanID: this.selectedStopTBTeamID,
+                  },
+                ]
+              : [],
+          ),
+        ),
+        takeUntil(this.destroy$),
+      )
       .subscribe(
-        () => {
-          this.alertService.alert('Mapping updated successfully', 'success');
+        (teamError: string | null) => {
+          if (teamError) {
+            this.alertService.alert(
+              'Mapping updated, but the team could not be changed: ' +
+                teamError,
+              'error',
+            );
+          } else {
+            this.alertService.alert('Mapping updated successfully', 'success');
+          }
           this.showTable();
           this.getAllMappedWorkLocations();
           this.bufferArray.data = [];

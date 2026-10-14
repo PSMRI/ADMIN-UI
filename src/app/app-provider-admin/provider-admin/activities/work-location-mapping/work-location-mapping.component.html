@@ -532,6 +532,26 @@
                 </mat-select>
               </mat-form-field>
             </div>
+            <!-- Stop TB team = MMU van of the state (AMM-2496); optional -->
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Team</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedStopTBTeamID"
+                  name="stopTBTeam"
+                  (selectionChange)="onStopTBTeamChange()"
+                >
+                  <mat-option [value]="null">No team</mat-option>
+                  <mat-option *ngFor="let team of stopTBTeamList" [value]="team.vanID">
+                    {{ team.vanName }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
+                  </mat-option>
+                </mat-select>
+                <mat-hint *ngIf="stopTBTeamMembers" class="stoptb-team-members" [title]="stopTBTeamMembers">
+                  Members: {{ stopTBTeamMembers }}
+                </mat-hint>
+              </mat-form-field>
+            </div>
           </div>
 
           <div class="col-3" *ngIf="!isFacilityServiceline && !isBlockRequired && !isStopTBServiceline">
@@ -1134,6 +1154,26 @@
                     </mat-option>
                   </cdk-virtual-scroll-viewport>
                 </mat-select>
+              </mat-form-field>
+            </div>
+            <!-- Stop TB team = MMU van of the state (AMM-2496); optional -->
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Team</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedStopTBTeamID"
+                  name="stopTBTeamEdit"
+                  (selectionChange)="onStopTBTeamChange()"
+                >
+                  <mat-option [value]="null">No team</mat-option>
+                  <mat-option *ngFor="let team of stopTBTeamList" [value]="team.vanID">
+                    {{ team.vanName }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
+                  </mat-option>
+                </mat-select>
+                <mat-hint *ngIf="stopTBTeamMembers" class="stoptb-team-members" [title]="stopTBTeamMembers">
+                  Members: {{ stopTBTeamMembers }}
+                </mat-hint>
               </mat-form-field>
             </div>
           </ng-container>
