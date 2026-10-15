@@ -102,6 +102,7 @@ export class ItemMasterComponent implements OnInit {
   edit_Uom: any;
   edit_DrugType: any;
   edit_Composition: any;
+  edit_MinStock: any;
   edit_Route: any;
   edit_Description: any;
   itemID: any;
@@ -117,6 +118,7 @@ export class ItemMasterComponent implements OnInit {
   code: any;
   name: any;
   composition: any;
+  minStock: any;
   description: any;
   route: any;
   strength: any;
@@ -490,6 +492,7 @@ export class ItemMasterComponent implements OnInit {
     this.itemCreationForm.controls['manufacturer'].reset();
     this.itemCreationForm.controls['drugType'].reset();
     this.itemCreationForm.controls['composition'].reset();
+    this.itemCreationForm.controls['minStock']?.reset();
     this.itemCreationForm.controls['route'].reset();
     this.itemCreationForm.controls['description'].reset();
     this.drugType = false;
@@ -541,6 +544,7 @@ export class ItemMasterComponent implements OnInit {
               uomID: formValue.uom.uOMID,
               isScheduledDrug: formValue.drugType,
               composition: formValue.composition,
+              minStock: this.toStock(formValue.minStock),
               routeID: formValue.route.routeID,
               createdBy: this.createdBy,
               providerServiceMapID: this.providerServiceMapID,
@@ -586,6 +590,7 @@ export class ItemMasterComponent implements OnInit {
         uomID: formValue.uom.uOMID,
         isScheduledDrug: formValue.drugType,
         composition: formValue.composition,
+        minStock: this.toStock(formValue.minStock),
         routeID: formValue.route.routeID,
         createdBy: this.createdBy,
         providerServiceMapID: this.providerServiceMapID,
@@ -701,12 +706,25 @@ export class ItemMasterComponent implements OnInit {
     this.edit_Uom = itemlist.uomID;
     this.edit_DrugType = itemlist.isScheduledDrug;
     this.edit_Composition = itemlist.composition;
+    this.edit_MinStock = itemlist.minStock;
     this.edit_Route = itemlist.routeID;
     this.edit_Description = itemlist.itemDesc;
     if (itemlist.isEDL === true) this.editDrug = 'EDL';
     else this.editDrug = 'Non-EDL';
     this.showEditForm();
   }
+  // Min Stock: whole number >= 0, or null when left empty
+  toStock(value: any) {
+    const n = Number(value);
+    return value === null ||
+      value === undefined ||
+      value === '' ||
+      isNaN(n) ||
+      n < 0
+      ? null
+      : Math.floor(n);
+  }
+
   showEditForm() {
     this.tableMode = false;
     this.showFormFlag = false;
@@ -743,6 +761,7 @@ export class ItemMasterComponent implements OnInit {
       providerServiceMapID: this.providerServiceMapID,
       modifiedBy: this.createdBy,
       itemID: this.itemID,
+      minStock: this.toStock(editItemCreationForm.minStock),
       sctCode: this.editSnomedCode,
       sctTerm: this.editSnomedName,
     };
@@ -897,6 +916,7 @@ export class EditItemMasterModalComponent implements OnInit {
   uom: any;
   drugType: any;
   composition: any;
+  minStock: any;
   route: any;
   description: any;
 
@@ -1033,6 +1053,7 @@ export class EditItemMasterModalComponent implements OnInit {
     this.uom = this.data.uomID;
     this.drugType = this.data.isScheduledDrug;
     this.composition = this.data.composition;
+    this.minStock = this.data.minStock;
     this.route = this.data.routeID;
     this.description = this.data.itemDesc;
   }
@@ -1052,6 +1073,12 @@ export class EditItemMasterModalComponent implements OnInit {
       uomID: this.uom,
       isScheduledDrug: this.drugType,
       composition: this.composition,
+      minStock:
+        this.minStock === null ||
+        this.minStock === undefined ||
+        this.minStock === ''
+          ? null
+          : Math.max(0, Math.floor(Number(this.minStock))),
       routeID: this.route,
       status: 'active',
       providerServiceMapID: this.data.providerServiceMapID,
