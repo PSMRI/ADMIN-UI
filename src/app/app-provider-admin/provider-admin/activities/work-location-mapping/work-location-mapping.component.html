@@ -431,6 +431,8 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayTUs"
+                  [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayTUs"
                   (selectionChange)="onNikshayTUChange()"
                   (openedChange)="$event ? null : nikshayTUSearch = ''"
@@ -461,6 +463,8 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayFacilities"
+                  [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayFacilities"
                   (selectionChange)="onNikshayFacilityChange()"
                   (openedChange)="$event ? null : nikshayFacilitySearch = ''"
@@ -477,9 +481,16 @@
                       allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
-                    {{ item.facilityName }}
-                  </mat-option>
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayFacilities, 'facilityName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayFacilityList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item" [title]="item.facilityName">
+                      {{ item.facilityName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -491,6 +502,8 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
+                  [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayVillages"
                   (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required
@@ -506,10 +519,37 @@
                       allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
-                    {{ item.villageName }}
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayVillages, 'villageName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayVillageList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item" [title]="item.villageName">
+                      {{ item.villageName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <!-- Stop TB team = MMU van of the state (AMM-2496); optional -->
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Team</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedStopTBTeamID"
+                  name="stopTBTeam"
+                  (selectionChange)="onStopTBTeamChange()"
+                >
+                  <mat-option [value]="null">No team</mat-option>
+                  <mat-option *ngFor="let team of stopTBTeamList" [value]="team.vanID">
+                    {{ team.vanName }} – {{ team.vanID }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
                   </mat-option>
                 </mat-select>
+                <mat-hint *ngIf="stopTBTeamMembers" class="stoptb-team-members" [title]="stopTBTeamMembers">
+                  Members: {{ stopTBTeamMembers }}
+                </mat-hint>
               </mat-form-field>
             </div>
           </div>
@@ -1017,6 +1057,8 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayTUs"
+                  [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayTUsEdit"
                   (selectionChange)="onNikshayTUChange()"
                   (openedChange)="$event ? null : nikshayTUSearch = ''"
@@ -1046,6 +1088,8 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayFacilities"
+                  [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayFacilitiesEdit"
                   (selectionChange)="onNikshayFacilityChange()"
                   (openedChange)="$event ? null : nikshayFacilitySearch = ''"
@@ -1062,9 +1106,16 @@
                       allNikshayFacilitiesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayFacilityList" [value]="item">
-                    {{ item.facilityName }}
-                  </mat-option>
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayFacilities, 'facilityName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayFacilityList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayFacilityList" [value]="item" [title]="item.facilityName">
+                      {{ item.facilityName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
                 </mat-select>
               </mat-form-field>
             </div>
@@ -1075,6 +1126,8 @@
                   multiple
                   [style.width]="'100%'"
                   [(ngModel)]="selectedNikshayVillages"
+                  [sortComparator]="sortNikshayOptions"
+                  appFastBulkSelect
                   name="nikshayVillagesEdit"
                   (openedChange)="$event ? null : nikshayVillageSearch = ''"
                   required
@@ -1090,10 +1143,37 @@
                       allNikshayVillagesSelected ? 'Deselect All' : 'Select All'
                     }}</a>
                   </div>
-                  <mat-option *ngFor="let item of filteredNikshayVillageList" [value]="item">
-                    {{ item.villageName }}
+                  <mat-select-trigger>{{ nikshayTriggerText(selectedNikshayVillages, 'villageName') }}</mat-select-trigger>
+                  <cdk-virtual-scroll-viewport
+                    class="nikshay-option-viewport"
+                    [itemSize]="nikshayOptionHeight"
+                    [style.height.px]="nikshayViewportHeight(filteredNikshayVillageList.length)"
+                  >
+                    <mat-option *cdkVirtualFor="let item of filteredNikshayVillageList" [value]="item" [title]="item.villageName">
+                      {{ item.villageName }}
+                    </mat-option>
+                  </cdk-virtual-scroll-viewport>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <!-- Stop TB team = MMU van of the state (AMM-2496); optional -->
+            <div class="col-3">
+              <mat-form-field [style.width]="'100%'">
+                <mat-label>Select Team</mat-label>
+                <mat-select
+                  [style.width]="'100%'"
+                  [(ngModel)]="selectedStopTBTeamID"
+                  name="stopTBTeamEdit"
+                  (selectionChange)="onStopTBTeamChange()"
+                >
+                  <mat-option [value]="null">No team</mat-option>
+                  <mat-option *ngFor="let team of stopTBTeamList" [value]="team.vanID">
+                    {{ team.vanName }} – {{ team.vanID }}<span *ngIf="team.parkingPlaceName"> ({{ team.parkingPlaceName }})</span>
                   </mat-option>
                 </mat-select>
+                <mat-hint *ngIf="stopTBTeamMembers" class="stoptb-team-members" [title]="stopTBTeamMembers">
+                  Members: {{ stopTBTeamMembers }}
+                </mat-hint>
               </mat-form-field>
             </div>
           </ng-container>
