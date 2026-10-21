@@ -404,6 +404,18 @@
         </mat-form-field>
       </div>
       <div class="col-3 m-t-25">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Min Stock (low stock alert)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0"
+            [(ngModel)]="minStock"
+            name="minStock"
+          />
+        </mat-form-field>
+      </div>
+      <div class="col-3 m-t-25">
         <mat-form-field [style.width]="'100%'" class="hide_underline">
           <!-- <input matInput style="display: none" /> -->
           <mat-label>UOM</mat-label>
@@ -838,6 +850,18 @@
             minlength="1"
             maxlength="10"
             required
+          />
+        </mat-form-field>
+      </div>
+      <div class="col-3">
+        <mat-form-field [style.width]="'100%'">
+          <mat-label>Min Stock (low stock alert)</mat-label>
+          <input
+            matInput
+            type="number"
+            min="0"
+            [(ngModel)]="edit_MinStock"
+            name="minStock"
           />
         </mat-form-field>
       </div>

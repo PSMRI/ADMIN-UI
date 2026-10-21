@@ -22,6 +22,8 @@ import { HttpErrorResponse, HttpResponse } from '@angular/common/http';
 })
 export class EmployeeMasterBulkUploadComponent {
   @Output() closeUpload = new EventEmitter<void>();
+  // Emitted after users are created, so the user list can reload.
+  @Output() usersUploaded = new EventEmitter<void>();
   objs = new MatTableDataSource<any>();
 
   paginator!: MatPaginator;
@@ -56,6 +58,10 @@ export class EmployeeMasterBulkUploadComponent {
   fileuploadedCount = 0;
   filetotalCount = 0;
   errorloglist: any;
+  // File checked and ready, waiting for Submit.
+  pendingXml: string | null = null;
+  pendingFileName = '';
+  pendingRowCount = 0;
 
   tableMode = true;
   editMode = false;
@@ -128,57 +134,85 @@ export class EmployeeMasterBulkUploadComponent {
       const wb: XLSX.WorkBook = XLSX.read(binarystr, { type: 'binary' });
       const wsname: string = wb.SheetNames[0];
       const ws: XLSX.WorkSheet = wb.Sheets[wsname];
+      const header: any[] =
+        (XLSX.utils.sheet_to_json(ws, { header: 1 })[0] as any[]) || [];
+      if (!header.includes('EmployeeId')) {
+        this.alertService.alert(
+          'Employee Id column is missing. Download the latest Bulk User Template and fill Employee Id for every user.',
+          'error',
+        );
+        this.clearSelection();
+        return;
+      }
       const data = XLSX.utils.sheet_to_json(ws);
+      if (!data.length) {
+        this.alertService.alert('The file has no users to upload', 'error');
+        this.clearSelection();
+        return;
+      }
+      // Checked and ready; the upload starts on Submit.
+      this.pendingXml = this.convertJsonToXml(data);
+      this.pendingFileName = file.name;
+      this.pendingRowCount = data.length;
+      this.successcount = false;
+      this.errorloglist = null;
+    };
+  }
 
-      const xmlData = this.convertJsonToXml(data);
-
-      this.showProgressBar = true;
-      this.blockSubcenterMappingService.memberBulkUploadXML(xmlData).subscribe(
+  submitUpload() {
+    if (!this.pendingXml || this.showProgressBar) return;
+    this.showProgressBar = true;
+    this.blockSubcenterMappingService
+      .memberBulkUploadXML(this.pendingXml)
+      .subscribe(
         (response: any) => {
-          if (response) {
-            this.fileuploadedCount = response.registeredUser;
-            this.filetotalCount = response.totalUser;
-
-            if (
-              Number(this.fileuploadedCount) !== Number(this.filetotalCount)
-            ) {
-              this.downloadFile();
-            }
-            this.showProgressBar = false;
-            this.alertService.alert('File Uploaded', 'success');
-
-            this.resetFileInput();
-            this.file = undefined;
-            this.successcount = true;
-
-            this.errorloglist = response.error;
-          } else {
-            this.showProgressBar = false;
-            this.alertService.alert(response.errorMessage, 'error');
+          this.showProgressBar = false;
+          if (!response || response.totalUser === undefined) {
+            this.alertService.alert(
+              response?.errorMessage || 'Upload failed',
+              'error',
+            );
+            return;
+          }
+          this.fileuploadedCount = response.registeredUser;
+          this.filetotalCount = response.totalUser;
+          if (Number(this.fileuploadedCount) !== Number(this.filetotalCount)) {
+            this.downloadFile();
+          }
+          this.alertService.alert('File Uploaded', 'success');
+          this.successcount = true;
+          this.errorloglist = response.error;
+          this.clearSelection();
+          if (Number(this.fileuploadedCount) > 0) {
+            this.usersUploaded.emit();
           }
         },
         (error: HttpErrorResponse) => {
+          this.showProgressBar = false;
           if (
             !navigator.onLine ||
             (error.status === 0 && error.error instanceof ProgressEvent)
           ) {
-            this.showProgressBar = false;
             this.alertService.alert(
               'Internet connection not available!',
+              'error',
+            );
+          } else {
+            this.alertService.alert(
+              error?.error?.errorMessage || 'Upload failed',
               'error',
             );
           }
         },
       );
-      (err: any) => {
-        this.showProgressBar = false;
-        this.alertService.alert(err.errorMessage, 'error');
-        this.resetFileInput();
-        this.file = undefined;
-        this.fileContent = null;
-        this.disableUpload = true;
-      };
-    };
+  }
+
+  clearSelection() {
+    this.pendingXml = null;
+    this.pendingFileName = '';
+    this.pendingRowCount = 0;
+    this.file = undefined;
+    this.resetFileInput();
   }
 
   convertJsonToXml(json: any): string {
@@ -231,6 +265,10 @@ export class EmployeeMasterBulkUploadComponent {
   }
 
   back() {
+    if (!this.pendingXml) {
+      this.closeUpload.emit();
+      return;
+    }
     this.alertService
       .confirm(
         'confirm',

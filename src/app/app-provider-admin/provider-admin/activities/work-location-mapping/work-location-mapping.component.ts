@@ -36,8 +36,9 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import { WorkLocationMapping } from '../services/work-location-mapping.service';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 import { FacilityMasterService } from 'src/app/core/services/inventory-services/facilitytypemaster.service';
-import { forkJoin, Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { MatOption } from '@angular/material/core';
+import { EMPTY, forkJoin, of, Subject, timer } from 'rxjs';
+import { catchError, debounce, switchMap, takeUntil } from 'rxjs/operators';
 
 interface RoleEntry {
   roleID: number;
@@ -224,9 +225,62 @@ export class WorkLocationMappingComponent
   isStopTBServiceline = false;
   nikshayStateList: any[] = [];
   nikshayDistrictList: any[] = [];
-  nikshayTUList: any[] = [];
-  nikshayFacilityList: any[] = [];
-  nikshayVillageList: any[] = [];
+  // TU/Facility/Village lists can hold thousands of entries (e.g. Pune MC:
+  // 5,327 facilities, Ganganagar: 3,058 villages). Each setter records every
+  // item's position once so nikshayOptionOrder can sort mat-select's selection
+  // cheaply — see sortNikshayOptions.
+  private _nikshayTUList: any[] = [];
+  private _nikshayFacilityList: any[] = [];
+  private _nikshayVillageList: any[] = [];
+  private nikshayOptionOrder = new WeakMap<object, number>();
+
+  get nikshayTUList(): any[] {
+    return this._nikshayTUList;
+  }
+  set nikshayTUList(list: any[]) {
+    this._nikshayTUList = this.indexNikshayOptions(list);
+  }
+
+  get nikshayFacilityList(): any[] {
+    return this._nikshayFacilityList;
+  }
+  set nikshayFacilityList(list: any[]) {
+    this._nikshayFacilityList = this.indexNikshayOptions(list);
+  }
+
+  get nikshayVillageList(): any[] {
+    return this._nikshayVillageList;
+  }
+  set nikshayVillageList(list: any[]) {
+    this._nikshayVillageList = this.indexNikshayOptions(list);
+  }
+
+  private indexNikshayOptions(list: any[]): any[] {
+    const items = list || [];
+    items.forEach((item: any, i: number) => {
+      if (item && typeof item === 'object') {
+        this.nikshayOptionOrder.set(item, i);
+      }
+    });
+    return items;
+  }
+
+  // mat-select (multiple) re-sorts its selection on every click, Select All
+  // and Edit prefill. Its default comparator calls options.indexOf() inside
+  // the sort — O(n^2 log n) — which freezes low-end PCs once a list reaches a
+  // few thousand entries. Sorting by the position recorded above keeps the
+  // same order at O(n log n).
+  sortNikshayOptions = (a: MatOption, b: MatOption): number =>
+    (this.nikshayOptionOrder.get(a.value) ?? 0) -
+    (this.nikshayOptionOrder.get(b.value) ?? 0);
+
+  // Ticking facilities/TUs one by one used to fire one request per click,
+  // and a slow earlier response could overwrite a newer one. Wait for the
+  // user to pause, then keep only the latest request. null cancels any
+  // pending request without touching the lists, so a late response can't
+  // overwrite a reset or an Edit prefill.
+  private nikshayTUSelection$ = new Subject<number[] | null>();
+  private nikshayFacilitySelection$ = new Subject<number[] | null>();
   selectedNikshayBlock: any = null;
   selectedNikshayTUs: any[] = [];
   selectedNikshayFacilities: any[] = [];
@@ -258,36 +312,91 @@ export class WorkLocationMappingComponent
     );
   }
 
+  // The getters below run on every change detection. With 1 lakh+ villages
+  // the filter/Set work is cached until the list, selection or search text
+  // changes (all three are always replaced, never mutated in place).
+  private nikshayMemo = new Map<string, { deps: any[]; value: any }>();
+  private memoNikshay<T>(key: string, deps: any[], compute: () => T): T {
+    const hit = this.nikshayMemo.get(key);
+    if (hit && hit.deps.every((d, i) => d === deps[i])) return hit.value;
+    const value = compute();
+    this.nikshayMemo.set(key, { deps, value });
+    return value;
+  }
+
   get filteredNikshayFacilityList(): any[] {
     if (!this.nikshayFacilitySearch) return this.nikshayFacilityList;
-    const s = this.nikshayFacilitySearch.toLowerCase();
-    const selectedIDs = new Set(
-      (this.selectedNikshayFacilities || []).map(
-        (f: any) => f.nikshayFacilityID,
-      ),
-    );
-    return this.nikshayFacilityList.filter(
-      (f: any) =>
-        selectedIDs.has(f.nikshayFacilityID) ||
-        (f.facilityName || '').toLowerCase().includes(s),
+    return this.memoNikshay(
+      'filteredFacilities',
+      [
+        this.nikshayFacilityList,
+        this.selectedNikshayFacilities,
+        this.nikshayFacilitySearch,
+      ],
+      () => {
+        const s = this.nikshayFacilitySearch.toLowerCase();
+        const selectedIDs = new Set(
+          (this.selectedNikshayFacilities || []).map(
+            (f: any) => f.nikshayFacilityID,
+          ),
+        );
+        return this.nikshayFacilityList.filter(
+          (f: any) =>
+            selectedIDs.has(f.nikshayFacilityID) ||
+            (f.facilityName || '').toLowerCase().includes(s),
+        );
+      },
     );
   }
 
   get filteredNikshayVillageList(): any[] {
     if (!this.nikshayVillageSearch) return this.nikshayVillageList;
-    const s = this.nikshayVillageSearch.toLowerCase();
-    const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
+    return this.memoNikshay(
+      'filteredVillages',
+      [
+        this.nikshayVillageList,
+        this.selectedNikshayVillages,
+        this.nikshayVillageSearch,
+      ],
+      () => {
+        const s = this.nikshayVillageSearch.toLowerCase();
+        const selectedIDs = new Set(
+          (this.selectedNikshayVillages || []).map(
+            (v: any) => v.nikshayVillageID,
+          ),
+        );
+        return this.nikshayVillageList.filter(
+          (v: any) =>
+            selectedIDs.has(v.nikshayVillageID) ||
+            (v.villageName || '').toLowerCase().includes(s),
+        );
+      },
     );
-    return this.nikshayVillageList.filter(
-      (v: any) =>
-        selectedIDs.has(v.nikshayVillageID) ||
-        (v.villageName || '').toLowerCase().includes(s),
-    );
+  }
+
+  // Text shown in a closed Facility/Village field: the selected names joined
+  // like mat-select's own label. The field shows one line, so only the first
+  // names are joined.
+  nikshayTriggerText(selected: any[], nameKey: string): string {
+    return (selected || [])
+      .slice(0, 50)
+      .map((item: any) => item?.[nameKey])
+      .join(', ');
+  }
+
+  // Facility/Village options are drawn in a virtual scroll list (only the
+  // rows on screen exist), sized like the panel's normal list area.
+  readonly nikshayOptionHeight = 48;
+  nikshayViewportHeight(count: number): number {
+    return Math.min(count * this.nikshayOptionHeight, 180);
   }
 
   get allNikshayTUsSelected(): boolean {
     if (!this.nikshayTUList?.length) return false;
+    // Runs on every change detection — skip the Set build unless the counts
+    // could actually match.
+    if ((this.selectedNikshayTUs?.length || 0) < this.nikshayTUList.length)
+      return false;
     const selectedIDs = new Set(
       (this.selectedNikshayTUs || []).map((t: any) => t.nikshayTUID),
     );
@@ -303,13 +412,26 @@ export class WorkLocationMappingComponent
 
   get allNikshayFacilitiesSelected(): boolean {
     if (!this.nikshayFacilityList?.length) return false;
-    const selectedIDs = new Set(
-      (this.selectedNikshayFacilities || []).map(
-        (f: any) => f.nikshayFacilityID,
-      ),
-    );
-    return this.nikshayFacilityList.every((f: any) =>
-      selectedIDs.has(f.nikshayFacilityID),
+    // Runs on every change detection — skip the Set build unless the counts
+    // could actually match.
+    if (
+      (this.selectedNikshayFacilities?.length || 0) <
+      this.nikshayFacilityList.length
+    )
+      return false;
+    return this.memoNikshay(
+      'allFacilitiesSelected',
+      [this.nikshayFacilityList, this.selectedNikshayFacilities],
+      () => {
+        const selectedIDs = new Set(
+          (this.selectedNikshayFacilities || []).map(
+            (f: any) => f.nikshayFacilityID,
+          ),
+        );
+        return this.nikshayFacilityList.every((f: any) =>
+          selectedIDs.has(f.nikshayFacilityID),
+        );
+      },
     );
   }
 
@@ -322,11 +444,26 @@ export class WorkLocationMappingComponent
 
   get allNikshayVillagesSelected(): boolean {
     if (!this.nikshayVillageList?.length) return false;
-    const selectedIDs = new Set(
-      (this.selectedNikshayVillages || []).map((v: any) => v.nikshayVillageID),
-    );
-    return this.nikshayVillageList.every((v: any) =>
-      selectedIDs.has(v.nikshayVillageID),
+    // Runs on every change detection — skip the Set build unless the counts
+    // could actually match.
+    if (
+      (this.selectedNikshayVillages?.length || 0) <
+      this.nikshayVillageList.length
+    )
+      return false;
+    return this.memoNikshay(
+      'allVillagesSelected',
+      [this.nikshayVillageList, this.selectedNikshayVillages],
+      () => {
+        const selectedIDs = new Set(
+          (this.selectedNikshayVillages || []).map(
+            (v: any) => v.nikshayVillageID,
+          ),
+        );
+        return this.nikshayVillageList.every((v: any) =>
+          selectedIDs.has(v.nikshayVillageID),
+        );
+      },
     );
   }
 
@@ -363,6 +500,9 @@ export class WorkLocationMappingComponent
     this.selectedNikshayTUs = [];
     this.selectedNikshayFacilities = [];
     this.selectedNikshayVillages = [];
+    this.selectedStopTBTeamID = null;
+    this.stopTBTeamMembers = '';
+    this.loadStopTBTeams(state?.stateID, state?.providerServiceMapID);
     if (!state?.stateName) return;
 
     // AMRIT's m_state spells this "Chattisgarh" (one 'h'); Nikshay's own data
@@ -476,18 +616,8 @@ export class WorkLocationMappingComponent
     const tuIDs = (this.selectedNikshayTUs || []).map(
       (t: any) => t.nikshayTUID,
     );
-    if (!tuIDs.length) return;
-    this.worklocationmapping
-      .getNikshayFacilities(tuIDs)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(
-        (response: any) => {
-          this.nikshayFacilityList = response.data || [];
-        },
-        () => {
-          this.alertService.alert('Failed to load Nikshay facilities', 'error');
-        },
-      );
+    this.nikshayTUSelection$.next(tuIDs.length ? tuIDs : null);
+    this.nikshayFacilitySelection$.next(null);
   }
 
   // Called whenever the Facility multi-select changes
@@ -497,21 +627,154 @@ export class WorkLocationMappingComponent
     const facilityIDs = (this.selectedNikshayFacilities || []).map(
       (f: any) => f.nikshayFacilityID,
     );
-    if (!facilityIDs.length) return;
+    this.nikshayFacilitySelection$.next(
+      facilityIDs.length ? facilityIDs : null,
+    );
+  }
+
+  private initNikshayCascade() {
+    this.nikshayTUSelection$
+      .pipe(
+        // cancels (null) go through at once; selections wait for a pause
+        debounce((ids: number[] | null) => (ids ? timer(400) : of(0))),
+        switchMap((tuIDs: number[] | null) =>
+          !tuIDs
+            ? EMPTY
+            : this.worklocationmapping.getNikshayFacilities(tuIDs).pipe(
+                catchError(() => {
+                  this.alertService.alert(
+                    'Failed to load Nikshay facilities',
+                    'error',
+                  );
+                  return of(null);
+                }),
+              ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((response: any) => {
+        if (response) this.nikshayFacilityList = response.data || [];
+      });
+
+    this.nikshayFacilitySelection$
+      .pipe(
+        // cancels (null) go through at once; selections wait for a pause
+        debounce((ids: number[] | null) => (ids ? timer(400) : of(0))),
+        switchMap((facilityIDs: number[] | null) =>
+          !facilityIDs
+            ? EMPTY
+            : this.worklocationmapping.getNikshayVillages(facilityIDs).pipe(
+                catchError(() => {
+                  this.alertService.alert(
+                    'Failed to load Nikshay villages',
+                    'error',
+                  );
+                  return of(null);
+                }),
+              ),
+        ),
+        takeUntil(this.destroy$),
+      )
+      .subscribe((response: any) => {
+        if (response) this.nikshayVillageList = response.data || [];
+      });
+  }
+
+  // ── Stop TB team (AMM-2496) ──
+  // A team is an MMU van of the user's state. A team has many users; a user
+  // is in one team per Stop TB service line, so picking a new team moves them.
+  stopTBTeamList: any[] = [];
+  selectedStopTBTeamID: number | null = null;
+  stopTBTeamMembers = '';
+  private stopTBTeamPSM: any = null;
+
+  get stopTBTeamName(): string | null {
+    const team = this.stopTBTeamList.find(
+      (t: any) => t.vanID === this.selectedStopTBTeamID,
+    );
+    return team ? team.vanName : null;
+  }
+
+  resetStopTBTeam() {
+    this.stopTBTeamList = [];
+    this.selectedStopTBTeamID = null;
+    this.stopTBTeamMembers = '';
+    this.stopTBTeamPSM = null;
+  }
+
+  loadStopTBTeams(stateID: any, providerServiceMapID: any) {
+    this.stopTBTeamList = [];
+    this.stopTBTeamPSM = providerServiceMapID;
+    if (!stateID) return;
     this.worklocationmapping
-      .getNikshayVillages(facilityIDs)
+      .getStopTBTeams(stateID, this.serviceProviderID)
       .pipe(takeUntil(this.destroy$))
       .subscribe(
         (response: any) => {
-          this.nikshayVillageList = response.data || [];
+          this.stopTBTeamList = response?.data || [];
         },
         () => {
-          this.alertService.alert('Failed to load Nikshay villages', 'error');
+          this.alertService.alert('Failed to load teams', 'error');
         },
       );
   }
 
+  onStopTBTeamChange() {
+    this.stopTBTeamMembers = '';
+    if (!this.selectedStopTBTeamID || !this.stopTBTeamPSM) return;
+    this.worklocationmapping
+      .getStopTBTeamMembers(this.selectedStopTBTeamID, this.stopTBTeamPSM)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        this.stopTBTeamMembers = (response?.data || [])
+          .map((m: any) => {
+            const name = [m.firstName, m.lastName].filter(Boolean).join(' ');
+            return name ? `${name} [${m.userName}]` : m.userName;
+          })
+          .join(', ');
+      });
+  }
+
+  // Edit: load the state's teams and pre-select the user's current team.
+  loadStopTBTeamForEdit() {
+    this.loadStopTBTeams(
+      this.stateID_duringEdit,
+      this.providerServiceMapID_duringEdit,
+    );
+    if (!this.userID_duringEdit || !this.providerServiceMapID_duringEdit)
+      return;
+    this.worklocationmapping
+      .getStopTBUserTeam(
+        this.userID_duringEdit,
+        this.providerServiceMapID_duringEdit,
+      )
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((response: any) => {
+        const vanID = response?.data?.vanID ?? null;
+        this.selectedStopTBTeamID = vanID;
+        this.onStopTBTeamChange();
+      });
+  }
+
+  // Admin-API reports some failures (e.g. a team not in the user's state)
+  // as HTTP 200 with statusCode != 200 in the body. Returns that error
+  // message, or null when every response succeeded.
+  private apiFailure(responses: any): string | null {
+    const failed = ([] as any[])
+      .concat(responses)
+      .find(
+        (r: any) =>
+          r && typeof r.statusCode === 'number' && r.statusCode !== 200,
+      );
+    return failed
+      ? failed.errorMessage || failed.status || 'Request failed'
+      : null;
+  }
+
   resetNikshaySelection() {
+    this.resetStopTBTeam();
+    this.nikshayTUSelection$.next(null);
+    this.nikshayFacilitySelection$.next(null);
     this.nikshayStateList = [];
     this.nikshayDistrictList = [];
     this.nikshayTUList = [];
@@ -534,6 +797,7 @@ export class WorkLocationMappingComponent
    */
   loadNikshayEditSelections() {
     this.resetNikshaySelection();
+    this.loadStopTBTeamForEdit();
 
     const splitIDs = (value: any): number[] =>
       String(value || '')
@@ -757,8 +1021,11 @@ export class WorkLocationMappingComponent
       .pipe(takeUntil(this.destroy$))
       .subscribe((tuResponse: any) => {
         this.nikshayTUList = tuResponse.data || [];
+        // Set lookups: a district can have thousands of saved facilities and
+        // villages, and includes() inside filter() is quadratic.
+        const tuIDSet = new Set(existingTUIDs);
         this.selectedNikshayTUs = this.nikshayTUList.filter((t: any) =>
-          existingTUIDs.includes(t.nikshayTUID),
+          tuIDSet.has(t.nikshayTUID),
         );
         // "Select Block" is a single-select quick-add convenience over this
         // same TU list (see onNikshayBlockChange), but the saved BlockID IS
@@ -779,8 +1046,9 @@ export class WorkLocationMappingComponent
           .pipe(takeUntil(this.destroy$))
           .subscribe((facResponse: any) => {
             this.nikshayFacilityList = facResponse.data || [];
+            const facilityIDSet = new Set(existingFacilityIDs);
             this.selectedNikshayFacilities = this.nikshayFacilityList.filter(
-              (f: any) => existingFacilityIDs.includes(f.nikshayFacilityID),
+              (f: any) => facilityIDSet.has(f.nikshayFacilityID),
             );
             if (!this.selectedNikshayFacilities.length) return;
 
@@ -792,8 +1060,9 @@ export class WorkLocationMappingComponent
               .pipe(takeUntil(this.destroy$))
               .subscribe((villResponse: any) => {
                 this.nikshayVillageList = villResponse.data || [];
+                const villageIDSet = new Set(uniqueVillageIDs);
                 this.selectedNikshayVillages = this.nikshayVillageList.filter(
-                  (v: any) => uniqueVillageIDs.includes(v.nikshayVillageID),
+                  (v: any) => villageIDSet.has(v.nikshayVillageID),
                 );
               });
           });
@@ -939,6 +1208,7 @@ export class WorkLocationMappingComponent
     this.getProviderServices(this.userID);
     this.getAllMappedWorkLocations();
     this.getUserName(this.serviceProviderID);
+    this.initNikshayCascade();
   }
 
   ngOnDestroy() {
@@ -1072,10 +1342,15 @@ export class WorkLocationMappingComponent
     const groupMap = new Map<string, GroupedWorkLocation>();
 
     for (const row of flatRows) {
-      // Group rows for HWC/FLW service lines (including ASHA Supervisor) by user+block
-      // Other services get one row per entry
+      // Group rows for HWC/FLW (including ASHA Supervisor) and Stop TB by
+      // user+block (Stop TB's "block" is the Nikshay TU — see blockIDToUse
+      // in updateGroupedWorkLocation) so multiple roles for the same
+      // user+location show as one row with multiple role chips, instead of
+      // a separate row per role. Other services still get one row per entry.
       const isFacilityService =
-        row.serviceName === 'HWC' || row.serviceName === 'FLW';
+        row.serviceName === 'HWC' ||
+        row.serviceName === 'FLW' ||
+        row.serviceName === 'Stop TB';
       let key: string;
       if (isFacilityService) {
         key = [
@@ -2302,6 +2577,9 @@ export class WorkLocationMappingComponent
         Inbound: 'N/A',
         Outbound: 'N/A',
         teleConsultation: [null],
+        // Not part of the mapping request; assigned after Save (AMM-2496).
+        stopTBTeamVanID: this.selectedStopTBTeamID,
+        stopTBTeamName: this.stopTBTeamName,
       };
       this.bufferArray.data.push(stopTBWorkLocationObj);
       if (this.paginatorSecond) {
@@ -2542,6 +2820,9 @@ export class WorkLocationMappingComponent
 
             nikshayFacilityID:
               this.bufferArray.data[i].nikshayFacilityID || null,
+
+            // Stop TB team (van), AMM-2496
+            vanID: this.bufferArray.data[i].stopTBTeamVanID ?? null,
           },
         ],
 
@@ -2633,7 +2914,15 @@ export class WorkLocationMappingComponent
       .SaveWorkLocationMapping(requestArray)
       .pipe(takeUntil(this.destroy$))
       .subscribe(
-        () => {
+        (response: any) => {
+          const failure = this.apiFailure(response);
+          if (failure) {
+            this.alertService.alert(
+              'Failed to save work location mapping: ' + failure,
+              'error',
+            );
+            return;
+          }
           this.alertService.alert('Mapping saved successfully', 'success');
           this.cleanupAfterSave();
         },
@@ -5321,10 +5610,12 @@ export class WorkLocationMappingComponent
       ...new Set(
         group.roles
           .filter((r) => !r.userServciceRoleDeleted)
-          .map((r) => r.roleID),
+          .map((r) => Number(r.roleID)),
       ),
     ];
-    const newRoleIDs: number[] = this.roleIDs_duringEdit;
+    const newRoleIDs: number[] = (this.roleIDs_duringEdit || []).map(
+      (rid: any) => Number(rid),
+    );
 
     const rolesToAdd = newRoleIDs.filter(
       (rid) => !existingRoleIDs.includes(rid),
@@ -5408,51 +5699,60 @@ export class WorkLocationMappingComponent
       ? nikshayFacilityIDArr.join(',')
       : null;
 
+    // Shared by "keep" (role stays checked) and "reactivate" (role was
+    // unchecked before, is checked again now) — both are an in-place
+    // update of an existing uSRMappingID, refreshed to the edit form's
+    // current location/role fields.
+    const buildRoleUpdateObj = (rid: number, uSRMappingID: any) => {
+      const roleName = this.getRoleNameById(rid);
+      const updateObj: any = {
+        uSRMappingID,
+        userID: this.userID_duringEdit,
+        roleID: rid,
+        providerServiceMapID: this.providerServiceMapID_duringEdit,
+        workingLocationID: this.isFacilityServicelineEdit
+          ? null
+          : this.workLocationID_duringEdit,
+        stateID: this.stateID_duringEdit,
+        districtID: this.district_duringEdit,
+        blockID: blockIDToUse,
+        blockName: blockNameToUse,
+        villageID: villageIDToUse,
+        villageName: villageNameToUse,
+        modifiedBy: this.createdBy,
+      };
+      if (this.isStopTBServicelineEdit) {
+        updateObj.nikshayTUID = nikshayTUIDToSend;
+        updateObj.nikshayFacilityID = nikshayFacilityIDToSend;
+        updateObj.vanID = this.selectedStopTBTeamID ?? null;
+      }
+      if (group.serviceName === '1097') {
+        updateObj.inbound =
+          roleName?.toLowerCase() === 'supervisor' ? false : this.isInboundEdit;
+        updateObj.outbound =
+          roleName?.toLowerCase() === 'supervisor'
+            ? false
+            : this.isOutboundEdit;
+      }
+      if (group.serviceName === 'HWC') {
+        updateObj.teleConsultation = this.teleConsultationEdit;
+      }
+      if (this.isFacilityServicelineEdit && this.editFacilityMappingData) {
+        updateObj.facilityID = this.editFacilityMappingData.facilityID;
+      }
+      return updateObj;
+    };
+
     // UPDATE existing rows for kept roles
     for (const rid of rolesToKeep) {
       const existingEntry = group.roles.find(
         (r) => r.roleID === rid && !r.userServciceRoleDeleted,
       );
       if (existingEntry) {
-        const roleName = this.getRoleNameById(rid);
-        const updateObj: any = {
-          uSRMappingID: existingEntry.uSRMappingID,
-          userID: this.userID_duringEdit,
-          roleID: rid,
-          providerServiceMapID: this.providerServiceMapID_duringEdit,
-          workingLocationID: this.isFacilityServicelineEdit
-            ? null
-            : this.workLocationID_duringEdit,
-          stateID: this.stateID_duringEdit,
-          districtID: this.district_duringEdit,
-          blockID: blockIDToUse,
-          blockName: blockNameToUse,
-          villageID: villageIDToUse,
-          villageName: villageNameToUse,
-          modifiedBy: this.createdBy,
-        };
-        if (this.isStopTBServicelineEdit) {
-          updateObj.nikshayTUID = nikshayTUIDToSend;
-          updateObj.nikshayFacilityID = nikshayFacilityIDToSend;
-        }
-        if (group.serviceName === '1097') {
-          updateObj.inbound =
-            roleName?.toLowerCase() === 'supervisor'
-              ? false
-              : this.isInboundEdit;
-          updateObj.outbound =
-            roleName?.toLowerCase() === 'supervisor'
-              ? false
-              : this.isOutboundEdit;
-        }
-        if (group.serviceName === 'HWC') {
-          updateObj.teleConsultation = this.teleConsultationEdit;
-        }
-        if (this.isFacilityServicelineEdit && this.editFacilityMappingData) {
-          updateObj.facilityID = this.editFacilityMappingData.facilityID;
-        }
         allRequests.push(
-          this.worklocationmapping.UpdateWorkLocationMapping(updateObj),
+          this.worklocationmapping.UpdateWorkLocationMapping(
+            buildRoleUpdateObj(rid, existingEntry.uSRMappingID),
+          ),
         );
       }
     }
@@ -5475,14 +5775,61 @@ export class WorkLocationMappingComponent
       }
     }
 
-    // CREATE new rows for added roles
-    for (const rid of rolesToAdd) {
-      const roleName = this.getRoleNameById(rid);
+    // A checked role with no active row may still have an old soft-deleted
+    // row from a previous remove (group.roles keeps deleted entries too —
+    // only existingRoleIDs filters them out). Reactivate that row in place
+    // (same {uSRMappingID, deleted:false} call the Activate button already
+    // uses) instead of creating a duplicate — otherwise every remove-then-
+    // re-add cycle leaves another dead row behind for the same role.
+    const rolesToReactivate = rolesToAdd.filter((rid) =>
+      group.roles.some((r) => r.roleID === rid && r.userServciceRoleDeleted),
+    );
+    const rolesToCreateFresh = rolesToAdd.filter(
+      (rid) => !rolesToReactivate.includes(rid),
+    );
+
+    for (const rid of rolesToReactivate) {
+      const deadEntry = group.roles.find(
+        (r) => r.roleID === rid && r.userServciceRoleDeleted,
+      );
+      if (deadEntry) {
+        const reactivateObj = {
+          uSRMappingID: deadEntry.uSRMappingID,
+          deleted: false,
+        };
+        allRequests.push(
+          group.serviceID === 4
+            ? this.worklocationmapping.DeleteWorkLocationMappingForTM(
+                reactivateObj,
+              )
+            : this.worklocationmapping.DeleteWorkLocationMapping(reactivateObj),
+        );
+        // Reactivating only flips the deleted flag — refresh its location/
+        // role fields to what the edit form currently shows, same as a kept role.
+        allRequests.push(
+          this.worklocationmapping.UpdateWorkLocationMapping(
+            buildRoleUpdateObj(rid, deadEntry.uSRMappingID),
+          ),
+        );
+      }
+    }
+
+    // CREATE new rows for roles that never existed for this user+scope.
+    // Batched into a single SaveWorkLocationMapping call (one previleges
+    // entry, ID array holding every added role) instead of one call per
+    // role. Firing them separately let the backend treat each create as
+    // the sole active role for this user+serviceline+block, so parallel
+    // creates raced and only the last commit stayed active — dropping
+    // roles added alongside others (reproduced with StopTB Counsellor/
+    // Nurse). Location fields (incl. StopTB's nikshayTUID/nikshayFacilityID)
+    // are per-group, not per-role, so batching them here is unchanged.
+    if (rolesToCreateFresh.length > 0) {
       const newObj: any = {
         previleges: [
           {
-            ID: [
-              {
+            ID: rolesToCreateFresh.map((rid) => {
+              const roleName = this.getRoleNameById(rid);
+              return {
                 roleID: rid,
                 teleConsultation:
                   group.serviceName === 'HWC' &&
@@ -5500,8 +5847,8 @@ export class WorkLocationMappingComponent
                   roleName?.toLowerCase() !== 'supervisor'
                     ? this.isOutboundEdit
                     : null,
-              },
-            ],
+              };
+            }),
             providerServiceMapID: this.providerServiceMapID_duringEdit,
             workingLocationID: this.isFacilityServicelineEdit
               ? null
@@ -5520,6 +5867,7 @@ export class WorkLocationMappingComponent
               ? {
                   nikshayTUID: nikshayTUIDToSend,
                   nikshayFacilityID: nikshayFacilityIDToSend,
+                  vanID: this.selectedStopTBTeamID ?? null,
                 }
               : {}),
           },
@@ -5541,7 +5889,16 @@ export class WorkLocationMappingComponent
     forkJoin(allRequests)
       .pipe(takeUntil(this.destroy$))
       .subscribe(
-        () => {
+        (responses: any) => {
+          const failure = this.apiFailure(responses);
+          if (failure) {
+            this.alertService.alert(
+              'Failed to update mapping: ' + failure,
+              'error',
+            );
+            this.getAllMappedWorkLocations();
+            return;
+          }
           this.alertService.alert('Mapping updated successfully', 'success');
           this.showTable();
           this.getAllMappedWorkLocations();
