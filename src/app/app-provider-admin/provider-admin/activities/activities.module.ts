@@ -100,6 +100,7 @@ import { ProjectServicelineMappingService } from './services/project-serviceline
 import { ProjectMasterComponent } from './project-master/project-master.component';
 import { ProjectServicelineMappingComponent } from './project-serviceline-mapping/project-serviceline-mapping.component';
 import { ProjectConfigutationScreenComponent } from './project-configutation-screen/project-configutation-screen.component';
+import { ConsentConfigurationComponent } from './consent-configuration/consent-configuration.component';
 import { ProjectConfigurationService } from './services/project-configuration-service';
 import { AddFieldsToProjectComponent } from './add-fields-to-project/add-fields-to-project.component';
 import { AddFieldsService } from './services/add-fields-service';
@@ -157,6 +158,7 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectMasterComponent,
     ProjectServicelineMappingComponent,
     ProjectConfigutationScreenComponent,
+    ConsentConfigurationComponent,
     AddFieldsToProjectComponent,
     EmployeeMasterBulkUploadComponent,
     UserFacilityMappingComponent,

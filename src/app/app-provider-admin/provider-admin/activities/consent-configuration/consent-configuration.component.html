@@ -1,0 +1,166 @@
+<div class="container-fluid consent-config">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>Consent Configuration</h4>
+    </div>
+
+    <form #projectForm="ngForm" autocomplete="off">
+      <div class="col-xs-12 col-sm-4">
+        <mat-form-field style="width: 100%">
+          <mat-label>Project Name</mat-label>
+          <input
+            type="text"
+            matInput
+            [(ngModel)]="project"
+            name="project"
+            [matAutocomplete]="auto"
+            (keyup)="filterOptions(project)"
+          />
+          <mat-autocomplete
+            #auto="matAutocomplete"
+            [displayWith]="displayFn"
+            (optionSelected)="onProjectSelected($event.option.value)"
+          >
+            <mat-option *ngFor="let item of filteredOptions" [value]="item">
+              {{ item.projectName }}
+              <small class="consent-config-status">{{
+                projectStatus(item)
+              }}</small>
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+    </form>
+  </div>
+
+  <ng-container *ngIf="loaded">
+    <p class="consent-config-version" *ngIf="!notConfigured">
+      Version {{ loaded.version }} · saved by {{ loaded.savedBy }} on
+      {{ loaded.savedAt | date: "d MMM y, HH:mm" }}
+    </p>
+    <p class="consent-config-version" *ngIf="notConfigured">
+      Not yet configured. The platform default is shown.
+    </p>
+
+    <mat-tab-group>
+      <mat-tab label="Registration">
+        <div class="consent-config-tab">
+          <div class="consent-config-toggles">
+            <mat-slide-toggle
+              name="consent-enabled"
+              [(ngModel)]="enabled"
+              (change)="markDirty()"
+              >Consent on</mat-slide-toggle
+            >
+            <mat-slide-toggle
+              name="consent-mandatory"
+              [(ngModel)]="mandatory"
+              [disabled]="!enabled"
+              (change)="markDirty()"
+              >Mandatory before registration</mat-slide-toggle
+            >
+          </div>
+
+          <ng-container *ngIf="enabled">
+            <h5>Consent modes</h5>
+            <table class="table table-striped table-hover consent-config-modes">
+              <thead>
+                <tr>
+                  <th>Allowed</th>
+                  <th>Mode</th>
+                  <th>Order</th>
+                  <th>Default</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of rows; let i = index; let last = last">
+                  <td>
+                    <mat-checkbox
+                      [checked]="row.ticked"
+                      [attr.aria-label]="'Allow ' + row.name"
+                      (change)="toggleMode(row, $event.checked)"
+                    ></mat-checkbox>
+                  </td>
+                  <td>{{ row.name }}</td>
+                  <td>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="consent-config-up"
+                      [disabled]="i === 0"
+                      [attr.aria-label]="'Move ' + row.name + ' up'"
+                      (click)="move(i, -1)"
+                    >
+                      <mat-icon>arrow_upward</mat-icon>
+                    </button>
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="consent-config-down"
+                      [disabled]="last"
+                      [attr.aria-label]="'Move ' + row.name + ' down'"
+                      (click)="move(i, 1)"
+                    >
+                      <mat-icon>arrow_downward</mat-icon>
+                    </button>
+                  </td>
+                  <td>
+                    <mat-radio-button
+                      name="consent-default-mode"
+                      [checked]="effectiveDefault === row.mode"
+                      [disabled]="!row.ticked"
+                      [attr.aria-label]="row.name + ' is the default'"
+                      (change)="setDefault(row.mode)"
+                    ></mat-radio-button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="consent-config-error" role="alert" *ngIf="errors.modes">
+              {{ errors.modes }}
+            </p>
+            <p
+              class="consent-config-error"
+              role="alert"
+              *ngIf="errors.defaultMode"
+            >
+              {{ errors.defaultMode }}
+            </p>
+          </ng-container>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+
+    <div class="consent-config-preview" *ngIf="enabled">
+      <h5>Preview for field staff</h5>
+      <ol>
+        <li *ngFor="let row of tickedRows">
+          {{ row.name }}
+          <strong *ngIf="effectiveDefault === row.mode">(default)</strong>
+        </li>
+      </ol>
+    </div>
+
+    <div class="consent-config-actions">
+      <button
+        mat-raised-button
+        type="button"
+        class="consent-config-reset"
+        [disabled]="!dirty || saving"
+        (click)="reset()"
+      >
+        Reset
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        class="mat_blue consent-config-save"
+        [disabled]="!canSave"
+        (click)="save()"
+      >
+        Save
+      </button>
+    </div>
+  </ng-container>
+</div>

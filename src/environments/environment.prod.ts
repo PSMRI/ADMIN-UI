@@ -524,6 +524,10 @@ export const environment = {
 
   // Customization APIs
   getAllRegistrationData: `${commonBaseURL}customization/fetchAllData`,
+  getConsentConfigMasters: `${commonBaseURL}customization/consent/masters`,
+  fetchConsentConfigByProject: `${commonBaseURL}customization/consent/fetchConfigByProject`,
+  saveConsentConfig: `${commonBaseURL}customization/consent/saveConfig`,
+  updateConsentConfig: `${commonBaseURL}customization/consent/updateConfig`,
   getBenIdForhealthID: `${fhirBaseUrl}healthID/getBenIdForhealthID`,
 
   //ABDM Facility
