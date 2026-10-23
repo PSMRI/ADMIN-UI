@@ -254,6 +254,7 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectMasterComponent,
     ProjectServicelineMappingComponent,
     ProjectConfigutationScreenComponent,
+    ConsentConfigurationComponent,
     AddFieldsToProjectComponent,
     LinkExistingFacilityComponent,
   ],
