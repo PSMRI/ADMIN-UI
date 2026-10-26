@@ -1,0 +1,146 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Link Existing Device</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="linkDeviceForm"
+        #linkDeviceForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Device</mat-label>
+            <mat-select
+              required
+              name="selectedDevice"
+              [(ngModel)]="selectedDevice"
+            >
+              <mat-option *ngFor="let item of devices_array" [value]="item">
+                {{ item.deviceId }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>State</mat-label>
+            <mat-select
+              required
+              name="state"
+              [(ngModel)]="state"
+              (selectionChange)="getDistricts()"
+            >
+              <mat-option *ngFor="let item of states_array" [value]="item">
+                {{ item.stateName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>District</mat-label>
+            <mat-select
+              required
+              name="district"
+              [(ngModel)]="district"
+              [disabled]="!state"
+              (selectionChange)="getTUs()"
+            >
+              <mat-option *ngFor="let item of districts_array" [value]="item">
+                {{ item.districtName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>TU</mat-label>
+            <mat-select
+              required
+              name="tu"
+              [(ngModel)]="tu"
+              [disabled]="!district"
+              (selectionChange)="getFacilities()"
+            >
+              <mat-option *ngFor="let item of tus_array" [value]="item">
+                {{ item.tUName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Facility</mat-label>
+            <mat-select
+              required
+              name="facility"
+              [(ngModel)]="facility"
+              [disabled]="!tu"
+              (selectionChange)="getVillages()"
+            >
+              <mat-option *ngFor="let item of facilities_array" [value]="item">
+                {{ item.facilityName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Select Villages</mat-label>
+            <mat-select
+              multiple
+              required
+              name="selectedVillages"
+              [(ngModel)]="selectedVillages"
+              [disabled]="!facility || villages_array.length === 0"
+              [compareWith]="compareVillages"
+              (selectionChange)="applyVillageFilter()"
+            >
+              <div class="select-search-box">
+                <mat-icon>search</mat-icon>
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyVillageFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="villageSearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allVillagesSelected"
+                  (change)="toggleSelectAllVillages()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
+              <mat-option *ngFor="let v of filteredVillages" [value]="v">
+                {{ v.villageName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+    <div class="col-xs-12 col-sm-12 m-t-15" style="padding-bottom: 40px">
+      <button
+        mat-raised-button
+        color="accent"
+        class="pull-right mat_green"
+        [disabled]="linkDeviceForm.invalid || selectedVillages.length === 0"
+        (click)="linkDevice()"
+      >
+        Link Device
+      </button>
+    </div>
+  </div>
+</div>

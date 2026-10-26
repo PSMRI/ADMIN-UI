@@ -1,0 +1,120 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Enroll New Device</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="enrollDeviceForm"
+        #enrollDeviceForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Device Id</mat-label>
+            <input
+              matInput
+              required
+              [(ngModel)]="deviceId"
+              name="deviceId"
+              #deviceIdField="ngModel"
+            />
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !deviceIdField.valid &&
+                  (deviceIdField.dirty || deviceIdField.touched)
+                "
+                >Device Id is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Device Name</mat-label>
+            <mat-select
+              required
+              name="deviceName"
+              [(ngModel)]="deviceName"
+              #deviceNameField="ngModel"
+            >
+              <mat-option value="NAAT">NAAT</mat-option>
+              <mat-option value="XRAY">XRAY</mat-option>
+            </mat-select>
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !deviceNameField.valid &&
+                  (deviceNameField.dirty || deviceNameField.touched)
+                "
+                >Device Name is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>PHI User Id</mat-label>
+            <input
+              matInput
+              required
+              [(ngModel)]="phiUserId"
+              name="phiUserId"
+              #phiUserIdField="ngModel"
+            />
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !phiUserIdField.valid &&
+                  (phiUserIdField.dirty || phiUserIdField.touched)
+                "
+                >PHI User Id is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Password</mat-label>
+            <input
+              matInput
+              type="password"
+              required
+              [(ngModel)]="password"
+              name="password"
+              #passwordField="ngModel"
+            />
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !passwordField.valid &&
+                  (passwordField.dirty || passwordField.touched)
+                "
+                >Password is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+    <div class="col-xs-12 col-sm-12 m-t-15" style="padding-bottom: 40px">
+      <button
+        mat-raised-button
+        color="accent"
+        class="pull-right mat_green"
+        [disabled]="enrollDeviceForm.invalid"
+        (click)="enrollDevice()"
+      >
+        Enroll
+      </button>
+    </div>
+  </div>
+</div>

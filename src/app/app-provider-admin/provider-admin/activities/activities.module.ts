@@ -104,6 +104,14 @@ import { AddFieldsService } from './services/add-fields-service';
 import { LinkExistingFacilityComponent } from './link-existing-facility/link-existing-facility.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
+import { NikshayDeviceMasterComponent } from './nikshay-device-config/nikshay-device-master/nikshay-device-master.component';
+import { EnrollNikshayDeviceComponent } from './nikshay-device-config/enroll-nikshay-device/enroll-nikshay-device.component';
+import { LinkNikshayDeviceComponent } from './nikshay-device-config/link-nikshay-device/link-nikshay-device.component';
+import { NikshayDeviceConfigService } from './services/nikshay-device-config.service';
+import { PhiMasterComponent } from './phi-transfer-config/phi-master/phi-master.component';
+import { CreatePhiTransferComponent } from './phi-transfer-config/create-phi-transfer/create-phi-transfer.component';
+import { UpdatePhiTransferComponent } from './phi-transfer-config/update-phi-transfer/update-phi-transfer.component';
+import { PhiTransferConfigService } from './services/phi-transfer-config.service';
 
 @NgModule({
   declarations: [
@@ -158,6 +166,12 @@ import { CoreModule } from 'src/app/core/core.module';
     EmployeeMasterBulkUploadComponent,
     UserFacilityMappingComponent,
     LinkExistingFacilityComponent,
+    NikshayDeviceMasterComponent,
+    EnrollNikshayDeviceComponent,
+    LinkNikshayDeviceComponent,
+    PhiMasterComponent,
+    CreatePhiTransferComponent,
+    UpdatePhiTransferComponent,
   ],
   imports: [
     CommonModule,
@@ -200,6 +214,8 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectServicelineMappingService,
     ProjectConfigurationService,
     AddFieldsService,
+    NikshayDeviceConfigService,
+    PhiTransferConfigService,
   ],
   exports: [
     LocationServicelineMappingComponent,
@@ -250,6 +266,12 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectConfigutationScreenComponent,
     AddFieldsToProjectComponent,
     LinkExistingFacilityComponent,
+    NikshayDeviceMasterComponent,
+    EnrollNikshayDeviceComponent,
+    LinkNikshayDeviceComponent,
+    PhiMasterComponent,
+    CreatePhiTransferComponent,
+    UpdatePhiTransferComponent,
   ],
 })
 export class ActivitiesModule {}

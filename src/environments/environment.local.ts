@@ -547,4 +547,21 @@ export const environment = {
   deleteAshaSupervisorMapping_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/delete`,
   restoreAshaSupervisorMapping_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/restore`,
   updateAshaSupervisorMappingAtomically_Url: `${adminBaseUrl}userFacilityMapping/ashaSupervisorMapping/updateAtomically`,
+
+  // Nikshay Device Config APIs
+  nikshay_GetStates_Url: `${adminBaseUrl}nikshay/location/states`,
+  nikshay_GetDistricts_Url: `${adminBaseUrl}nikshay/location/districts`,
+  nikshay_GetTUs_Url: `${adminBaseUrl}nikshay/location/tus`,
+  nikshay_GetFacilities_Url: `${adminBaseUrl}nikshay/location/facilities`,
+  nikshay_GetVillages_Url: `${adminBaseUrl}nikshay/location/villages`,
+  nikshay_EnrollDevice_Url: `${adminBaseUrl}nikshay/device/create`,
+  nikshay_LinkDeviceToVillage_Url: `${adminBaseUrl}nikshay/device/village/enroll`,
+  nikshay_ListDevices_Url: `${adminBaseUrl}nikshay/device/list`,
+  nikshay_SearchDevice_Url: `${adminBaseUrl}nikshay/device/search`,
+
+  // PHI Transfer Config APIs
+  phi_CreateDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/save`,
+  phi_UpdateDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/update`,
+  phi_GetDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/get`,
+  phi_GetAllDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/getAll`,
 };
