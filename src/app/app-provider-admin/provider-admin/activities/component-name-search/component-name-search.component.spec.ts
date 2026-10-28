@@ -19,17 +19,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { of } from 'rxjs';
 
 import { ComponentNameSearchComponent } from './component-name-search.component';
+import { ComponentMasterServiceService } from 'src/app/core/services/ProviderAdminServices/component-master-service.service';
+
+const FakeComponentMasterServiceService = {
+  searchComponent: (_term?: any, _pageNo?: any) =>
+    of({ statusCode: 200, data: { lonicMaster: [] } }),
+};
+
+const FakeMatDialogRef = {
+  close: (_result?: any) => undefined,
+};
 
 describe('ComponentNameSearchComponent', () => {
   let component: ComponentNameSearchComponent;
   let fixture: ComponentFixture<ComponentNameSearchComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [ComponentNameSearchComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      providers: [
+        { provide: MAT_DIALOG_DATA, useValue: { searchTerm: '' } },
+        { provide: MatDialogRef, useValue: FakeMatDialogRef },
+        {
+          provide: ComponentMasterServiceService,
+          useValue: FakeComponentMasterServiceService,
+        },
+      ],
     }).compileComponents();
   }));
 

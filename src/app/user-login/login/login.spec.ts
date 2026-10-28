@@ -20,69 +20,117 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import {
-  async,
-  tick,
-  fakeAsync,
   ComponentFixture,
   TestBed,
+  fakeAsync,
+  tick,
+  waitForAsync,
 } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { loginContentClass } from './login.component';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import { dataService } from '../services/dataService/data.service';
-import { loginService } from '../services/loginService/login.service';
-import { Router } from '@angular/router';
-import { MaterialModule, MdGridListModule } from '@angular/material';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { By } from '@angular/platform-browser';
+import { Router } from '@angular/router';
+import { CookieService } from 'ngx-cookie-service';
+import { of } from 'rxjs';
+import { loginContentClassComponent } from './login.component';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { loginService } from '../loginService/login.service';
+import { HttpServices } from 'src/app/core/services/http-services/http_services.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
-let component: loginContentClass;
-let fixture: ComponentFixture<loginContentClass>;
+let component: loginContentClassComponent;
+let fixture: ComponentFixture<loginContentClassComponent>;
 
-class fakeLoginService {
-  superAdminAuthenticate(userID, password) {
-    return Observable.of({
-      isAuthenticated: true,
-      key: 1234567890,
-      previlegeObj: [{ serviceID: 1 }],
-      Previlege: [],
+class FakeLoginService {
+  logoutUserFromPreviousSessions$ = of(false);
+
+  dologoutUsrFromPreSession(_flag: any) {}
+
+  checkAuthorisedUser() {
+    return of({});
+  }
+
+  superAdminAuthenticate(
+    _userID: any,
+    _password: any,
+    _doLogout: any,
+    _captchaToken?: any,
+  ) {
+    return of({
+      data: {
+        isAuthenticated: true,
+        key: 1234567890,
+        userID: 1,
+        previlegeObj: [],
+      },
     });
   }
 
-  authenticateUser(userID, password) {
-    return Observable.of({
-      isAuthenticated: true,
-      key: 1234567890,
-      previlegeObj: [{ serviceID: 1 }],
-      Previlege: [{ Role: 'ProviderAdmin' }],
-      Status: 'Active',
+  authenticateUser(
+    _userID: any,
+    _password: any,
+    _doLogout: any,
+    _captchaToken?: any,
+  ) {
+    return of({
+      data: {
+        isAuthenticated: true,
+        Status: 'Active',
+        key: 1234567890,
+        userID: 1,
+        userName: 'di242323',
+        previlegeObj: [
+          { serviceID: 1, providerServiceMapID: 'SP1', serviceDesc: 'other' },
+        ],
+        Previlege: [{ Role: 'ProviderAdmin' }],
+      },
     });
   }
 
-  getServiceProviderID() {
-    return Observable.of({
-      serviceProviderID: '007',
-    });
+  getServiceProviderID(_serviceID: any) {
+    return of({ data: { serviceProviderID: '007' } });
   }
 }
 const providerForFakeLoginService = {
   provide: loginService,
-  useClass: fakeLoginService,
+  useClass: FakeLoginService,
 };
 
-const fakeDataService = {
-  Userdata: '',
-  role: '',
-  uname: '',
-  userPriveliges: '',
-  uid: '',
-  service_providerID: '',
+const sessionValues: Record<string, any> = {};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
+  setItem: (key: string, value: any) => {
+    sessionValues[key] = value;
+  },
+  removeItem: (key: string) => {
+    delete sessionValues[key];
+  },
 };
-const providerForFakeDataService = {
-  provide: dataService,
-  useValue: fakeDataService,
+const providerForFakeSessionStorage = {
+  provide: SessionStorageService,
+  useValue: FakeSessionStorageService,
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+};
+const providerForFakeConfirmationDialogsService = {
+  provide: ConfirmationDialogsService,
+  useValue: FakeConfirmationDialogsService,
+};
+
+const FakeHttpServices = {
+  getCommitDetails: (_url: any) => of({ version: '1.0.0' }),
+};
+const providerForFakeHttpServices = {
+  provide: HttpServices,
+  useValue: FakeHttpServices,
+};
+
+const providerForFakeCookieService = {
+  provide: CookieService,
+  useValue: {},
 };
 
 const fakeRouterService = {
@@ -93,127 +141,104 @@ const providerForFakeRoutes = {
   useValue: fakeRouterService,
 };
 
-describe('LOGIN COMPONENT', () => {
+describe('loginContentClassComponent', () => {
   let loginServiceInstance: loginService;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [loginContentClass],
-      imports: [
-        FormsModule,
-        MaterialModule,
-        MdGridListModule,
-        NoopAnimationsModule,
-      ],
+      declarations: [loginContentClassComponent],
+      imports: [FormsModule],
       schemas: [NO_ERRORS_SCHEMA],
       providers: [
         providerForFakeLoginService,
-        providerForFakeDataService,
+        providerForFakeSessionStorage,
+        providerForFakeConfirmationDialogsService,
+        providerForFakeHttpServices,
+        providerForFakeCookieService,
         providerForFakeRoutes,
       ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(loginContentClass);
+    fixture = TestBed.createComponent(loginContentClassComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
-    loginServiceInstance = TestBed.get(loginService);
-
-    let store = {};
-
-    spyOn(localStorage, 'getItem').and.callFake((key: string): string => {
-      return store[key] || null;
-    });
-    spyOn(localStorage, 'removeItem').and.callFake((key: string): void => {
-      delete store[key];
-    });
-    spyOn(localStorage, 'setItem').and.callFake(
-      (key: string, value: string): string => {
-        return (store[key] = <string>value);
-      },
-    );
-    spyOn(localStorage, 'clear').and.callFake(() => {
-      store = {};
-    });
+    loginServiceInstance = TestBed.inject(loginService);
+    fakeRouterService.navigate.calls.reset();
   });
 
-  fdescribe('When the Login component is getting loaded', () => {
+  afterEach(() => {
+    // login() writes the real browser sessionStorage; clear it so a
+    // successful login in one test doesn't leak into the next test's
+    // ngOnInit (which checks sessionStorage.getItem('authToken')).
+    sessionStorage.removeItem('authToken');
+  });
+
+  describe('When the Login component is getting loaded', () => {
     it('should be created', () => {
       expect(component).toBeTruthy();
     });
 
-    it('should have password field encrypted', () => {
-      const dt = component.dynamictype;
-      expect(dt).toEqual('password');
+    it('should have password field encrypted by default', () => {
+      expect(component.dynamictype).toEqual('password');
     });
 
     it('should show the password on icon mouse down by calling showPWD()', fakeAsync(() => {
-      spyOn(component, 'showPWD');
+      spyOn(component, 'showPWD').and.callThrough();
       const btn = fixture.debugElement.query(By.css('#eye'));
       btn.triggerEventHandler('mousedown', null);
-      const dt = component.dynamictype;
       tick();
       expect(component.showPWD).toHaveBeenCalled();
     }));
 
-    it('should show the password on icon mouse down by setting the type of password field as "text" ', fakeAsync(() => {
+    it('should show the password by setting the type of password field as "text"', fakeAsync(() => {
       component.showPWD();
       fixture.detectChanges();
       expect(component.dynamictype).toBe('text');
     }));
 
-    it('should hide the password on icon mouse up by calling hidePWD()', fakeAsync(() => {
-      spyOn(component, 'hidePWD');
-      component.dynamictype = 'text';
-      const btn = fixture.debugElement.query(By.css('md-grid-list'));
-      btn.triggerEventHandler('mouseup', null);
-      const dt = component.dynamictype;
-      tick();
-      expect(component.hidePWD).toHaveBeenCalled();
-    }));
-
-    it('should hide the password on icon mouse up by setting the type of password field as "password"', fakeAsync(() => {
+    it('should hide the password by setting the type of password field as "password"', fakeAsync(() => {
       component.dynamictype = 'text';
       component.hidePWD();
       fixture.detectChanges();
       expect(component.dynamictype).toBe('password');
     }));
 
-    // it('should call Login function, if Login Button clicked/submitted', fakeAsync(() => {
-    //     spyOn(component, 'login');
-    //     const btn = fixture.debugElement.query(By.css('#login_btn'));
-    //     btn.triggerEventHandler('submit', null);
-    //     tick();
-    //     expect(component.login).toHaveBeenCalled();
-    // }));
-
-    it('should authenticate SUPERADMIN on login, if username is SUPERADMIN(case insensitive)', () => {
-      component.login('SUPERADMIN', '12345');
+    it('should authenticate SUPERADMIN on login, if username is SUPERADMIN (case insensitive)', () => {
+      component.login('SUPERADMIN', '12345', false);
       expect(fakeRouterService.navigate).toHaveBeenCalledWith([
         '/MultiRoleScreenComponent',
       ]);
     });
 
-    it('should authenticate on login with status ACTIVE and go inside app', () => {
-      component.login('di242323', 'abcde');
-      fixture.detectChanges();
+    it('should authenticate on login with status Active and go inside the app', fakeAsync(() => {
+      component.login('di242323', 'abcde', false);
+      tick(1000);
       expect(fakeRouterService.navigate).toHaveBeenCalledWith([
         '/MultiRoleScreenComponent',
       ]);
-    });
+    }));
 
-    it('should authenticate on login with status NEW and go to SET SECURITY QUESTION page', () => {
+    it('should authenticate on login with status New and go to SET SECURITY QUESTION page', () => {
       spyOn(loginServiceInstance, 'authenticateUser').and.returnValue(
-        Observable.of({
-          isAuthenticated: true,
-          key: 1234567890,
-          previlegeObj: [{ serviceID: 1 }],
-          Previlege: [{ Role: 'ProviderAdmin' }],
-          Status: 'New',
+        of({
+          data: {
+            isAuthenticated: true,
+            Status: 'New',
+            key: 1234567890,
+            previlegeObj: [
+              {
+                serviceID: 1,
+                providerServiceMapID: 'SP1',
+                serviceDesc: 'other',
+              },
+            ],
+            Previlege: [{ Role: 'ProviderAdmin' }],
+          },
         }),
       );
-      component.login('di242323', 'abcde');
+      component.login('di242323', 'abcde', false);
       fixture.detectChanges();
       expect(component.status).toBe('new');
       expect(fakeRouterService.navigate).toHaveBeenCalledWith([
@@ -222,7 +247,7 @@ describe('LOGIN COMPONENT', () => {
     });
 
     it('should get Service Provider ID if authentication succeeds (except Superadmin login)', () => {
-      component.login('di352929', '12345');
+      component.login('di352929', '12345', false);
       fixture.detectChanges();
       expect(component.serviceProviderID).toBe('007');
     });

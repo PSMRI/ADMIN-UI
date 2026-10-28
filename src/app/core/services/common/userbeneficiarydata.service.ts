@@ -24,8 +24,6 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ConfigService } from '../config/config.service';
-import 'rxjs/add/operator/catch';
-import 'rxjs/add/operator/map';
 // import { InterceptedHttp } from './../../http.interceptor';
 // import { SecurityInterceptedHttp } from '../../http.securityinterceptor';
 

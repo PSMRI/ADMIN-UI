@@ -20,13 +20,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { TestBed, inject } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { StoreSelfConsumptionServiceService } from './store-self-consumption-service.service';
+import { ConfigService } from '../config/config.service';
 
 describe('StoreSelfConsumptionServiceService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [StoreSelfConsumptionServiceService],
+      imports: [HttpClientTestingModule],
+      providers: [StoreSelfConsumptionServiceService, ConfigService],
     });
   });
 

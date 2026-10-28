@@ -19,24 +19,82 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 
 import { FeedbackComplaintNatureMasterComponent } from './feedback-complaint-nature-master.component';
+import { FeedbackTypeService } from '../services/feedback-type-master-service.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+
+const FakeFeedbackTypeService = {
+  getStates: (_userID?: any, _serviceID?: any, _isNational?: any) =>
+    of({ data: [] }),
+  getServiceLines: (_userID?: any) => of({ data: [{ serviceID: 1 }] }),
+  getFeedbackTypes_nature: (_obj?: any) => of({ data: [] }),
+  getFeedbackNatureTypes: (_obj?: any) => of({ data: [] }),
+  deleteFeedbackNatureType: (_obj?: any) => of({}),
+  saveFeedbackNatureType: (_arr?: any) => of({}),
+  editFeedbackNatureType: (_obj?: any) => of({}),
+};
+
+const FakeDataService = {
+  uid: 'U1',
+  uname: 'admin',
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+};
+
+const FakeMatDialog = {
+  open: (_component?: any, _config?: any) => ({
+    afterClosed: () => of(undefined),
+  }),
+};
+
+const sessionValues: Record<string, any> = {
+  service_providerID: 'serviceProviderID',
+};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
+};
 
 describe('FeedbackComplaintNatureMasterComponent', () => {
   let component: FeedbackComplaintNatureMasterComponent;
   let fixture: ComponentFixture<FeedbackComplaintNatureMasterComponent>;
 
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [FeedbackComplaintNatureMasterComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      imports: [FormsModule],
+      providers: [
+        { provide: dataService, useValue: FakeDataService },
+        { provide: FeedbackTypeService, useValue: FakeFeedbackTypeService },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: MatDialog, useValue: FakeMatDialog },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
+      ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on mat-table/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic, not
+    // the rendered DOM. ngOnInit is run explicitly instead.
     fixture = TestBed.createComponent(FeedbackComplaintNatureMasterComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
 
   it('should be created', () => {

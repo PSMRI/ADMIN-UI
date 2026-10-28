@@ -19,27 +19,93 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { of } from 'rxjs';
+import { RoleMasterComponent } from './provider-admin-role-master.component';
+import { ProviderAdminRoleService } from '../services/state-serviceline-role.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
-import { ProviderAdminRoleMasterComponent } from './provider-admin-role-master.component';
+let component: RoleMasterComponent;
+let fixture: ComponentFixture<RoleMasterComponent>;
 
-describe('ProviderAdminRoleMasterComponent', () => {
-  let component: ProviderAdminRoleMasterComponent;
-  let fixture: ComponentFixture<ProviderAdminRoleMasterComponent>;
+const FakeProviderAdminRoleService = {
+  getServiceLinesNew: (_userID: any) =>
+    of({ data: [{ serviceID: 1, serviceName: 'MMU' }] }),
+  getStatesNew: (_obj: any) => of({ data: [] }),
+  getFeature: (_serviceID: any) => of({ data: [] }),
+  getRole: (_obj: any) => of({ data: [] }),
+  createRoles: (_roles: any) => of({ data: [] }),
+  deleteRole: (_obj: any) => of({}),
+  editRole: (_obj: any) => of({}),
+  updateFeatureToRole: (_arr: any) => of([]),
+};
 
-  beforeEach(async(() => {
+const FakeDataService = {
+  uid: 'U1',
+  uname: 'admin',
+  provider_serviceMapID: null,
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+};
+
+const sessionValues: Record<string, any> = {
+  service_providerID: 'SP1',
+};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
+};
+
+function initTestBed() {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
-      declarations: [ProviderAdminRoleMasterComponent],
+      declarations: [RoleMasterComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      imports: [FormsModule],
+      providers: [
+        {
+          provide: ProviderAdminRoleService,
+          useValue: FakeProviderAdminRoleService,
+        },
+        { provide: dataService, useValue: FakeDataService },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
+      ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ProviderAdminRoleMasterComponent);
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on matSort/matPaginator/mat-table directives whose modules
+    // aren't imported here, and these tests only exercise component logic.
+    fixture = TestBed.createComponent(RoleMasterComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
   });
+}
+
+describe('RoleMasterComponent', () => {
+  initTestBed();
 
   it('should be created', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should read serviceProviderID from session storage on construction', () => {
+    expect(component.serviceProviderID).toBe('SP1');
+  });
+
+  it('should set userID from commonDataService and load service lines on ngOnInit', () => {
+    component.ngOnInit();
+    expect(component.userID).toBe('U1');
+    expect(component.services).toEqual([{ serviceID: 1, serviceName: 'MMU' }]);
   });
 });

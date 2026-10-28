@@ -20,13 +20,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { TestBed, inject } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { CallibrationMasterServiceService } from './callibration-master-service.service';
+import { ConfigService } from 'src/app/core/services/config/config.service';
 
 describe('CallibrationMasterServiceService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [CallibrationMasterServiceService],
+      imports: [HttpClientTestingModule],
+      providers: [CallibrationMasterServiceService, ConfigService],
     });
   });
 

@@ -20,13 +20,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { TestBed, inject } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
-import { SnomedMasterService } from '../../../configurations/services/snomed-master.service';
+import { SnomedMasterService } from './snomed-master.service';
+import { ConfigService } from 'src/app/core/services/config/config.service';
 
 describe('SnomedMasterService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [SnomedMasterService],
+      imports: [HttpClientTestingModule],
+      providers: [SnomedMasterService, ConfigService],
     });
   });
 

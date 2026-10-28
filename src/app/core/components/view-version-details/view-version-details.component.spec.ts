@@ -20,8 +20,15 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
 import { ViewVersionDetailsComponent } from './view-version-details.component';
+import { ConfirmationDialogsService } from '../../services/dialog/confirmation.service';
+
+class MatDialogRefStub {
+  close(_result?: any): void {}
+}
 
 describe('ViewVersionDetailsComponent', () => {
   let component: ViewVersionDetailsComponent;
@@ -30,6 +37,18 @@ describe('ViewVersionDetailsComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [ViewVersionDetailsComponent],
+      providers: [
+        { provide: MatDialogRef, useClass: MatDialogRefStub },
+        {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            api_versionDetails: { Version: '1.0.0', Commit: 'abc123' },
+            uiversionDetails: { Version: '1.0.0', Commit: 'abc123' },
+          },
+        },
+        { provide: ConfirmationDialogsService, useValue: {} },
+      ],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
   }));
 

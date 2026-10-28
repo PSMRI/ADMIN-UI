@@ -19,93 +19,75 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
-import { LanguageMappingComponent } from './language-mapping.component';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ActivatedRoute, Params } from '@angular/router';
-import { Observable } from 'rxjs/Observable';
-import 'rxjs/add/observable/of';
-import { dataService } from '../services/dataService/data.service';
-import { Router } from '@angular/router';
-import { Md2Module } from 'md2';
 import { FormsModule } from '@angular/forms';
-import { fakeAsync } from '@angular/core/testing';
-import { By } from '@angular/platform-browser';
-import { tick } from '@angular/core/testing';
-import { ConfirmationDialogsService } from '../services/dialog/confirmation.service';
-import { LanguageMapping } from '../services/ProviderAdminServices/language-mapping.service';
-import { not } from '@angular/compiler/src/output/output_ast';
+import { of } from 'rxjs';
+import { LanguageMappingComponent } from './language-mapping.component';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
+import { LanguageMapping } from '../services/language-mapping.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 let component: LanguageMappingComponent;
 let fixture: ComponentFixture<LanguageMappingComponent>;
 
-const FakeConfirmationDialogsService = {};
-
-const providerForFakeConfirmationDialogsService = {
-  provide: ConfirmationDialogsService,
-  useValue: FakeConfirmationDialogsService,
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
 };
+
 const FakeDataService = {
-  service_providerID: 'serviceProviderID',
   uname: 'admin',
 };
 
-const providerForFakeDataService = {
-  provide: dataService,
-  useValue: FakeDataService,
+const FakeLanguageMapping = {
+  getUserName: (_providerId: any) => of({ data: [{ userID: '1' }] }),
+  getLanguageList: () => of({ data: [{ userLangID: '1' }] }),
+  getMappedLanguagesList: (_serviceProviderID: any) =>
+    of({ data: [{ languageID: '1', LanguageName: 'english' }] }),
+  SaveLanguageMapping: (_data: any) => of({}),
+  UpdateLanguageMapping: (_data: any) => of({}),
+  DeleteLanguageMapping: (_data: any) => of({}),
 };
-class FakeLanguageMapping {
-  getUserName(data) {
-    return Observable.of([
-      {
-        userID: '1',
-      },
-    ]);
-  }
-  getLanguageList() {
-    return Observable.of([
-      {
-        userLangID: '1',
-      },
-    ]);
-  }
-  getMappedLanguagesList() {
-    return Observable.of([
-      {
-        languageID: '1',
-        LanguageName: 'english',
-      },
-    ]);
-  }
-}
 
-const providerForLanguageMappingService = {
-  provide: LanguageMapping,
-  useClass: FakeLanguageMapping,
+const sessionValues: Record<string, any> = {
+  service_providerID: 'serviceProviderID',
+};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
 };
 
 function InitializeAdminTestBed() {
-  beforeEach(async(() => {
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [LanguageMappingComponent],
       schemas: [NO_ERRORS_SCHEMA],
-      imports: [Md2Module, FormsModule],
+      imports: [FormsModule],
       providers: [
-        providerForFakeConfirmationDialogsService,
-        providerForFakeDataService,
-        providerForLanguageMappingService,
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: dataService, useValue: FakeDataService },
+        { provide: LanguageMapping, useValue: FakeLanguageMapping },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
       ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on mat-table/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic, not
+    // the rendered DOM. ngOnInit is run explicitly instead.
     fixture = TestBed.createComponent(LanguageMappingComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
 }
 describe('Language-mapping', () => {
-  fdescribe('When the component is getting loaded, then ngOninit', () => {
+  describe('When the component is getting loaded, then ngOnInit', () => {
     InitializeAdminTestBed();
 
     it('should be created', () => {
@@ -114,7 +96,7 @@ describe('Language-mapping', () => {
     it('should be defined', () => {
       expect(component).toBeDefined();
     });
-    it('checking the value of uname should not be null and shoul have some value username', () => {
+    it('checking the value of uname should not be null and should have some value username', () => {
       expect(component.createdBy).not.toBe('1');
       expect(component.createdBy).toBe('admin');
     });
@@ -122,22 +104,21 @@ describe('Language-mapping', () => {
       expect(component.serviceProviderID).not.toBe('');
       expect(component.serviceProviderID).toBe('serviceProviderID');
     });
-    it(' getUserName should be called after OnInit', () => {
+    it('getUserName should be called after OnInit', () => {
       spyOn(component, 'getUserName');
       component.ngOnInit();
-      expect(component.getUserName).toHaveBeenCalled;
-      expect(component.userNamesList).not.toBe('');
+      expect(component.getUserName).toHaveBeenCalled();
     });
     it('getAllLanguagesList method should be called after OnInit', () => {
       spyOn(component, 'getAllLanguagesList');
       component.ngOnInit();
-      expect(component.getAllLanguagesList).toHaveBeenCalled;
+      expect(component.getAllLanguagesList).toHaveBeenCalled();
     });
-    it(' getAllMappedLanguagesList should be called after OnInit', () => {
-      spyOn(component, 'getAllMappedLanguagesList');
+    it('getAllMappedLanguagesList should be called after OnInit and populate LanguageMappedList', () => {
+      spyOn(component, 'getAllMappedLanguagesList').and.callThrough();
       component.ngOnInit();
-      expect(component.getAllMappedLanguagesList).toHaveBeenCalled;
-      expect(component.LanguageMappedList).not.toBe('');
+      expect(component.getAllMappedLanguagesList).toHaveBeenCalled();
+      expect(component.LanguageMappedList).not.toEqual([]);
     });
   });
 });

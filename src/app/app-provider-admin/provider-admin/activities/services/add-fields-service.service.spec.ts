@@ -1,13 +1,16 @@
 import { TestBed } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
-import { AddFieldsServiceService } from './add-fields-service.service';
+import { AddFieldsService } from './add-fields-service';
 
-describe('AddFieldsServiceService', () => {
-  let service: AddFieldsServiceService;
+describe('AddFieldsService', () => {
+  let service: AddFieldsService;
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
-    service = TestBed.inject(AddFieldsServiceService);
+    TestBed.configureTestingModule({
+      imports: [HttpClientTestingModule],
+    });
+    service = TestBed.inject(AddFieldsService);
   });
 
   it('should be created', () => {

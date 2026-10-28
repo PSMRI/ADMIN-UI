@@ -20,8 +20,38 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { of } from 'rxjs';
 
 import { AgentListCreationComponent } from './agent-list-creation.component';
+import { AgentListCreationService } from '../services/agent-list-creation-service.service';
+import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
+
+const FakeAgentListCreationService = {
+  getStates: (_userID: any, _serviceID: any, _isNational: any) =>
+    of({ data: [{ providerServiceMapID: '1' }] }),
+  getServices: (_userID: any) => of({ data: [] }),
+  getAllAgents: (_providerServiceMapID: any) => of({ data: [] }),
+  getCampaignNames: (_serviceName: any) => of({ data: { campaign: [] } }),
+  saveAgentListMapping: (_data: any) => of({ data: [] }),
+  editAgentDetails: (_data: any) => of({}),
+};
+
+const FakeConfirmationDialogsService = {
+  alert: (_msg?: any, _type?: any) => undefined,
+  confirm: (_title?: any, _msg?: any) => of(true),
+};
+
+const sessionValues: Record<string, any> = {
+  service_providerID: 'serviceProviderID',
+  uid: 'uid',
+  uname: 'admin',
+};
+const FakeSessionStorageService = {
+  getItem: (key: string) => sessionValues[key] ?? null,
+};
 
 describe('AgentListCreationComponent', () => {
   let component: AgentListCreationComponent;
@@ -30,13 +60,30 @@ describe('AgentListCreationComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       declarations: [AgentListCreationComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      imports: [FormsModule],
+      providers: [
+        {
+          provide: AgentListCreationService,
+          useValue: FakeAgentListCreationService,
+        },
+        {
+          provide: ConfirmationDialogsService,
+          useValue: FakeConfirmationDialogsService,
+        },
+        { provide: SessionStorageService, useValue: FakeSessionStorageService },
+      ],
     }).compileComponents();
   }));
 
   beforeEach(() => {
+    // Deliberately not calling fixture.detectChanges(): the real template
+    // relies on mat-table/matPaginator directives whose modules aren't
+    // imported here, and these tests only exercise component logic, not
+    // the rendered DOM. ngOnInit is run explicitly instead.
     fixture = TestBed.createComponent(AgentListCreationComponent);
     component = fixture.componentInstance;
-    fixture.detectChanges();
+    component.ngOnInit();
   });
 
   it('should be created', () => {

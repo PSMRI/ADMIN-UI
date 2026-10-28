@@ -19,17 +19,68 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed, waitForAsync } from '@angular/core/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { Router } from '@angular/router';
+import { PlatformLocation } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import { of } from 'rxjs';
 
 import { MultiRoleScreenComponent } from './multi-role-screen.component';
+import { ConfigService } from '../core/services/config/config.service';
+import { HttpServices } from '../core/services/http-services/http_services.service';
+import { loginService } from '../user-login/loginService/login.service';
+import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
 describe('MultiRoleScreenComponent', () => {
   let component: MultiRoleScreenComponent;
   let fixture: ComponentFixture<MultiRoleScreenComponent>;
 
-  beforeEach(async(() => {
+  const fakeRouter = {
+    navigate: (_path?: any) => Promise.resolve(true),
+  };
+
+  const fakePlatformLocation = {
+    onPopState: (_fn?: any) => undefined,
+  };
+
+  const fakeHttpServices = {
+    getCommitDetails: (_url: string) => of({ version: '1.0.0', commit: 'abc' }),
+    getData: (_path: string) => of({ english: {} }),
+  };
+
+  const fakeLoginService = {
+    removeTokenFromRedis: () => of(true),
+    getApiVersionDetails: () => of({}),
+  };
+
+  const fakeConfigService = {
+    getCommonBaseURL: () => 'http://localhost/',
+  };
+
+  const fakeMatDialog = {
+    open: () => ({ afterClosed: () => of(undefined) }),
+  };
+
+  const fakeSessionStorageService = {
+    getItem: (_key: string) => JSON.stringify({}),
+    removeItem: (_key: string) => undefined,
+    setItem: (_key: string, _value?: any) => undefined,
+  };
+
+  beforeEach(waitForAsync(() => {
     TestBed.configureTestingModule({
       declarations: [MultiRoleScreenComponent],
+      schemas: [NO_ERRORS_SCHEMA],
+      providers: [
+        { provide: Router, useValue: fakeRouter },
+        { provide: PlatformLocation, useValue: fakePlatformLocation },
+        { provide: HttpServices, useValue: fakeHttpServices },
+        { provide: loginService, useValue: fakeLoginService },
+        { provide: ConfigService, useValue: fakeConfigService },
+        { provide: MatDialog, useValue: fakeMatDialog },
+        { provide: SessionStorageService, useValue: fakeSessionStorageService },
+      ],
     }).compileComponents();
   }));
 

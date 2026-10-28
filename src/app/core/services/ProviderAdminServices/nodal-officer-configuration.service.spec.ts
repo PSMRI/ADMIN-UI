@@ -20,13 +20,16 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { TestBed, inject } from '@angular/core/testing';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
 
 import { NodalOfficerConfigurationService } from './nodal-officer-configuration.service';
+import { ConfigService } from '../config/config.service';
 
 describe('NodalOfficerConfigurationService', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [NodalOfficerConfigurationService],
+      imports: [HttpClientTestingModule],
+      providers: [NodalOfficerConfigurationService, ConfigService],
     });
   });
 

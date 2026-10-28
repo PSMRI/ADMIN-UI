@@ -72,7 +72,7 @@ export class AgentListCreationComponent implements OnInit, AfterViewInit {
   setDataSourceAttributes() {
     this.dataSource.paginator = this.paginator;
   }
-  agentsResponse: any;
+  agentsResponse: any = { data: [] };
 
   constructor(
     public _AgentListCreationService: AgentListCreationService,
