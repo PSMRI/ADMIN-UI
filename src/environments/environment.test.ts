@@ -548,6 +548,8 @@ export const environment = {
   nikshay_GetVillages_Url: `${adminBaseUrl}nikshay/location/villages`,
   nikshay_EnrollDevice_Url: `${adminBaseUrl}nikshay/device/create`,
   nikshay_LinkDeviceToVillage_Url: `${adminBaseUrl}nikshay/device/village/enroll`,
+  // TODO: confirm the unlink endpoint path once the API is available
+  nikshay_UnlinkDeviceVillage_Url: `${adminBaseUrl}nikshay/device/village/unlink`,
   nikshay_ListDevices_Url: `${adminBaseUrl}nikshay/device/list`,
   nikshay_SearchDevice_Url: `${adminBaseUrl}nikshay/device/search`,
 

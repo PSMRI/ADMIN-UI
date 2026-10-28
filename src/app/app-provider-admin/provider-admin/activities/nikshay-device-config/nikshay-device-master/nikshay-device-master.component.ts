@@ -25,6 +25,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
 import { NikshayDeviceConfigService } from '../../services/nikshay-device-config.service';
 
 @Component({
@@ -50,11 +51,14 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
   searchDeviceId = '';
   showTableFlag = false;
   expandedDevice: any = null;
+  // TODO: set to true once the unlink API is available
+  isUnlinkApiAvailable = false;
 
   private searchInput$ = new Subject<string>();
 
   constructor(
     private nikshayDeviceService: NikshayDeviceConfigService,
+    public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
   ) {}
 
@@ -71,6 +75,45 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
 
   toggleExpand(item: any) {
     this.expandedDevice = this.expandedDevice === item ? null : item;
+  }
+
+  unlinkVillage(device: any, village: any) {
+    this.dialogService
+      .confirm(
+        'confirm',
+        `Are you sure you want to unlink ${village.villageName} from ${device.deviceId}?`,
+      )
+      .subscribe((res: boolean) => {
+        if (!res) return;
+
+        if (!this.isUnlinkApiAvailable) {
+          this.removeVillageFromDevice(device, village);
+          return;
+        }
+
+        const requestObj = {
+          mappingId: village.mappingId,
+          deviceDetailId: device.id,
+          villageId: village.villageId,
+          updatedBy: this.commonDataService.uname,
+        };
+        this.nikshayDeviceService.unlinkDeviceVillage(requestObj).subscribe(
+          () => this.removeVillageFromDevice(device, village),
+          (err: any) => {
+            this.dialogService.alert(
+              err?.errorMessage || 'Failed to unlink village',
+              'error',
+            );
+          },
+        );
+      });
+  }
+
+  removeVillageFromDevice(device: any, village: any) {
+    device.villages = (device.villages || []).filter(
+      (v: any) => v.mappingId !== village.mappingId,
+    );
+    this.dialogService.alert('Village unlinked successfully', 'success');
   }
 
   onSearchInputChange(value: string) {

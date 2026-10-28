@@ -86,6 +86,12 @@ export class NikshayDeviceConfigService {
     );
   }
 
+  unlinkDeviceVillage(requestObj: any) {
+    return this.checkStatus(
+      this.http.post(environment.nikshay_UnlinkDeviceVillage_Url, requestObj),
+    );
+  }
+
   listDevices() {
     return this.checkStatus(this.http.get(environment.nikshay_ListDevices_Url));
   }

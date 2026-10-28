@@ -89,6 +89,7 @@
                     <th>Village Name</th>
                     <th>TU Name</th>
                     <th>Facility Name</th>
+                    <th style="text-align: center">Unlink</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -97,9 +98,19 @@
                     <td>{{ village.villageName }}</td>
                     <td>{{ village.tbuName }}</td>
                     <td>{{ village.facilityName }}</td>
+                    <td style="text-align: center">
+                      <button
+                        mat-icon-button
+                        matTooltip="Unlink"
+                        (click)="unlinkVillage(item, village)"
+                        style="border: unset; background-color: unset"
+                      >
+                        <mat-icon color="warn">link_off</mat-icon>
+                      </button>
+                    </td>
                   </tr>
                   <tr *ngIf="!item.villages || item.villages.length === 0">
-                    <td colspan="4" style="text-align: center">
+                    <td colspan="5" style="text-align: center">
                       No villages linked
                     </td>
                   </tr>
