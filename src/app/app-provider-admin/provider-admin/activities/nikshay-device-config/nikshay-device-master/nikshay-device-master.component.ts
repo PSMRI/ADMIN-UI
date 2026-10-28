@@ -38,6 +38,7 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
 
   displayedColumns: string[] = [
     'sno',
+    'deviceSerialId',
     'deviceId',
     'deviceName',
     'phiUserId',

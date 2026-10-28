@@ -44,8 +44,11 @@ export class LinkNikshayDeviceComponent implements OnInit {
   state: any;
   district: any;
   tu: any;
-  facility: any;
+  facility: any = [];
   selectedVillages: any = [];
+
+  facilitySearch = '';
+  filteredFacilities: any = [];
 
   villageSearch = '';
   filteredVillages: any = [];
@@ -96,10 +99,11 @@ export class LinkNikshayDeviceComponent implements OnInit {
     this.districts_array = [];
     this.tus_array = [];
     this.facilities_array = [];
+    this.filteredFacilities = [];
     this.resetVillages();
     this.district = undefined;
     this.tu = undefined;
-    this.facility = undefined;
+    this.facility = [];
 
     if (!this.state) return;
     this.nikshayDeviceService.getDistricts(this.state.nikshayStateID).subscribe(
@@ -118,9 +122,10 @@ export class LinkNikshayDeviceComponent implements OnInit {
   getTUs() {
     this.tus_array = [];
     this.facilities_array = [];
+    this.filteredFacilities = [];
     this.resetVillages();
     this.tu = undefined;
-    this.facility = undefined;
+    this.facility = [];
 
     if (!this.district) return;
     this.nikshayDeviceService.getTUs(this.district.nikshayDistrictID).subscribe(
@@ -138,13 +143,16 @@ export class LinkNikshayDeviceComponent implements OnInit {
 
   getFacilities() {
     this.facilities_array = [];
+    this.facilitySearch = '';
+    this.applyFacilityFilter();
     this.resetVillages();
-    this.facility = undefined;
+    this.facility = [];
 
     if (!this.tu) return;
     this.nikshayDeviceService.getFacilities(this.tu.nikshayTUID).subscribe(
       (response: any) => {
         this.facilities_array = (response && response.data) || [];
+        this.applyFacilityFilter();
       },
       (err: any) => {
         this.dialogService.alert(
@@ -158,9 +166,9 @@ export class LinkNikshayDeviceComponent implements OnInit {
   getVillages() {
     this.resetVillages();
 
-    if (!this.facility) return;
+    if (!this.facility || this.facility.length === 0) return;
     this.nikshayDeviceService
-      .getVillages(this.facility.nikshayFacilityID)
+      .getVillages(this.getFacilityIds().join(','))
       .subscribe(
         (response: any) => {
           this.villages_array = (response && response.data) || [];
@@ -173,6 +181,47 @@ export class LinkNikshayDeviceComponent implements OnInit {
           );
         },
       );
+  }
+
+  applyFacilityFilter(term?: string) {
+    if (term !== undefined) this.facilitySearch = term;
+    if (!this.facilitySearch) {
+      this.filteredFacilities = this.facilities_array.slice();
+    } else {
+      const s = this.facilitySearch.toLowerCase();
+      const selectedIDs = new Set(
+        (this.facility || []).map((f: any) => f.nikshayFacilityID),
+      );
+      this.filteredFacilities = this.facilities_array.filter(
+        (f: any) =>
+          selectedIDs.has(f.nikshayFacilityID) ||
+          (f.facilityName || '').toLowerCase().includes(s),
+      );
+    }
+  }
+
+  get allFacilitiesSelected(): boolean {
+    return (
+      this.filteredFacilities.length > 0 &&
+      (this.facility || []).length === this.facilities_array.length
+    );
+  }
+
+  toggleSelectAllFacilities() {
+    if (this.allFacilitiesSelected) {
+      this.facility = [];
+    } else {
+      this.facility = this.facilities_array.slice();
+    }
+    this.getVillages();
+  }
+
+  compareFacilities(f1: any, f2: any): boolean {
+    return f1 && f2 && f1.nikshayFacilityID === f2.nikshayFacilityID;
+  }
+
+  getFacilityIds() {
+    return (this.facility || []).map((f: any) => f.nikshayFacilityID);
   }
 
   resetVillages() {
@@ -226,7 +275,7 @@ export class LinkNikshayDeviceComponent implements OnInit {
         stateId: this.state.nikshayStateID,
         districtId: this.district.nikshayDistrictID,
         tbuId: this.tu.nikshayTUID,
-        facilityId: this.facility.nikshayFacilityID,
+        facilityIds: this.getFacilityIds(),
         villageId: v.nikshayVillageID,
       })),
     };
@@ -249,6 +298,7 @@ export class LinkNikshayDeviceComponent implements OnInit {
     this.districts_array = [];
     this.tus_array = [];
     this.facilities_array = [];
+    this.filteredFacilities = [];
     this.resetVillages();
     this.linkDeviceForm.resetForm();
   }

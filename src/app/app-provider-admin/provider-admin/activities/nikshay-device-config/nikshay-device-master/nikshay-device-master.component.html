@@ -7,7 +7,7 @@
     </div>
     <div class="col-12 p-a-0" style="text-align: end">
       <mat-form-field id="filterbox">
-        <mat-label>Search by Device Id</mat-label>
+        <mat-label>Search by Device Serial Id</mat-label>
         <input
           matInput
           name="searchDeviceId"
@@ -31,9 +31,14 @@
             <td mat-cell *matCellDef="let item; let i = dataIndex">{{ i + 1 }}</td>
           </ng-container>
 
+          <ng-container matColumnDef="deviceSerialId">
+            <th mat-header-cell *matHeaderCellDef>Device Serial Id</th>
+            <td mat-cell *matCellDef="let item">{{ item.deviceId }}</td>
+          </ng-container>
+
           <ng-container matColumnDef="deviceId">
             <th mat-header-cell *matHeaderCellDef>Device Id</th>
-            <td mat-cell *matCellDef="let item">{{ item.deviceId }}</td>
+            <td mat-cell *matCellDef="let item">{{ item.id }}</td>
           </ng-container>
 
           <ng-container matColumnDef="deviceName">

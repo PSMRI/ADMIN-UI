@@ -110,7 +110,6 @@ import { LinkNikshayDeviceComponent } from './nikshay-device-config/link-nikshay
 import { NikshayDeviceConfigService } from './services/nikshay-device-config.service';
 import { PhiMasterComponent } from './phi-transfer-config/phi-master/phi-master.component';
 import { CreatePhiTransferComponent } from './phi-transfer-config/create-phi-transfer/create-phi-transfer.component';
-import { UpdatePhiTransferComponent } from './phi-transfer-config/update-phi-transfer/update-phi-transfer.component';
 import { PhiTransferConfigService } from './services/phi-transfer-config.service';
 
 @NgModule({
@@ -171,7 +170,6 @@ import { PhiTransferConfigService } from './services/phi-transfer-config.service
     LinkNikshayDeviceComponent,
     PhiMasterComponent,
     CreatePhiTransferComponent,
-    UpdatePhiTransferComponent,
   ],
   imports: [
     CommonModule,
@@ -271,7 +269,6 @@ import { PhiTransferConfigService } from './services/phi-transfer-config.service
     LinkNikshayDeviceComponent,
     PhiMasterComponent,
     CreatePhiTransferComponent,
-    UpdatePhiTransferComponent,
   ],
 })
 export class ActivitiesModule {}

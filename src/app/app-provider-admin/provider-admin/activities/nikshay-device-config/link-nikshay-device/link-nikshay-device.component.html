@@ -77,13 +77,37 @@
           <mat-form-field [style.width]="'100%'" class="hide_underline">
             <mat-label>Facility</mat-label>
             <mat-select
+              multiple
               required
               name="facility"
               [(ngModel)]="facility"
               [disabled]="!tu"
+              [compareWith]="compareFacilities"
               (selectionChange)="getVillages()"
             >
-              <mat-option *ngFor="let item of facilities_array" [value]="item">
+              <div class="select-search-box">
+                <mat-icon>search</mat-icon>
+                <input
+                  matInput
+                  placeholder="Search..."
+                  (input)="applyFacilityFilter($any($event.target).value)"
+                  (keydown)="$event.stopPropagation()"
+                  (click)="$event.stopPropagation()"
+                  [value]="facilitySearch"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="select-all-option" (click)="$event.stopPropagation()">
+                <mat-checkbox
+                  [checked]="allFacilitiesSelected"
+                  (change)="toggleSelectAllFacilities()"
+                  (click)="$event.stopPropagation()"
+                  color="warn"
+                >
+                  Select All
+                </mat-checkbox>
+              </div>
+              <mat-option *ngFor="let item of filteredFacilities" [value]="item">
                 {{ item.facilityName }}
               </mat-option>
             </mat-select>
@@ -97,7 +121,7 @@
               required
               name="selectedVillages"
               [(ngModel)]="selectedVillages"
-              [disabled]="!facility || villages_array.length === 0"
+              [disabled]="!facility?.length || villages_array.length === 0"
               [compareWith]="compareVillages"
               (selectionChange)="applyVillageFilter()"
             >

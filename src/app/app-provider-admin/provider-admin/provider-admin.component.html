@@ -201,7 +201,6 @@
     <mat-menu #phiTransferConfigMenu="matMenu">
       <button mat-menu-item (click)="show('86')">Designated PHI Master</button>
       <button mat-menu-item (click)="show('87')">Create PHI Transfer</button>
-      <button mat-menu-item (click)="show('88')">Update PHI Transfer</button>
     </mat-menu>
 
     <div
@@ -310,7 +309,6 @@
         <app-link-nikshay-device *ngSwitchCase="85"></app-link-nikshay-device>
         <app-phi-master *ngSwitchCase="86"></app-phi-master>
         <app-create-phi-transfer *ngSwitchCase="87"></app-create-phi-transfer>
-        <app-update-phi-transfer *ngSwitchCase="88"></app-update-phi-transfer>
         <app-item-to-facility-mapping *ngSwitchCase="81"></app-item-to-facility-mapping>
         <app-main-store-and-sub-store
           *ngSwitchCase="40"

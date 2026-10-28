@@ -23,6 +23,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
+import { dataService } from 'src/app/core/services/dataService/data.service';
 import { PhiTransferConfigService } from '../../services/phi-transfer-config.service';
 
 @Component({
@@ -39,9 +40,11 @@ export class PhiMasterComponent implements OnInit {
     'villageId',
     'villageName',
     'tbuId',
+    'tbuName',
     'designatedPhiId',
     'designationHierarchyId',
     'createdBy',
+    'edit',
   ];
 
   filterVillageId: any;
@@ -50,10 +53,19 @@ export class PhiMasterComponent implements OnInit {
   showTableFlag = false;
   showFilters = false;
 
+  editMode = false;
+  selectedRecord: any;
+  edit_designatedPhiId: any;
+  edit_designationHierarchyId: any;
+  updatedBy: any;
+
   constructor(
     private phiService: PhiTransferConfigService,
+    public commonDataService: dataService,
     public dialogService: ConfirmationDialogsService,
-  ) {}
+  ) {
+    this.updatedBy = this.commonDataService.uname;
+  }
 
   ngOnInit() {
     this.search();
@@ -92,5 +104,46 @@ export class PhiMasterComponent implements OnInit {
     this.filterDesignatedPhiId = undefined;
     this.phiList.data = [];
     this.showTableFlag = false;
+  }
+
+  editRecord(item: any) {
+    this.selectedRecord = item;
+    this.edit_designatedPhiId = item.designatedPhiId;
+    this.edit_designationHierarchyId = item.designationHierarchyId;
+    this.editMode = true;
+  }
+
+  cancelEdit() {
+    this.editMode = false;
+    this.selectedRecord = undefined;
+  }
+
+  updatePhiTransfer() {
+    const requestObj = {
+      id: this.selectedRecord.id,
+      villageId: this.selectedRecord.villageId,
+      tbuId: this.selectedRecord.tbuId,
+      designatedPhiId: this.edit_designatedPhiId,
+      designationHierarchyId: this.edit_designationHierarchyId || null,
+      createdBy: this.selectedRecord.createdBy,
+      updatedBy: this.updatedBy,
+    };
+
+    this.phiService.updateDesignatedPhi(requestObj).subscribe(
+      () => {
+        this.dialogService.alert(
+          'Designated PHI transfer updated successfully',
+          'success',
+        );
+        this.editMode = false;
+        this.search();
+      },
+      (err: any) => {
+        this.dialogService.alert(
+          err?.errorMessage || 'Failed to update designated PHI transfer',
+          'error',
+        );
+      },
+    );
   }
 }

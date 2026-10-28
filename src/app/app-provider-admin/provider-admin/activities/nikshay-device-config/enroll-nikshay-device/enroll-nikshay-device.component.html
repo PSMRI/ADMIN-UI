@@ -14,7 +14,7 @@
       >
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
-            <mat-label>Device Id</mat-label>
+            <mat-label>Device Serial Id</mat-label>
             <input
               matInput
               required
@@ -114,6 +114,36 @@
         (click)="enrollDevice()"
       >
         Enroll
+      </button>
+    </div>
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Bulk Upload</strong>
+      </h4>
+    </div>
+    <div class="col-xs-12 col-sm-12">
+      <input
+        type="file"
+        id="enroll-device-upload-file"
+        accept=".xls,.xlsx"
+        (change)="onFileSelected($event)"
+      />
+      <div class="m-t-5">
+        <small
+          >Supported file formats: .xls, .xlsx (max {{ maxFileSizeInMB }}MB).
+          Columns: {{ expectedHeaders.join(", ") }}</small
+        >
+      </div>
+    </div>
+    <div class="col-xs-12 col-sm-12 m-t-15" style="padding-bottom: 40px">
+      <button
+        mat-raised-button
+        color="accent"
+        class="pull-right mat_green"
+        [disabled]="!selectedFile"
+        (click)="uploadFile()"
+      >
+        Upload
       </button>
     </div>
   </div>
