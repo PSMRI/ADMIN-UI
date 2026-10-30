@@ -37,7 +37,6 @@
                 [(ngModel)]="pendingStageFilter"
                 class="stage-filter-options"
               >
-                <mat-radio-button [value]="anyStage">Any Stage</mat-radio-button>
                 <mat-radio-button
                   *ngFor="let stage of stageOptions"
                   [value]="stage.key"
@@ -54,9 +53,9 @@
               >
                 <mat-radio-button
                   *ngFor="let status of statusFilterOptions"
-                  [value]="status"
+                  [value]="status.value"
                 >
-                  {{ status }}
+                  {{ status.label }}
                 </mat-radio-button>
               </mat-radio-group>
             </div>
@@ -108,7 +107,7 @@
           >
             <ng-container matColumnDef="sno">
               <th mat-header-cell *matHeaderCellDef>S.No.</th>
-              <td mat-cell *matCellDef="let element">{{ element.sno }}</td>
+              <td mat-cell *matCellDef="let element; let i = index">{{ i + 1 }}</td>
             </ng-container>
 
             <ng-container matColumnDef="name">
@@ -135,13 +134,11 @@
                 >
                   <span
                     class="status-chip"
-                    [ngClass]="'status-' + stageStatus.status.toLowerCase()"
+                    [ngClass]="stageStatus.cssClass"
                   >
-                    {{ stageStatus.status }}
+                    {{ stageStatus.label }}
                   </span>
-                  <ng-container
-                    *ngIf="stageStatus.status.toLowerCase() === 'failed'"
-                  >
+                  <ng-container *ngIf="stageStatus.status === 'FAILED'">
                     <mat-icon
                       *ngIf="stageStatus.reason"
                       class="reason-icon"
@@ -153,6 +150,7 @@
                       type="button"
                       class="retry-icon-btn"
                       matTooltip="Retry"
+                      [disabled]="isRetrying(element, stage.key)"
                       (click)="onStageRetryClick(element, stage.key)"
                     >
                       <mat-icon>refresh</mat-icon>
@@ -169,22 +167,10 @@
 
         <div
           style="margin-top: 16px; text-align: center; font-size: 16px"
-          [hidden]="dataSource.data.length > 0"
+          [hidden]="dataSource.filteredData.length > 0"
         >
           <strong>No beneficiaries found</strong>
         </div>
-
-        <mat-paginator
-          [hidden]="totalCount === 0"
-          [length]="totalCount"
-          [pageIndex]="pageIndex"
-          [pageSize]="pageSize"
-          [pageSizeOptions]="[5, 10, 20]"
-          (page)="onPageChange($event)"
-          showFirstLastButtons
-          aria-label="Select page of Nikshay beneficiary list"
-        >
-        </mat-paginator>
       </div>
     </div>
   </div>
