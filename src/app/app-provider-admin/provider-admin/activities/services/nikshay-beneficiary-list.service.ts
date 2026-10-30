@@ -76,6 +76,14 @@ export interface NikshayBeneficiaryListQuery {
   status?: PhaseStatus;
 }
 
+/** How a phase's job is triggered. */
+export type PhaseRunMode = 'AUTOMATIC' | 'MANUAL';
+
+export interface PhaseJobConfig {
+  phase: NikshayPhaseKey;
+  runMode: PhaseRunMode;
+}
+
 @Injectable()
 export class NikshayBeneficiaryListService {
   constructor(private http: HttpClient) {}
@@ -102,17 +110,55 @@ export class NikshayBeneficiaryListService {
       );
   }
 
+  getPhaseJobConfigs(): Observable<PhaseJobConfig[]> {
+    return this.http.get(environment.nikshay_GetPhaseJobConfig_Url).pipe(
+      map((response: any) => {
+        if (response?.statusCode && response.statusCode !== 200) {
+          throw { errorMessage: response?.errorMessage || 'Request failed' };
+        }
+        const data = response?.data ?? response;
+        return Array.isArray(data) ? data : [];
+      }),
+    );
+  }
+
+  updatePhaseRunMode(
+    phase: NikshayPhaseKey,
+    runMode: PhaseRunMode,
+  ): Observable<any> {
+    return this.http
+      .put(`${environment.nikshay_Phase_Url}${phase}/setting`, { runMode })
+      .pipe(
+        map((response: any) => {
+          if (response?.statusCode && response.statusCode !== 200) {
+            throw { errorMessage: response?.errorMessage || 'Request failed' };
+          }
+          return response?.data ?? response;
+        }),
+      );
+  }
+
+  /** Runs a phase for every beneficiary due for it. */
+  runPhase(phase: NikshayPhaseKey): Observable<any> {
+    return this.http
+      .post(`${environment.nikshay_Phase_Url}${phase}/run`, {})
+      .pipe(
+        map((response: any) => {
+          if (response?.statusCode && response.statusCode !== 200) {
+            throw { errorMessage: response?.errorMessage || 'Request failed' };
+          }
+          return response?.data ?? response;
+        }),
+      );
+  }
+
   /** Re-runs a phase for the given beneficiaries straight away. */
   reprocessPhase(phase: NikshayPhaseKey, benRegIds: number[]): Observable<any> {
     const params = new HttpParams().set('runNow', 'true');
     return this.http
-      .post(
-        `${environment.nikshay_ReprocessPhase_Url}${phase}/reprocess`,
-        benRegIds,
-        {
-          params,
-        },
-      )
+      .post(`${environment.nikshay_Phase_Url}${phase}/reprocess`, benRegIds, {
+        params,
+      })
       .pipe(
         map((response: any) => {
           if (response?.statusCode && response.statusCode !== 200) {

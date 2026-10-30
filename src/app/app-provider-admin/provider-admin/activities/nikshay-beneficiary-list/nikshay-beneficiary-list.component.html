@@ -37,6 +37,7 @@
                 [(ngModel)]="pendingStageFilter"
                 class="stage-filter-options"
               >
+                <mat-radio-button [value]="anyStage">Any Stage</mat-radio-button>
                 <mat-radio-button
                   *ngFor="let stage of stageOptions"
                   [value]="stage.key"

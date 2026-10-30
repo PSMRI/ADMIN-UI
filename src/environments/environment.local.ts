@@ -561,8 +561,9 @@ export const environment = {
   nikshay_ListDevices_Url: `${adminBaseUrl}nikshay/device/list`,
   nikshay_SearchDevice_Url: `${adminBaseUrl}nikshay/device/search`,
   nikshay_GetBeneficiaryList_Url: `${adminBaseUrl}nikshay/beneficiaryStatus/list`,
-  // Append {phase}/reprocess; the body is the benRegIds to retry
-  nikshay_ReprocessPhase_Url: `${adminBaseUrl}nikshay/phase/`,
+  // Append {phase}/run or {phase}/reprocess
+  nikshay_Phase_Url: `${adminBaseUrl}nikshay/phase/`,
+  nikshay_GetPhaseJobConfig_Url: `${adminBaseUrl}nikshay/phase/jobConfig/list`,
 
   // PHI Transfer Config APIs
   phi_CreateDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/save`,

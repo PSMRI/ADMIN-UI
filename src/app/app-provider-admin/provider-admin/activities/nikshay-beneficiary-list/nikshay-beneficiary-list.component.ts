@@ -57,6 +57,10 @@ const NIKSHAY_STAGES: { key: NikshayPhaseKey; label: string }[] = [
   { key: 'TRANSFER_OUT', label: 'Transfer Out Status' },
 ];
 
+/** Stage filter value matching a beneficiary when any stage has the chosen status. */
+const ANY_STAGE = 'any';
+type NikshayStageFilter = NikshayPhaseKey | typeof ANY_STAGE;
+
 const getStatusLabel = (status: PhaseStatus | null): string =>
   NIKSHAY_STATUS_OPTIONS.find((option) => option.value === status)?.label || '';
 
@@ -73,9 +77,10 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   stageOptions = NIKSHAY_STAGES;
   statusFilterOptions = NIKSHAY_STATUS_OPTIONS;
   /** Selections in the filter menu, committed only on Apply. */
-  pendingStageFilter: NikshayPhaseKey | null = null;
+  readonly anyStage = ANY_STAGE;
+  pendingStageFilter: NikshayStageFilter | null = null;
   pendingStatusFilter: PhaseStatus | null = null;
-  appliedStageFilter: NikshayPhaseKey | null = null;
+  appliedStageFilter: NikshayStageFilter | null = null;
   appliedStatusFilter: PhaseStatus | null = null;
   displayedColumns = [
     'sno',
@@ -125,9 +130,11 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   }
 
   buildQuery(): NikshayBeneficiaryListQuery {
-    return this.appliedStageFilter && this.appliedStatusFilter
-      ? { phase: this.appliedStageFilter, status: this.appliedStatusFilter }
-      : {};
+    if (!this.appliedStageFilter || !this.appliedStatusFilter) return {};
+    // Any Stage sends the status alone
+    return this.appliedStageFilter === ANY_STAGE
+      ? { status: this.appliedStatusFilter }
+      : { phase: this.appliedStageFilter, status: this.appliedStatusFilter };
   }
 
   /** Syncs the filter menu with the currently applied filter when it opens. */
@@ -149,9 +156,10 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   }
 
   get appliedStageFilterLabel(): string {
-    const stageLabel = NIKSHAY_STAGES.find(
-      (s) => s.key === this.appliedStageFilter,
-    )?.label;
+    const stageLabel =
+      this.appliedStageFilter === ANY_STAGE
+        ? 'Any Stage'
+        : NIKSHAY_STAGES.find((s) => s.key === this.appliedStageFilter)?.label;
     return stageLabel && this.appliedStatusFilter
       ? `${stageLabel}: ${getStatusLabel(this.appliedStatusFilter)}`
       : '';
