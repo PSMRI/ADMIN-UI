@@ -552,6 +552,8 @@ export const environment = {
   nikshay_UnlinkDeviceVillage_Url: `${adminBaseUrl}nikshay/device/village/unlink`,
   nikshay_ListDevices_Url: `${adminBaseUrl}nikshay/device/list`,
   nikshay_SearchDevice_Url: `${adminBaseUrl}nikshay/device/search`,
+  // TODO: confirm the beneficiary list endpoint path once the API is available
+  nikshay_GetBeneficiaryList_Url: `${adminBaseUrl}nikshay/beneficiary/list`,
 
   // PHI Transfer Config APIs
   phi_CreateDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/save`,

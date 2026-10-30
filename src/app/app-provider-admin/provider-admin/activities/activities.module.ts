@@ -111,6 +111,8 @@ import { NikshayDeviceConfigService } from './services/nikshay-device-config.ser
 import { PhiMasterComponent } from './phi-transfer-config/phi-master/phi-master.component';
 import { CreatePhiTransferComponent } from './phi-transfer-config/create-phi-transfer/create-phi-transfer.component';
 import { PhiTransferConfigService } from './services/phi-transfer-config.service';
+import { NikshayBeneficiaryListComponent } from './nikshay-beneficiary-list/nikshay-beneficiary-list.component';
+import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-list.service';
 
 @NgModule({
   declarations: [
@@ -170,6 +172,7 @@ import { PhiTransferConfigService } from './services/phi-transfer-config.service
     LinkNikshayDeviceComponent,
     PhiMasterComponent,
     CreatePhiTransferComponent,
+    NikshayBeneficiaryListComponent,
   ],
   imports: [
     CommonModule,
@@ -214,6 +217,7 @@ import { PhiTransferConfigService } from './services/phi-transfer-config.service
     AddFieldsService,
     NikshayDeviceConfigService,
     PhiTransferConfigService,
+    NikshayBeneficiaryListService,
   ],
   exports: [
     LocationServicelineMappingComponent,
@@ -269,6 +273,7 @@ import { PhiTransferConfigService } from './services/phi-transfer-config.service
     LinkNikshayDeviceComponent,
     PhiMasterComponent,
     CreatePhiTransferComponent,
+    NikshayBeneficiaryListComponent,
   ],
 })
 export class ActivitiesModule {}
