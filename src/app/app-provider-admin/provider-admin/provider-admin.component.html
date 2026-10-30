@@ -6,6 +6,10 @@
     </button>
     <mat-menu #Activities="matMenu">
       <button mat-menu-item [matMenuTriggerFor]="facilityHierarchyMenu">Facility Hierarchy</button>
+      <button mat-menu-item [matMenuTriggerFor]="nikshayDeviceConfigMenu">Nikshay Device Config</button>
+      <button mat-menu-item [matMenuTriggerFor]="phiTransferConfigMenu">PHI Transfer Config</button>
+      <button mat-menu-item (click)="show('88')">Nikshay Beneficiary List</button>
+      <button mat-menu-item (click)="show('89')">Nikshay Phase Config</button>
       <button mat-menu-item (click)="show('1')">
         Job Location-ServiceLine Mapping Master
       </button>
@@ -192,6 +196,15 @@
       <button mat-menu-item (click)="show('79')">Facility Master</button>
       <button mat-menu-item (click)="show('80')">Link Existing Facility</button>
     </mat-menu>
+    <mat-menu #nikshayDeviceConfigMenu="matMenu">
+      <button mat-menu-item (click)="show('83')">Nikshay Device Master</button>
+      <button mat-menu-item (click)="show('84')">Enroll New Device</button>
+      <button mat-menu-item (click)="show('85')">Link Existing Device</button>
+    </mat-menu>
+    <mat-menu #phiTransferConfigMenu="matMenu">
+      <button mat-menu-item (click)="show('86')">Designated PHI Master</button>
+      <button mat-menu-item (click)="show('87')">Create PHI Transfer</button>
+    </mat-menu>
 
     <div
       [ngSwitch]="Activity_Number"
@@ -295,6 +308,13 @@
         <app-master-type-creation *ngSwitchCase="78"></app-master-type-creation>
         <app-facility-creation *ngSwitchCase="79"></app-facility-creation>
         <app-link-existing-facility *ngSwitchCase="80"></app-link-existing-facility>
+        <app-nikshay-device-master *ngSwitchCase="83"></app-nikshay-device-master>
+        <app-enroll-nikshay-device *ngSwitchCase="84"></app-enroll-nikshay-device>
+        <app-link-nikshay-device *ngSwitchCase="85"></app-link-nikshay-device>
+        <app-phi-master *ngSwitchCase="86"></app-phi-master>
+        <app-create-phi-transfer *ngSwitchCase="87"></app-create-phi-transfer>
+        <app-nikshay-beneficiary-list *ngSwitchCase="88"></app-nikshay-beneficiary-list>
+        <app-nikshay-phase-config *ngSwitchCase="89"></app-nikshay-phase-config>
         <app-item-to-facility-mapping *ngSwitchCase="81"></app-item-to-facility-mapping>
         <app-main-store-and-sub-store
           *ngSwitchCase="40"

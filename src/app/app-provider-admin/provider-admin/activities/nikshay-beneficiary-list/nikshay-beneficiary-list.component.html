@@ -1,0 +1,178 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Nikshay Beneficiary List</strong>
+      </h4>
+    </div>
+    <div class="col-xs-12 col-sm-12">
+      <div class="beneficiary-filter-row">
+        <mat-form-field class="beneficiary-search">
+          <mat-label>Search by name</mat-label>
+          <input
+            matInput
+            autocomplete="off"
+            name="beneficiaryListSearchTerm"
+            [(ngModel)]="beneficiaryListSearchTerm"
+            (ngModelChange)="onSearchInputChange()"
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <button
+          mat-stroked-button
+          type="button"
+          #stageFilterTrigger="matMenuTrigger"
+          [matMenuTriggerFor]="stageFilterMenu"
+          (menuOpened)="onStageFilterMenuOpened()"
+        >
+          <mat-icon class="btn-icon">filter_list</mat-icon>
+          {{ appliedStageFilterLabel || "Filter" }}
+        </button>
+        <mat-menu #stageFilterMenu="matMenu">
+          <div class="stage-filter-panel" (click)="$event.stopPropagation()">
+            <div class="stage-filter-group">
+              <div class="stage-filter-title">Stage</div>
+              <mat-radio-group
+                [(ngModel)]="pendingStageFilter"
+                class="stage-filter-options"
+              >
+                <mat-radio-button [value]="anyStage">Any Stage</mat-radio-button>
+                <mat-radio-button
+                  *ngFor="let stage of stageOptions"
+                  [value]="stage.key"
+                >
+                  {{ stage.label }}
+                </mat-radio-button>
+              </mat-radio-group>
+            </div>
+            <div class="stage-filter-group">
+              <div class="stage-filter-title">Status</div>
+              <mat-radio-group
+                [(ngModel)]="pendingStatusFilter"
+                class="stage-filter-options"
+              >
+                <mat-radio-button
+                  *ngFor="let status of statusFilterOptions"
+                  [value]="status.value"
+                >
+                  {{ status.label }}
+                </mat-radio-button>
+              </mat-radio-group>
+            </div>
+            <div class="stage-filter-actions">
+              <button
+                mat-button
+                type="button"
+                (click)="resetStageFilter(); stageFilterTrigger.closeMenu()"
+              >
+                Reset
+              </button>
+              <button
+                mat-raised-button
+                color="primary"
+                class="mat_blue"
+                type="button"
+                [disabled]="!pendingStageFilter || !pendingStatusFilter"
+                (click)="applyStageFilter(); stageFilterTrigger.closeMenu()"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </mat-menu>
+
+        <button
+          mat-raised-button
+          color="primary"
+          class="mat_blue"
+          type="button"
+          [disabled]="isLoadingBeneficiaryList"
+          (click)="loadNikshayBeneficiaryList()"
+        >
+          <mat-icon class="btn-icon">refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+
+      <div *ngIf="isLoadingBeneficiaryList" class="list-loading">
+        <mat-spinner diameter="36"></mat-spinner>
+      </div>
+
+      <div [hidden]="isLoadingBeneficiaryList" class="table-responsive">
+        <div class="beneficiary-table-scroll">
+          <table
+            mat-table
+            class="table table-striped table-hover"
+            [dataSource]="dataSource"
+          >
+            <ng-container matColumnDef="sno">
+              <th mat-header-cell *matHeaderCellDef>S.No.</th>
+              <td mat-cell *matCellDef="let element; let i = index">{{ i + 1 }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="name">
+              <th mat-header-cell *matHeaderCellDef>Name</th>
+              <td mat-cell *matCellDef="let element">{{ maskName(element.name) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="nikshayId">
+              <th mat-header-cell *matHeaderCellDef>Nikshay ID</th>
+              <td mat-cell *matCellDef="let element">
+                {{ element.nikshayId }}
+              </td>
+            </ng-container>
+
+            <ng-container
+              *ngFor="let stage of stageOptions"
+              [matColumnDef]="stage.key"
+            >
+              <th mat-header-cell *matHeaderCellDef>{{ stage.label }}</th>
+              <td mat-cell *matCellDef="let element">
+                <div
+                  *ngIf="getStageStatus(element, stage.key) as stageStatus"
+                  class="stage-status-cell"
+                >
+                  <span
+                    class="status-chip"
+                    [ngClass]="stageStatus.cssClass"
+                  >
+                    {{ stageStatus.label }}
+                  </span>
+                  <ng-container *ngIf="stageStatus.status === 'FAILED'">
+                    <mat-icon
+                      *ngIf="stageStatus.reason"
+                      class="reason-icon"
+                      [matTooltip]="stageStatus.reason"
+                      >info_outline</mat-icon
+                    >
+                    <button
+                      mat-icon-button
+                      type="button"
+                      class="retry-icon-btn"
+                      matTooltip="Retry"
+                      [disabled]="isRetrying(element, stage.key)"
+                      (click)="onStageRetryClick(element, stage.key)"
+                    >
+                      <mat-icon>refresh</mat-icon>
+                    </button>
+                  </ng-container>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+          </table>
+        </div>
+
+        <div
+          style="margin-top: 16px; text-align: center; font-size: 16px"
+          [hidden]="dataSource.filteredData.length > 0"
+        >
+          <strong>No beneficiaries found</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,74 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Nikshay Phase Config</strong>
+      </h4>
+    </div>
+    <div class="col-xs-12 col-sm-12">
+      <div *ngIf="isLoadingJobConfigs" class="list-loading">
+        <mat-spinner diameter="36"></mat-spinner>
+      </div>
+      <div [hidden]="isLoadingJobConfigs" class="table-responsive">
+        <table
+          mat-table
+          class="table table-striped table-hover"
+          [dataSource]="rows"
+        >
+          <ng-container matColumnDef="sno">
+            <th mat-header-cell *matHeaderCellDef>S.No.</th>
+            <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="phase">
+            <th mat-header-cell *matHeaderCellDef>Phase</th>
+            <td mat-cell *matCellDef="let row">{{ row.label }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="mode">
+            <th mat-header-cell *matHeaderCellDef>Job Mode</th>
+            <td mat-cell *matCellDef="let row">
+              <mat-form-field class="mode-select">
+                <mat-select
+                  [ngModel]="row.mode"
+                  (selectionChange)="onJobModeChange(row, $event.value)"
+                  [disabled]="savingPhases.has(row.key)"
+                  placeholder="Select"
+                >
+                  <mat-option
+                    *ngFor="let option of jobModeOptions"
+                    [value]="option.value"
+                  >
+                    {{ option.label }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </td>
+          </ng-container>
+
+          <ng-container matColumnDef="run">
+            <th mat-header-cell *matHeaderCellDef class="run-cell">
+              Manual Trigger
+            </th>
+            <td mat-cell *matCellDef="let row" class="run-cell">
+              <button
+                mat-raised-button
+                color="primary"
+                class="mat_blue"
+                type="button"
+                [disabled]="runningPhases.has(row.key)"
+                (click)="runPhase(row)"
+              >
+                <mat-icon class="btn-icon">play_arrow</mat-icon>
+                {{ runningPhases.has(row.key) ? "Running..." : "Run" }}
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

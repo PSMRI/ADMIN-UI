@@ -1,0 +1,29 @@
+.table-responsive {
+  margin-top: 16px;
+}
+
+.table-responsive td {
+  vertical-align: middle;
+}
+
+.run-cell {
+  text-align: end;
+}
+
+.btn-icon {
+  vertical-align: middle;
+  font-size: 18px;
+  height: 18px;
+  width: 18px;
+  margin-right: 4px;
+}
+
+.list-loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.mode-select {
+  width: 140px;
+}

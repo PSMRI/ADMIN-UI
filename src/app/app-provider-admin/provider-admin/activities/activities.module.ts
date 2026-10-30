@@ -104,6 +104,16 @@ import { AddFieldsService } from './services/add-fields-service';
 import { LinkExistingFacilityComponent } from './link-existing-facility/link-existing-facility.component';
 import { MatChipsModule } from '@angular/material/chips';
 import { CoreModule } from 'src/app/core/core.module';
+import { NikshayDeviceMasterComponent } from './nikshay-device-config/nikshay-device-master/nikshay-device-master.component';
+import { EnrollNikshayDeviceComponent } from './nikshay-device-config/enroll-nikshay-device/enroll-nikshay-device.component';
+import { LinkNikshayDeviceComponent } from './nikshay-device-config/link-nikshay-device/link-nikshay-device.component';
+import { NikshayDeviceConfigService } from './services/nikshay-device-config.service';
+import { PhiMasterComponent } from './phi-transfer-config/phi-master/phi-master.component';
+import { CreatePhiTransferComponent } from './phi-transfer-config/create-phi-transfer/create-phi-transfer.component';
+import { PhiTransferConfigService } from './services/phi-transfer-config.service';
+import { NikshayBeneficiaryListComponent } from './nikshay-beneficiary-list/nikshay-beneficiary-list.component';
+import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-list.service';
+import { NikshayPhaseConfigComponent } from './nikshay-phase-config/nikshay-phase-config.component';
 
 @NgModule({
   declarations: [
@@ -158,6 +168,13 @@ import { CoreModule } from 'src/app/core/core.module';
     EmployeeMasterBulkUploadComponent,
     UserFacilityMappingComponent,
     LinkExistingFacilityComponent,
+    NikshayDeviceMasterComponent,
+    EnrollNikshayDeviceComponent,
+    LinkNikshayDeviceComponent,
+    PhiMasterComponent,
+    CreatePhiTransferComponent,
+    NikshayBeneficiaryListComponent,
+    NikshayPhaseConfigComponent,
   ],
   imports: [
     CommonModule,
@@ -200,6 +217,9 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectServicelineMappingService,
     ProjectConfigurationService,
     AddFieldsService,
+    NikshayDeviceConfigService,
+    PhiTransferConfigService,
+    NikshayBeneficiaryListService,
   ],
   exports: [
     LocationServicelineMappingComponent,
@@ -250,6 +270,13 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectConfigutationScreenComponent,
     AddFieldsToProjectComponent,
     LinkExistingFacilityComponent,
+    NikshayDeviceMasterComponent,
+    EnrollNikshayDeviceComponent,
+    LinkNikshayDeviceComponent,
+    PhiMasterComponent,
+    CreatePhiTransferComponent,
+    NikshayBeneficiaryListComponent,
+    NikshayPhaseConfigComponent,
   ],
 })
 export class ActivitiesModule {}

@@ -1,0 +1,140 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>
+        <strong>Create Designated PHI Transfer</strong>
+      </h4>
+    </div>
+    <div class="col-12 p-a-0">
+      <form
+        id="createPhiTransferForm"
+        #createPhiTransferForm="ngForm"
+        class="row"
+        style="width: 100%; margin-left: 0px"
+      >
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>State</mat-label>
+            <mat-select
+              required
+              name="state"
+              [(ngModel)]="state"
+              (selectionChange)="getDistricts()"
+            >
+              <mat-option *ngFor="let item of states_array" [value]="item">
+                {{ item.stateName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>District</mat-label>
+            <mat-select
+              required
+              name="district"
+              [(ngModel)]="district"
+              [disabled]="!state"
+              (selectionChange)="getTUs()"
+            >
+              <mat-option *ngFor="let item of districts_array" [value]="item">
+                {{ item.districtName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>TU</mat-label>
+            <mat-select
+              required
+              name="tu"
+              [(ngModel)]="tu"
+              [disabled]="!district"
+              (selectionChange)="getFacilities()"
+            >
+              <mat-option *ngFor="let item of tus_array" [value]="item">
+                {{ item.tUName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Facility</mat-label>
+            <mat-select
+              required
+              name="facility"
+              [(ngModel)]="facility"
+              [disabled]="!tu"
+              (selectionChange)="getVillages()"
+            >
+              <mat-option *ngFor="let item of facilities_array" [value]="item">
+                {{ item.facilityName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Village</mat-label>
+            <mat-select
+              required
+              name="village"
+              [(ngModel)]="village"
+              [disabled]="!facility || villages_array.length === 0"
+            >
+              <mat-option *ngFor="let item of villages_array" [value]="item">
+                {{ item.villageName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Designated PHI Id</mat-label>
+            <input
+              matInput
+              required
+              [(ngModel)]="designatedPhiId"
+              name="designatedPhiId"
+              #designatedPhiIdField="ngModel"
+            />
+            <mat-hint>
+              <span
+                class="error_text"
+                *ngIf="
+                  !designatedPhiIdField.valid &&
+                  (designatedPhiIdField.dirty || designatedPhiIdField.touched)
+                "
+                >Designated PHI Id is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Designation Hierarchy Id</mat-label>
+            <input
+              matInput
+              [(ngModel)]="designationHierarchyId"
+              name="designationHierarchyId"
+              #designationHierarchyIdField="ngModel"
+            />
+          </mat-form-field>
+        </div>
+      </form>
+    </div>
+    <div class="col-xs-12 col-sm-12 m-t-15" style="padding-bottom: 40px">
+      <button
+        mat-raised-button
+        color="accent"
+        class="pull-right mat_green"
+        [disabled]="createPhiTransferForm.invalid"
+        (click)="createPhiTransfer()"
+      >
+        Create
+      </button>
+    </div>
+  </div>
+</div>
