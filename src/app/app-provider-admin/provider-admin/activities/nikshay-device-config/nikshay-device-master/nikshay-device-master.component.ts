@@ -51,8 +51,6 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
   searchDeviceId = '';
   showTableFlag = false;
   expandedDevice: any = null;
-  // TODO: set to true once the unlink API is available
-  isUnlinkApiAvailable = false;
 
   private searchInput$ = new Subject<string>();
 
@@ -86,15 +84,8 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
       .subscribe((res: boolean) => {
         if (!res) return;
 
-        if (!this.isUnlinkApiAvailable) {
-          this.removeVillageFromDevice(device, village);
-          return;
-        }
-
         const requestObj = {
-          mappingId: village.mappingId,
-          deviceDetailId: device.id,
-          villageId: village.villageId,
+          mappingIds: [village.mappingId],
           updatedBy: this.commonDataService.uname,
         };
         this.nikshayDeviceService.unlinkDeviceVillage(requestObj).subscribe(
