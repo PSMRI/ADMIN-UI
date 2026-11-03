@@ -20,6 +20,7 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Component, OnInit } from '@angular/core';
+import { PageEvent } from '@angular/material/paginator';
 import { MatTableDataSource } from '@angular/material/table';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import {
@@ -71,6 +72,10 @@ const getStatusLabel = (status: PhaseStatus | null): string =>
 })
 export class NikshayBeneficiaryListComponent implements OnInit {
   isLoadingBeneficiaryList = false;
+  /** Server-side paging state; pageIndex is 0-based like the API's page. */
+  pageIndex = 0;
+  pageSize = 20;
+  totalCount = 0;
   /** "<benRegId>-<phase>" of the retry calls in flight. */
   retryingStages = new Set<string>();
   beneficiaryListSearchTerm = '';
@@ -96,7 +101,7 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // The API has no search param yet, so the name search runs on the loaded rows
+    // The API has no search param yet, so the name search runs on the loaded page
     this.dataSource.filterPredicate = (row, term) =>
       (row.name || '').toLowerCase().includes(term);
     this.loadNikshayBeneficiaryList();
@@ -107,12 +112,14 @@ export class NikshayBeneficiaryListComponent implements OnInit {
     this.nikshayBeneficiaryListService
       .getNikshayBeneficiaryList(this.buildQuery())
       .subscribe(
-        (beneficiaries) => {
+        (response) => {
           this.isLoadingBeneficiaryList = false;
-          this.dataSource.data = beneficiaries;
+          this.totalCount = response.total;
+          this.dataSource.data = response.beneficiaries;
         },
         (err: any) => {
           this.isLoadingBeneficiaryList = false;
+          this.totalCount = 0;
           this.dataSource.data = [];
           this.dialogService.alert(
             err?.errorMessage ||
@@ -123,6 +130,12 @@ export class NikshayBeneficiaryListComponent implements OnInit {
       );
   }
 
+  onPageChange(event: PageEvent) {
+    this.pageIndex = event.pageIndex;
+    this.pageSize = event.pageSize;
+    this.loadNikshayBeneficiaryList();
+  }
+
   onSearchInputChange() {
     this.dataSource.filter = this.beneficiaryListSearchTerm
       .trim()
@@ -130,11 +143,17 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   }
 
   buildQuery(): NikshayBeneficiaryListQuery {
-    if (!this.appliedStageFilter || !this.appliedStatusFilter) return {};
+    const query: NikshayBeneficiaryListQuery = {
+      page: this.pageIndex,
+      size: this.pageSize,
+    };
+    if (!this.appliedStageFilter || !this.appliedStatusFilter) return query;
     // Any Stage sends the status alone
-    return this.appliedStageFilter === ANY_STAGE
-      ? { status: this.appliedStatusFilter }
-      : { phase: this.appliedStageFilter, status: this.appliedStatusFilter };
+    if (this.appliedStageFilter !== ANY_STAGE) {
+      query.phase = this.appliedStageFilter;
+    }
+    query.status = this.appliedStatusFilter;
+    return query;
   }
 
   /** Syncs the filter menu with the currently applied filter when it opens. */
@@ -146,6 +165,7 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   applyStageFilter() {
     this.appliedStageFilter = this.pendingStageFilter;
     this.appliedStatusFilter = this.pendingStatusFilter;
+    this.pageIndex = 0;
     this.loadNikshayBeneficiaryList();
   }
 

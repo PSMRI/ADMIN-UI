@@ -14,22 +14,23 @@
       >
         <div class="col-3">
           <mat-form-field [style.width]="'100%'">
-            <mat-label>Device Serial Id</mat-label>
+            <mat-label>Device Serial Number</mat-label>
             <input
               matInput
               required
-              [(ngModel)]="deviceId"
-              name="deviceId"
-              #deviceIdField="ngModel"
+              [(ngModel)]="deviceSerialNumber"
+              name="deviceSerialNumber"
+              #deviceSerialNumberField="ngModel"
             />
             <mat-hint>
               <span
                 class="error_text"
                 *ngIf="
-                  !deviceIdField.valid &&
-                  (deviceIdField.dirty || deviceIdField.touched)
+                  !deviceSerialNumberField.valid &&
+                  (deviceSerialNumberField.dirty ||
+                    deviceSerialNumberField.touched)
                 "
-                >Device Id is required</span
+                >Device Serial Number is required</span
               >
             </mat-hint>
           </mat-form-field>

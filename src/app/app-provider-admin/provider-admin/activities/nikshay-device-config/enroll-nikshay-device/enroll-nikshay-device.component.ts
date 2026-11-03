@@ -34,7 +34,7 @@ import { NikshayDeviceConfigService } from '../../services/nikshay-device-config
 export class EnrollNikshayDeviceComponent implements OnInit {
   @ViewChild('enrollDeviceForm') enrollDeviceForm!: NgForm;
 
-  deviceId: any;
+  deviceSerialNumber: any;
   deviceName: any;
   phiUserId: any;
   password: any;
@@ -45,7 +45,7 @@ export class EnrollNikshayDeviceComponent implements OnInit {
   validFileExtensions = ['xls', 'xlsx'];
   // Excel column header -> request key
   headerKeyMap: { [header: string]: string } = {
-    'Device Serial Id': 'deviceSerialId',
+    'Device Serial Number': 'deviceSerialNumber',
     'Device Name': 'deviceName',
     'PHI User Id': 'phiUserId',
     Password: 'password',
@@ -65,7 +65,7 @@ export class EnrollNikshayDeviceComponent implements OnInit {
 
   enrollDevice() {
     const requestObj = {
-      deviceId: this.deviceId,
+      deviceSerialNumber: this.deviceSerialNumber,
       deviceName: this.deviceName,
       phiUserId: this.phiUserId,
       password: this.password,

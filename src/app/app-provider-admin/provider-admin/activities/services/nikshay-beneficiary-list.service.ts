@@ -70,8 +70,17 @@ export interface NikshayBeneficiaryListItem {
   phases: NikshayBeneficiaryPhases;
 }
 
-/** Filters sent with the list request; the API does not page yet. */
+export interface NikshayBeneficiaryListResponse {
+  total: number;
+  page: number;
+  size: number;
+  beneficiaries: NikshayBeneficiaryListItem[];
+}
+
+/** Page and filters sent with the list request; page is 0-based. */
 export interface NikshayBeneficiaryListQuery {
+  page: number;
+  size: number;
   phase?: NikshayPhaseKey;
   status?: PhaseStatus;
 }
@@ -90,8 +99,10 @@ export class NikshayBeneficiaryListService {
 
   getNikshayBeneficiaryList(
     query: NikshayBeneficiaryListQuery,
-  ): Observable<NikshayBeneficiaryListItem[]> {
-    let params = new HttpParams();
+  ): Observable<NikshayBeneficiaryListResponse> {
+    let params = new HttpParams()
+      .set('page', String(query.page))
+      .set('size', String(query.size));
     if (query.phase) params = params.set('phase', query.phase);
     if (query.status) params = params.set('status', query.status);
 
@@ -102,10 +113,14 @@ export class NikshayBeneficiaryListService {
           if (response?.statusCode && response.statusCode !== 200) {
             throw { errorMessage: response?.errorMessage || 'Request failed' };
           }
-          // Accept the payload bare or wrapped in { data: ... }, as a list
-          // or as { beneficiaries: [...] }
+
           const data = response?.data ?? response;
-          return Array.isArray(data) ? data : data?.beneficiaries || [];
+          return {
+            total: data?.total || 0,
+            page: data?.page || 0,
+            size: data?.size || query.size,
+            beneficiaries: data?.beneficiaries || [],
+          };
         }),
       );
   }
