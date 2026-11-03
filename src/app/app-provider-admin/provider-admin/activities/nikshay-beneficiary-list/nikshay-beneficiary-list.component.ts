@@ -72,6 +72,8 @@ const getStatusLabel = (status: PhaseStatus | null): string =>
 })
 export class NikshayBeneficiaryListComponent implements OnInit {
   isLoadingBeneficiaryList = false;
+  /** Bumped per list request so only the latest response is applied. */
+  private listRequestId = 0;
   /** Server-side paging state; pageIndex is 0-based like the API's page. */
   pageIndex = 0;
   pageSize = 20;
@@ -108,16 +110,19 @@ export class NikshayBeneficiaryListComponent implements OnInit {
   }
 
   loadNikshayBeneficiaryList() {
+    const requestId = ++this.listRequestId;
     this.isLoadingBeneficiaryList = true;
     this.nikshayBeneficiaryListService
       .getNikshayBeneficiaryList(this.buildQuery())
       .subscribe(
         (response) => {
+          if (requestId !== this.listRequestId) return;
           this.isLoadingBeneficiaryList = false;
           this.totalCount = response.total;
           this.dataSource.data = response.beneficiaries;
         },
         (err: any) => {
+          if (requestId !== this.listRequestId) return;
           this.isLoadingBeneficiaryList = false;
           this.totalCount = 0;
           this.dataSource.data = [];

@@ -105,9 +105,11 @@ export class LinkNikshayDeviceComponent implements OnInit {
     this.tu = undefined;
     this.facility = [];
 
-    if (!this.state) return;
-    this.nikshayDeviceService.getDistricts(this.state.nikshayStateID).subscribe(
+    const state = this.state;
+    if (!state) return;
+    this.nikshayDeviceService.getDistricts(state.nikshayStateID).subscribe(
       (response: any) => {
+        if (this.state !== state) return;
         this.districts_array = (response && response.data) || [];
       },
       (err: any) => {
@@ -127,9 +129,11 @@ export class LinkNikshayDeviceComponent implements OnInit {
     this.tu = undefined;
     this.facility = [];
 
-    if (!this.district) return;
-    this.nikshayDeviceService.getTUs(this.district.nikshayDistrictID).subscribe(
+    const district = this.district;
+    if (!district) return;
+    this.nikshayDeviceService.getTUs(district.nikshayDistrictID).subscribe(
       (response: any) => {
+        if (this.district !== district) return;
         this.tus_array = (response && response.data) || [];
       },
       (err: any) => {
@@ -148,9 +152,11 @@ export class LinkNikshayDeviceComponent implements OnInit {
     this.resetVillages();
     this.facility = [];
 
-    if (!this.tu) return;
-    this.nikshayDeviceService.getFacilities(this.tu.nikshayTUID).subscribe(
+    const tu = this.tu;
+    if (!tu) return;
+    this.nikshayDeviceService.getFacilities(tu.nikshayTUID).subscribe(
       (response: any) => {
+        if (this.tu !== tu) return;
         this.facilities_array = (response && response.data) || [];
         this.applyFacilityFilter();
       },
@@ -167,20 +173,21 @@ export class LinkNikshayDeviceComponent implements OnInit {
     this.resetVillages();
 
     if (!this.facility || this.facility.length === 0) return;
-    this.nikshayDeviceService
-      .getVillages(this.getFacilityIds().join(','))
-      .subscribe(
-        (response: any) => {
-          this.villages_array = (response && response.data) || [];
-          this.applyVillageFilter();
-        },
-        (err: any) => {
-          this.dialogService.alert(
-            err?.errorMessage || 'Failed to load villages',
-            'error',
-          );
-        },
-      );
+    const facilityIds = this.getFacilityIds().join(',');
+    this.nikshayDeviceService.getVillages(facilityIds).subscribe(
+      (response: any) => {
+        // Skip responses for a facility selection that has since changed
+        if (this.getFacilityIds().join(',') !== facilityIds) return;
+        this.villages_array = (response && response.data) || [];
+        this.applyVillageFilter();
+      },
+      (err: any) => {
+        this.dialogService.alert(
+          err?.errorMessage || 'Failed to load villages',
+          'error',
+        );
+      },
+    );
   }
 
   applyFacilityFilter(term?: string) {

@@ -86,9 +86,11 @@ export class CreatePhiTransferComponent implements OnInit {
     this.facility = undefined;
     this.village = undefined;
 
-    if (!this.state) return;
-    this.nikshayDeviceService.getDistricts(this.state.nikshayStateID).subscribe(
+    const state = this.state;
+    if (!state) return;
+    this.nikshayDeviceService.getDistricts(state.nikshayStateID).subscribe(
       (response: any) => {
+        if (this.state !== state) return;
         this.districts_array = (response && response.data) || [];
       },
       (err: any) => {
@@ -108,9 +110,11 @@ export class CreatePhiTransferComponent implements OnInit {
     this.facility = undefined;
     this.village = undefined;
 
-    if (!this.district) return;
-    this.nikshayDeviceService.getTUs(this.district.nikshayDistrictID).subscribe(
+    const district = this.district;
+    if (!district) return;
+    this.nikshayDeviceService.getTUs(district.nikshayDistrictID).subscribe(
       (response: any) => {
+        if (this.district !== district) return;
         this.tus_array = (response && response.data) || [];
       },
       (err: any) => {
@@ -128,9 +132,11 @@ export class CreatePhiTransferComponent implements OnInit {
     this.facility = undefined;
     this.village = undefined;
 
-    if (!this.tu) return;
-    this.nikshayDeviceService.getFacilities(this.tu.nikshayTUID).subscribe(
+    const tu = this.tu;
+    if (!tu) return;
+    this.nikshayDeviceService.getFacilities(tu.nikshayTUID).subscribe(
       (response: any) => {
+        if (this.tu !== tu) return;
         this.facilities_array = (response && response.data) || [];
       },
       (err: any) => {
@@ -146,20 +152,20 @@ export class CreatePhiTransferComponent implements OnInit {
     this.villages_array = [];
     this.village = undefined;
 
-    if (!this.facility) return;
-    this.nikshayDeviceService
-      .getVillages(this.facility.nikshayFacilityID)
-      .subscribe(
-        (response: any) => {
-          this.villages_array = (response && response.data) || [];
-        },
-        (err: any) => {
-          this.dialogService.alert(
-            err?.errorMessage || 'Failed to load villages',
-            'error',
-          );
-        },
-      );
+    const facility = this.facility;
+    if (!facility) return;
+    this.nikshayDeviceService.getVillages(facility.nikshayFacilityID).subscribe(
+      (response: any) => {
+        if (this.facility !== facility) return;
+        this.villages_array = (response && response.data) || [];
+      },
+      (err: any) => {
+        this.dialogService.alert(
+          err?.errorMessage || 'Failed to load villages',
+          'error',
+        );
+      },
+    );
   }
 
   createPhiTransfer() {

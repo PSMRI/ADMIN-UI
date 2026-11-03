@@ -96,10 +96,10 @@ export class NikshayDeviceConfigService {
     return this.checkStatus(this.http.get(environment.nikshay_ListDevices_Url));
   }
 
-  searchDevice(deviceId: any) {
+  searchDevice(deviceSerialNumber: any) {
     return this.checkStatus(
       this.http.get(
-        `${environment.nikshay_SearchDevice_Url}?deviceId=${deviceId}`,
+        `${environment.nikshay_SearchDevice_Url}?deviceSerialNumber=${encodeURIComponent(deviceSerialNumber)}`,
       ),
     );
   }

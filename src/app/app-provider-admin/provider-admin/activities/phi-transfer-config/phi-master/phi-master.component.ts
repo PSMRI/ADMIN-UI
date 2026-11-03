@@ -22,6 +22,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
+import { Subscription } from 'rxjs';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { PhiTransferConfigService } from '../../services/phi-transfer-config.service';
@@ -52,6 +53,7 @@ export class PhiMasterComponent implements OnInit {
   filterDesignatedPhiId: any;
   showTableFlag = false;
   showFilters = false;
+  private searchSubscription?: Subscription;
 
   editMode = false;
   selectedRecord: any;
@@ -82,7 +84,8 @@ export class PhiMasterComponent implements OnInit {
         })
       : this.phiService.getAllDesignatedPhi();
 
-    request.subscribe(
+    this.searchSubscription?.unsubscribe();
+    this.searchSubscription = request.subscribe(
       (response: any) => {
         const result = (response && response.data) || [];
         this.phiList.data = Array.isArray(result) ? result : [result];

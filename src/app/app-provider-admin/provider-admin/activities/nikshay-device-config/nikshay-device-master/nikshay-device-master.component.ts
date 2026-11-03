@@ -101,9 +101,13 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
   }
 
   removeVillageFromDevice(device: any, village: any) {
-    device.villages = (device.villages || []).filter(
+    const villages = (device.villages || []).filter(
       (v: any) => v.mappingId !== village.mappingId,
     );
+    device.villages = villages;
+    // A searched device is a separate object from its entry in allDevices
+    const cached = this.allDevices.find((d: any) => d.id === device.id);
+    if (cached) cached.villages = villages;
     this.dialogService.alert('Village unlinked successfully', 'success');
   }
 
@@ -135,24 +139,26 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
       this.deviceList.paginator = this.tablePaginator;
       return;
     }
-    this.nikshayDeviceService
-      .searchDevice(this.searchDeviceSerialNumber)
-      .subscribe(
-        (response: any) => {
-          const result = response && response.data;
-          this.deviceList.data = Array.isArray(result)
-            ? result
-            : result
-              ? [result]
-              : [];
-          this.deviceList.paginator = this.tablePaginator;
-        },
-        (err: any) => {
-          this.dialogService.alert(
-            err?.errorMessage || 'Failed to search device',
-            'error',
-          );
-        },
-      );
+    const term = this.searchDeviceSerialNumber;
+    this.nikshayDeviceService.searchDevice(term).subscribe(
+      (response: any) => {
+        // Skip responses for a term the user has since changed or cleared
+        if (term !== this.searchDeviceSerialNumber) return;
+        const result = response && response.data;
+        this.deviceList.data = Array.isArray(result)
+          ? result
+          : result
+            ? [result]
+            : [];
+        this.deviceList.paginator = this.tablePaginator;
+      },
+      (err: any) => {
+        if (term !== this.searchDeviceSerialNumber) return;
+        this.dialogService.alert(
+          err?.errorMessage || 'Failed to search device',
+          'error',
+        );
+      },
+    );
   }
 }

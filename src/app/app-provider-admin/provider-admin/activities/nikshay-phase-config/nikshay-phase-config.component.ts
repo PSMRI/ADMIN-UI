@@ -64,6 +64,8 @@ export class NikshayPhaseConfigComponent implements OnInit {
   /** Saved cron that the picker can't show, e.g. one set outside this screen. */
   unsupportedCron: string | null = null;
   isLoadingJobSetting = false;
+  /** Set when the GET fails, so the defaults can't overwrite an unseen schedule. */
+  jobSettingLoadFailed = false;
   isSavingJobSetting = false;
 
   /** Unsaved values in the form; together they build the cron expression. */
@@ -85,6 +87,7 @@ export class NikshayPhaseConfigComponent implements OnInit {
 
   loadJobSetting() {
     this.isLoadingJobSetting = true;
+    this.jobSettingLoadFailed = false;
     this.nikshayBeneficiaryListService.getPhaseJobSetting().subscribe(
       (setting) => {
         this.isLoadingJobSetting = false;
@@ -92,6 +95,7 @@ export class NikshayPhaseConfigComponent implements OnInit {
       },
       (err: any) => {
         this.isLoadingJobSetting = false;
+        this.jobSettingLoadFailed = true;
         this.dialogService.alert(
           err?.errorMessage ||
             'Could not load the job setting. Please try again.',
@@ -146,7 +150,9 @@ export class NikshayPhaseConfigComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    return this.hasChanges && !this.isSavingJobSetting;
+    return (
+      this.hasChanges && !this.isSavingJobSetting && !this.jobSettingLoadFailed
+    );
   }
 
   /** Fills the picker from a cron it can build; false for anything else. */

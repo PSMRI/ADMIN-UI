@@ -194,6 +194,12 @@ export class EnrollNikshayDeviceComponent implements OnInit {
     if (missing.length || extra.length) {
       return `Invalid file format. Expected columns: ${this.expectedHeaders.join(', ')}`;
     }
+    const duplicates = headers.filter(
+      (h: string, i: number) => headers.indexOf(h) !== i,
+    );
+    if (duplicates.length) {
+      return `Invalid file format. Duplicate columns: ${[...new Set(duplicates)].join(', ')}`;
+    }
     if (rows.length < 2) return 'The uploaded file has no data rows';
 
     const deviceNameIndex = headers.indexOf('Device Name');

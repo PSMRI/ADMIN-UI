@@ -172,7 +172,11 @@
           style="margin-top: 16px; text-align: center; font-size: 16px"
           [hidden]="dataSource.filteredData.length > 0"
         >
-          <strong>No beneficiaries found</strong>
+          <strong>{{
+            beneficiaryListSearchTerm.trim()
+              ? "No beneficiaries on this page match the search"
+              : "No beneficiaries found"
+          }}</strong>
         </div>
 
         <mat-paginator
