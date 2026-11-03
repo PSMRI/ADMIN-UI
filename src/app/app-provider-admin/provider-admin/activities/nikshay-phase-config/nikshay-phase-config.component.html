@@ -6,68 +6,180 @@
       </h4>
     </div>
     <div class="col-xs-12 col-sm-12">
-      <div *ngIf="isLoadingJobConfigs" class="list-loading">
-        <mat-spinner diameter="36"></mat-spinner>
-      </div>
-      <div [hidden]="isLoadingJobConfigs" class="table-responsive">
-        <table
-          mat-table
-          class="table table-striped table-hover"
-          [dataSource]="rows"
-        >
-          <ng-container matColumnDef="sno">
-            <th mat-header-cell *matHeaderCellDef>S.No.</th>
-            <td mat-cell *matCellDef="let row; let i = index">{{ i + 1 }}</td>
-          </ng-container>
+      <div class="config-section">
+        <h5 class="section-title"><strong>Job Setting</strong></h5>
 
-          <ng-container matColumnDef="phase">
-            <th mat-header-cell *matHeaderCellDef>Phase</th>
-            <td mat-cell *matCellDef="let row">{{ row.label }}</td>
-          </ng-container>
+        <div *ngIf="isLoadingJobSetting" class="list-loading">
+          <mat-spinner diameter="36"></mat-spinner>
+        </div>
 
-          <ng-container matColumnDef="mode">
-            <th mat-header-cell *matHeaderCellDef>Job Mode</th>
-            <td mat-cell *matCellDef="let row">
-              <mat-form-field class="mode-select">
-                <mat-select
-                  [ngModel]="row.mode"
-                  (selectionChange)="onJobModeChange(row, $event.value)"
-                  [disabled]="savingPhases.has(row.key)"
-                  placeholder="Select"
-                >
-                  <mat-option
-                    *ngFor="let option of jobModeOptions"
-                    [value]="option.value"
-                  >
-                    {{ option.label }}
-                  </mat-option>
-                </mat-select>
-              </mat-form-field>
-            </td>
-          </ng-container>
+        <div [hidden]="isLoadingJobSetting">
+          <div class="job-setting">
+            <span class="job-setting-label">Run Scheduled Job</span>
+            <span
+              class="job-setting-state"
+              [ngClass]="isJobEnabled ? 'state-on' : 'state-off'"
+              >{{ isJobEnabled ? "On" : "Off" }}</span
+            >
+            <mat-slide-toggle
+              class="job-setting-toggle"
+              color="primary"
+              name="isJobEnabled"
+              aria-label="Run Scheduled Job"
+              [hideIcon]="true"
+              [disabled]="isSavingJobSetting"
+              [(ngModel)]="isJobEnabled"
+            ></mat-slide-toggle>
+          </div>
 
-          <ng-container matColumnDef="run">
-            <th mat-header-cell *matHeaderCellDef class="run-cell">
-              Manual Trigger
-            </th>
-            <td mat-cell *matCellDef="let row" class="run-cell">
-              <button
-                mat-raised-button
-                color="primary"
-                class="mat_blue"
-                type="button"
-                [disabled]="runningPhases.has(row.key)"
-                (click)="runPhase(row)"
+          <div class="schedule-row">
+            <mat-form-field class="schedule-field">
+              <mat-label>Frequency</mat-label>
+              <mat-select
+                name="frequency"
+                [disabled]="isSavingJobSetting"
+                [(ngModel)]="frequency"
               >
-                <mat-icon class="btn-icon">play_arrow</mat-icon>
-                {{ runningPhases.has(row.key) ? "Running..." : "Run" }}
-              </button>
-            </td>
-          </ng-container>
+                <mat-option
+                  *ngFor="let option of frequencyOptions"
+                  [value]="option.value"
+                >
+                  {{ option.label }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
 
-          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-          <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-        </table>
+            <mat-form-field
+              *ngIf="frequency === 'MINUTES'"
+              class="schedule-field"
+            >
+              <mat-label>Every</mat-label>
+              <mat-select
+                name="minuteInterval"
+                [disabled]="isSavingJobSetting"
+                [(ngModel)]="minuteInterval"
+              >
+                <mat-option *ngFor="let value of minuteIntervals" [value]="value">
+                  {{ value }} minutes
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="frequency === 'HOURLY'" class="schedule-field">
+              <mat-label>Every</mat-label>
+              <mat-select
+                name="hourInterval"
+                [disabled]="isSavingJobSetting"
+                [(ngModel)]="hourInterval"
+              >
+                <mat-option *ngFor="let value of hourIntervals" [value]="value">
+                  {{ value }} {{ value === 1 ? "hour" : "hours" }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field
+              *ngIf="frequency === 'MONTHLY'"
+              class="schedule-field"
+            >
+              <mat-label>Day of Month</mat-label>
+              <mat-select
+                name="dayOfMonth"
+                [disabled]="isSavingJobSetting"
+                [(ngModel)]="dayOfMonth"
+              >
+                <mat-option *ngFor="let day of daysOfMonth" [value]="day">
+                  {{ day }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field
+              *ngIf="frequency !== 'MINUTES' && frequency !== 'HOURLY'"
+              class="schedule-field"
+            >
+              <mat-label>Hour</mat-label>
+              <mat-select
+                name="hour"
+                [disabled]="isSavingJobSetting"
+                [(ngModel)]="hour"
+              >
+                <mat-option *ngFor="let value of hours" [value]="value">
+                  {{ formatHour(value) }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field *ngIf="frequency !== 'MINUTES'" class="schedule-field">
+              <mat-label>{{
+                frequency === "HOURLY" ? "Minutes past the hour" : "Minute"
+              }}</mat-label>
+              <mat-select
+                name="minute"
+                [disabled]="isSavingJobSetting"
+                [(ngModel)]="minute"
+              >
+                <mat-option *ngFor="let value of minutes" [value]="value">
+                  {{ pad(value) }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+
+          <div *ngIf="frequency === 'WEEKLY'" class="week-days">
+            <span class="week-days-label">On</span>
+            <button
+              *ngFor="let day of weekDays"
+              mat-stroked-button
+              type="button"
+              class="week-day-btn"
+              [class.week-day-selected]="isWeekDaySelected(day.value)"
+              [disabled]="isSavingJobSetting"
+              (click)="toggleWeekDay(day.value)"
+            >
+              {{ day.label }}
+            </button>
+            <span *ngIf="selectedWeekDays.length === 0" class="error_text">
+              Select at least one day
+            </span>
+          </div>
+
+          <div class="schedule-summary">
+            <mat-icon class="summary-icon">schedule</mat-icon>
+            <span>{{ scheduleDescription }}</span>
+          </div>
+
+          <div *ngIf="unsupportedCron" class="unsupported-cron">
+            The saved schedule can't be shown here. Saving will replace it with
+            the schedule above.
+          </div>
+
+          <div class="job-setting-actions">
+            <button
+              mat-button
+              type="button"
+              [disabled]="!hasChanges || isSavingJobSetting"
+              (click)="resetJobSetting()"
+            >
+              Reset
+            </button>
+            <button
+              mat-raised-button
+              color="primary"
+              class="mat_blue"
+              type="button"
+              [disabled]="!canSave"
+              (click)="saveJobSetting()"
+            >
+              {{ isSavingJobSetting ? "Saving..." : "Save" }}
+            </button>
+          </div>
+
+          <div *ngIf="jobSetting?.updatedAt" class="job-setting-meta">
+            Last updated by {{ jobSetting?.updatedBy || "-" }} on
+            {{ jobSetting?.updatedAt | date: "dd MMM yyyy, hh:mm a" }}
+          </div>
+        </div>
       </div>
     </div>
   </div>

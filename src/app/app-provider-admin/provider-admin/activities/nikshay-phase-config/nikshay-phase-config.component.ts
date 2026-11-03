@@ -20,47 +20,55 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Component, OnInit } from '@angular/core';
-import { Observable, of } from 'rxjs';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import {
   NikshayBeneficiaryListService,
-  NikshayPhaseKey,
-  PhaseJobConfig,
-  PhaseRunMode,
+  NikshayPhaseJobSetting,
 } from '../services/nikshay-beneficiary-list.service';
 
-/** Sync phases that can be run, in run order. */
-const NIKSHAY_PHASES: { key: NikshayPhaseKey; label: string }[] = [
-  { key: 'ENROLMENT', label: 'Enrolment' },
-  { key: 'NAAT_UPLOAD', label: 'TruNaat Upload' },
-  { key: 'XRAY_UPLOAD', label: 'X-ray Upload' },
-  { key: 'CONTACTS', label: 'Contacts' },
-  { key: 'TRANSFER_OUT', label: 'Transfer Out' },
+type ScheduleFrequency = 'MINUTES' | 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+const FREQUENCY_OPTIONS: { value: ScheduleFrequency; label: string }[] = [
+  { value: 'MINUTES', label: 'Every few minutes' },
+  { value: 'HOURLY', label: 'Every few hours' },
+  { value: 'DAILY', label: 'Daily' },
+  { value: 'WEEKLY', label: 'Weekly' },
+  { value: 'MONTHLY', label: 'Monthly' },
 ];
 
-const JOB_MODE_OPTIONS: { value: PhaseRunMode; label: string }[] = [
-  { value: 'MANUAL', label: 'Manual' },
-  { value: 'AUTOMATIC', label: 'Auto' },
+const MINUTE_INTERVALS = [5, 10, 15, 20, 30];
+const HOUR_INTERVALS = [1, 2, 3, 4, 6, 8, 12];
+const MINUTES = Array.from({ length: 60 }, (_, i) => i);
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
+/** Up to 28 so the job runs every month, including February. */
+const DAYS_OF_MONTH = Array.from({ length: 28 }, (_, i) => i + 1);
+const WEEK_DAYS = [
+  { value: 'MON', label: 'Mon' },
+  { value: 'TUE', label: 'Tue' },
+  { value: 'WED', label: 'Wed' },
+  { value: 'THU', label: 'Thu' },
+  { value: 'FRI', label: 'Fri' },
+  { value: 'SAT', label: 'Sat' },
+  { value: 'SUN', label: 'Sun' },
 ];
 
-/** Flip to true once the phase run mode list API is live. */
-const PHASE_JOB_CONFIG_LIST_API_AVAILABLE = false;
+const pad = (value: number) => String(value).padStart(2, '0');
 
-/** Placeholder job config shown until the API is live. */
-const DUMMY_PHASE_JOB_CONFIGS: PhaseJobConfig[] = [
-  { phase: 'ENROLMENT', runMode: 'AUTOMATIC' },
-  { phase: 'NAAT_UPLOAD', runMode: 'AUTOMATIC' },
-  { phase: 'XRAY_UPLOAD', runMode: 'MANUAL' },
-  { phase: 'CONTACTS', runMode: 'AUTOMATIC' },
-  { phase: 'TRANSFER_OUT', runMode: 'MANUAL' },
-];
+/** "14:05" -> "02:05 PM" */
+const formatTime = (hour: number, minute: number) =>
+  `${pad(hour % 12 || 12)}:${pad(minute)} ${hour < 12 ? 'AM' : 'PM'}`;
 
-/** A phase row: its run state and job mode together. */
-interface PhaseConfigRow {
-  key: NikshayPhaseKey;
-  label: string;
-  mode: PhaseRunMode | null;
-}
+const ordinal = (day: number) => {
+  const suffix =
+    day % 10 === 1 && day !== 11
+      ? 'st'
+      : day % 10 === 2 && day !== 12
+        ? 'nd'
+        : day % 10 === 3 && day !== 13
+          ? 'rd'
+          : 'th';
+  return `${day}${suffix}`;
+};
 
 @Component({
   selector: 'app-nikshay-phase-config',
@@ -68,17 +76,33 @@ interface PhaseConfigRow {
   styleUrls: ['./nikshay-phase-config.component.css'],
 })
 export class NikshayPhaseConfigComponent implements OnInit {
-  displayedColumns = ['sno', 'phase', 'mode', 'run'];
-  jobModeOptions = JOB_MODE_OPTIONS;
-  rows: PhaseConfigRow[] = NIKSHAY_PHASES.map((phase) => ({
-    ...phase,
-    mode: null,
-  }));
-  isLoadingJobConfigs = false;
-  /** Phases whose run call is in flight. */
-  runningPhases = new Set<NikshayPhaseKey>();
-  /** Phases whose job mode update is in flight. */
-  savingPhases = new Set<NikshayPhaseKey>();
+  readonly frequencyOptions = FREQUENCY_OPTIONS;
+  readonly minuteIntervals = MINUTE_INTERVALS;
+  readonly hourIntervals = HOUR_INTERVALS;
+  readonly minutes = MINUTES;
+  readonly hours = HOURS;
+  readonly daysOfMonth = DAYS_OF_MONTH;
+  readonly weekDays = WEEK_DAYS;
+  readonly pad = pad;
+  readonly formatHour = (hour: number) =>
+    `${pad(hour % 12 || 12)} ${hour < 12 ? 'AM' : 'PM'}`;
+
+  /** The setting as last loaded or saved on the server. */
+  jobSetting: NikshayPhaseJobSetting | null = null;
+  /** Saved cron that the picker can't show, e.g. one set outside this screen. */
+  unsupportedCron: string | null = null;
+  isLoadingJobSetting = false;
+  isSavingJobSetting = false;
+
+  /** Unsaved values in the form; together they build the cron expression. */
+  isJobEnabled = false;
+  frequency: ScheduleFrequency = 'DAILY';
+  minuteInterval = 15;
+  hourInterval = 1;
+  minute = 0;
+  hour = 2;
+  selectedWeekDays: string[] = ['MON'];
+  dayOfMonth = 1;
 
   constructor(
     private nikshayBeneficiaryListService: NikshayBeneficiaryListService,
@@ -86,85 +110,184 @@ export class NikshayPhaseConfigComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadJobConfigs();
+    this.loadJobSetting();
   }
 
-  runPhase(row: PhaseConfigRow) {
-    this.dialogService
-      .confirm('Confirm', `Run the ${row.label} phase now?`)
-      .subscribe((confirmed) => {
-        if (!confirmed) return;
-        this.runningPhases.add(row.key);
-        this.nikshayBeneficiaryListService.runPhase(row.key).subscribe(
-          () => {
-            this.runningPhases.delete(row.key);
-            this.dialogService.alert(
-              `${row.label} phase started successfully`,
-              'success',
-            );
-          },
-          (err: any) => {
-            this.runningPhases.delete(row.key);
-            this.dialogService.alert(
-              err?.errorMessage ||
-                `Could not run the ${row.label} phase. Please try again.`,
-              'error',
-            );
-          },
-        );
-      });
-  }
-
-  loadJobConfigs() {
-    this.isLoadingJobConfigs = true;
-    const request$: Observable<PhaseJobConfig[]> =
-      PHASE_JOB_CONFIG_LIST_API_AVAILABLE
-        ? this.nikshayBeneficiaryListService.getPhaseJobConfigs()
-        : of(DUMMY_PHASE_JOB_CONFIGS);
-    request$.subscribe(
-      (configs) => {
-        this.isLoadingJobConfigs = false;
-        this.rows = NIKSHAY_PHASES.map((phase) => ({
-          ...phase,
-          mode: configs.find((c) => c.phase === phase.key)?.runMode || null,
-        }));
+  loadJobSetting() {
+    this.isLoadingJobSetting = true;
+    this.nikshayBeneficiaryListService.getPhaseJobSetting().subscribe(
+      (setting) => {
+        this.isLoadingJobSetting = false;
+        this.setJobSetting(setting);
       },
       (err: any) => {
-        this.isLoadingJobConfigs = false;
+        this.isLoadingJobSetting = false;
         this.dialogService.alert(
           err?.errorMessage ||
-            'Could not load the job configuration. Please try again.',
+            'Could not load the job setting. Please try again.',
           'error',
         );
       },
     );
   }
 
-  getJobModeLabel(mode: PhaseRunMode): string {
-    return JOB_MODE_OPTIONS.find((m) => m.value === mode)?.label || mode;
+  setJobSetting(setting: NikshayPhaseJobSetting) {
+    this.jobSetting = setting;
+    this.isJobEnabled = !!setting?.enabled;
+    const cron = setting?.cronExpression;
+    this.unsupportedCron = cron && !this.applyCron(cron) ? cron : null;
   }
 
-  /** Saves the new mode straight away; reverts the select if the save fails. */
-  onJobModeChange(row: PhaseConfigRow, mode: PhaseRunMode) {
-    const previousMode = row.mode;
-    row.mode = mode;
-    this.savingPhases.add(row.key);
+  /** Spring cron (second minute hour day-of-month month day-of-week) from the picker. */
+  get cronExpression(): string {
+    switch (this.frequency) {
+      case 'MINUTES':
+        return `0 */${this.minuteInterval} * * * *`;
+      case 'HOURLY':
+        return this.hourInterval === 1
+          ? `0 ${this.minute} * * * *`
+          : `0 ${this.minute} */${this.hourInterval} * * *`;
+      case 'WEEKLY':
+        return `0 ${this.minute} ${this.hour} * * ${this.sortedWeekDays.join(',')}`;
+      case 'MONTHLY':
+        return `0 ${this.minute} ${this.hour} ${this.dayOfMonth} * *`;
+      default:
+        return `0 ${this.minute} ${this.hour} * * *`;
+    }
+  }
+
+  get scheduleDescription(): string {
+    const time = formatTime(this.hour, this.minute);
+    switch (this.frequency) {
+      case 'MINUTES':
+        return `Runs every ${this.minuteInterval} minutes`;
+      case 'HOURLY':
+        return this.hourInterval === 1
+          ? `Runs every hour at ${pad(this.minute)} minutes past the hour`
+          : `Runs every ${this.hourInterval} hours at ${pad(this.minute)} minutes past the hour`;
+      case 'WEEKLY':
+        return `Runs every ${this.sortedWeekDays
+          .map((d) => WEEK_DAYS.find((w) => w.value === d)?.label)
+          .join(', ')} at ${time}`;
+      case 'MONTHLY':
+        return `Runs on the ${ordinal(this.dayOfMonth)} of every month at ${time}`;
+      default:
+        return `Runs every day at ${time}`;
+    }
+  }
+
+  get sortedWeekDays(): string[] {
+    return WEEK_DAYS.map((d) => d.value).filter((d) =>
+      this.selectedWeekDays.includes(d),
+    );
+  }
+
+  get hasChanges(): boolean {
+    const savedCron = this.jobSetting?.cronExpression || null;
+    // With no saved schedule, the picker's default only counts once the job is on
+    const cronChanged = savedCron
+      ? this.cronExpression !== savedCron
+      : this.isJobEnabled;
+    return this.isJobEnabled !== !!this.jobSetting?.enabled || cronChanged;
+  }
+
+  get canSave(): boolean {
+    const hasWeekDays =
+      this.frequency !== 'WEEKLY' || this.selectedWeekDays.length > 0;
+    return this.hasChanges && hasWeekDays && !this.isSavingJobSetting;
+  }
+
+  /** Fills the picker from a cron it can build; false for anything else. */
+  applyCron(cron: string): boolean {
+    const [second, minute, hour, dayOfMonth, month, dayOfWeek, ...rest] = cron
+      .trim()
+      .split(/\s+/);
+    if (second !== '0' || month !== '*' || rest.length || !dayOfWeek) {
+      return false;
+    }
+    const num = (v: string, allowed: number[]) =>
+      /^\d+$/.test(v) && allowed.includes(+v) ? +v : null;
+    const step = (v: string, allowed: number[]) =>
+      v.startsWith('*/') ? num(v.slice(2), allowed) : null;
+
+    const minuteInterval = step(minute, MINUTE_INTERVALS);
+    if (
+      minuteInterval !== null &&
+      hour === '*' &&
+      dayOfMonth === '*' &&
+      dayOfWeek === '*'
+    ) {
+      this.frequency = 'MINUTES';
+      this.minuteInterval = minuteInterval;
+      return true;
+    }
+
+    const m = num(minute, MINUTES);
+    if (m === null) return false;
+    const hourInterval = hour === '*' ? 1 : step(hour, HOUR_INTERVALS);
+    if (hourInterval !== null && dayOfMonth === '*' && dayOfWeek === '*') {
+      this.frequency = 'HOURLY';
+      this.hourInterval = hourInterval;
+      this.minute = m;
+      return true;
+    }
+
+    const h = num(hour, HOURS);
+    if (h === null) return false;
+    if (dayOfMonth === '*' && dayOfWeek === '*') {
+      this.frequency = 'DAILY';
+    } else if (dayOfMonth === '*') {
+      const days = dayOfWeek.toUpperCase().split(',');
+      if (!days.every((d) => WEEK_DAYS.some((w) => w.value === d))) {
+        return false;
+      }
+      this.frequency = 'WEEKLY';
+      this.selectedWeekDays = days;
+    } else if (dayOfWeek === '*') {
+      const day = num(dayOfMonth, DAYS_OF_MONTH);
+      if (day === null) return false;
+      this.frequency = 'MONTHLY';
+      this.dayOfMonth = day;
+    } else {
+      return false;
+    }
+    this.minute = m;
+    this.hour = h;
+    return true;
+  }
+
+  isWeekDaySelected(day: string): boolean {
+    return this.selectedWeekDays.includes(day);
+  }
+
+  toggleWeekDay(day: string) {
+    this.selectedWeekDays = this.isWeekDaySelected(day)
+      ? this.selectedWeekDays.filter((d) => d !== day)
+      : [...this.selectedWeekDays, day];
+  }
+
+  resetJobSetting() {
+    if (this.jobSetting) this.setJobSetting(this.jobSetting);
+  }
+
+  saveJobSetting() {
+    this.isSavingJobSetting = true;
     this.nikshayBeneficiaryListService
-      .updatePhaseRunMode(row.key, mode)
+      .updatePhaseJobSetting({
+        enabled: this.isJobEnabled,
+        cron: this.cronExpression,
+      })
       .subscribe(
-        () => {
-          this.savingPhases.delete(row.key);
-          this.dialogService.alert(
-            `${row.label} job set to ${this.getJobModeLabel(mode)}`,
-            'success',
-          );
+        (setting) => {
+          this.isSavingJobSetting = false;
+          this.setJobSetting(setting);
+          this.dialogService.alert('Job setting saved successfully', 'success');
         },
         (err: any) => {
-          this.savingPhases.delete(row.key);
-          row.mode = previousMode;
+          this.isSavingJobSetting = false;
           this.dialogService.alert(
             err?.errorMessage ||
-              'Could not update the job mode. Please try again.',
+              'Could not save the job setting. Please try again.',
             'error',
           );
         },

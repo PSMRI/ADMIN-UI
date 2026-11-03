@@ -85,12 +85,12 @@ export interface NikshayBeneficiaryListQuery {
   status?: PhaseStatus;
 }
 
-/** How a phase's job is triggered. */
-export type PhaseRunMode = 'AUTOMATIC' | 'MANUAL';
-
-export interface PhaseJobConfig {
-  phase: NikshayPhaseKey;
-  runMode: PhaseRunMode;
+/** The scheduled Nikshay sync job, as returned by GET/PUT nikshay/phase/job. */
+export interface NikshayPhaseJobSetting {
+  enabled: boolean;
+  cronExpression: string | null;
+  updatedBy: string | null;
+  updatedAt: string | null;
 }
 
 @Injectable()
@@ -125,46 +125,26 @@ export class NikshayBeneficiaryListService {
       );
   }
 
-  getPhaseJobConfigs(): Observable<PhaseJobConfig[]> {
-    return this.http.get(environment.nikshay_GetPhaseJobConfig_Url).pipe(
-      map((response: any) => {
-        if (response?.statusCode && response.statusCode !== 200) {
-          throw { errorMessage: response?.errorMessage || 'Request failed' };
-        }
-        const data = response?.data ?? response;
-        return Array.isArray(data) ? data : [];
-      }),
-    );
+  getPhaseJobSetting(): Observable<NikshayPhaseJobSetting> {
+    return this.http
+      .get(environment.nikshay_PhaseJob_Url)
+      .pipe(map((response: any) => this.unwrap(response)));
   }
 
-  updatePhaseRunMode(
-    phase: NikshayPhaseKey,
-    runMode: PhaseRunMode,
-  ): Observable<any> {
+  updatePhaseJobSetting(requestObj: {
+    enabled: boolean;
+    cron: string | null;
+  }): Observable<NikshayPhaseJobSetting> {
     return this.http
-      .put(`${environment.nikshay_Phase_Url}${phase}/setting`, { runMode })
-      .pipe(
-        map((response: any) => {
-          if (response?.statusCode && response.statusCode !== 200) {
-            throw { errorMessage: response?.errorMessage || 'Request failed' };
-          }
-          return response?.data ?? response;
-        }),
-      );
+      .put(environment.nikshay_PhaseJob_Url, requestObj)
+      .pipe(map((response: any) => this.unwrap(response)));
   }
 
-  /** Runs a phase for every beneficiary due for it. */
-  runPhase(phase: NikshayPhaseKey): Observable<any> {
-    return this.http
-      .post(`${environment.nikshay_Phase_Url}${phase}/run`, {})
-      .pipe(
-        map((response: any) => {
-          if (response?.statusCode && response.statusCode !== 200) {
-            throw { errorMessage: response?.errorMessage || 'Request failed' };
-          }
-          return response?.data ?? response;
-        }),
-      );
+  private unwrap(response: any) {
+    if (response?.statusCode && response.statusCode !== 200) {
+      throw { errorMessage: response?.errorMessage || 'Request failed' };
+    }
+    return response?.data ?? response;
   }
 
   /** Re-runs a phase for the given beneficiaries straight away. */
