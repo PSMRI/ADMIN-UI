@@ -144,7 +144,7 @@
             </span>
           </div>
 
-          <div class="schedule-summary">
+          <div *ngIf="isJobEnabled" class="schedule-summary">
             <mat-icon class="summary-icon">schedule</mat-icon>
             <span>{{ scheduleDescription }}</span>
           </div>

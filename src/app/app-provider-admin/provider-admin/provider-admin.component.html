@@ -6,10 +6,6 @@
     </button>
     <mat-menu #Activities="matMenu">
       <button mat-menu-item [matMenuTriggerFor]="facilityHierarchyMenu">Facility Hierarchy</button>
-      <button mat-menu-item [matMenuTriggerFor]="nikshayDeviceConfigMenu">Nikshay Device Config</button>
-      <button mat-menu-item [matMenuTriggerFor]="phiTransferConfigMenu">PHI Transfer Config</button>
-      <button mat-menu-item (click)="show('88')">Nikshay Beneficiary List</button>
-      <button mat-menu-item (click)="show('89')">Nikshay Phase Config</button>
       <button mat-menu-item (click)="show('1')">
         Job Location-ServiceLine Mapping Master
       </button>
@@ -166,6 +162,16 @@
     </button>
     <mat-menu #Inventory="matMenu">
       <button mat-menu-item [matMenuTriggerFor]="typeMaster">Master</button>
+    </mat-menu>
+    <button mat-button [matMenuTriggerFor]="NikshayConfig" class="top-element">
+      Nikshay Config
+      <span class="caret"></span>
+    </button>
+    <mat-menu #NikshayConfig="matMenu">
+      <button mat-menu-item [matMenuTriggerFor]="nikshayDeviceConfigMenu">Nikshay Device Config</button>
+      <button mat-menu-item [matMenuTriggerFor]="phiTransferConfigMenu">PHI Transfer Config</button>
+      <button mat-menu-item (click)="show('88')">Nikshay Beneficiary List</button>
+      <button mat-menu-item (click)="show('89')">Nikshay Phase Config</button>
     </mat-menu>
     <mat-menu #typeMaster="matMenu">
       <button mat-menu-item (click)="show('43')">Supplier Master</button>
