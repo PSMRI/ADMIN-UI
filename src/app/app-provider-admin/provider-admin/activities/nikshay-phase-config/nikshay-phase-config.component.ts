@@ -26,49 +26,23 @@ import {
   NikshayPhaseJobSetting,
 } from '../services/nikshay-beneficiary-list.service';
 
-type ScheduleFrequency = 'MINUTES' | 'HOURLY' | 'DAILY' | 'WEEKLY' | 'MONTHLY';
+type ScheduleFrequency = 'MINUTES' | 'HOURLY' | 'DAILY';
 
 const FREQUENCY_OPTIONS: { value: ScheduleFrequency; label: string }[] = [
   { value: 'MINUTES', label: 'Every few minutes' },
   { value: 'HOURLY', label: 'Every few hours' },
   { value: 'DAILY', label: 'Daily' },
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'MONTHLY', label: 'Monthly' },
 ];
 
 const MINUTE_INTERVALS = [5, 10, 15, 20, 30];
 const HOUR_INTERVALS = [1, 2, 3, 4, 6, 8, 12];
 const MINUTES = Array.from({ length: 60 }, (_, i) => i);
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-/** Up to 28 so the job runs every month, including February. */
-const DAYS_OF_MONTH = Array.from({ length: 28 }, (_, i) => i + 1);
-const WEEK_DAYS = [
-  { value: 'MON', label: 'Mon' },
-  { value: 'TUE', label: 'Tue' },
-  { value: 'WED', label: 'Wed' },
-  { value: 'THU', label: 'Thu' },
-  { value: 'FRI', label: 'Fri' },
-  { value: 'SAT', label: 'Sat' },
-  { value: 'SUN', label: 'Sun' },
-];
-
 const pad = (value: number) => String(value).padStart(2, '0');
 
 /** "14:05" -> "02:05 PM" */
 const formatTime = (hour: number, minute: number) =>
   `${pad(hour % 12 || 12)}:${pad(minute)} ${hour < 12 ? 'AM' : 'PM'}`;
-
-const ordinal = (day: number) => {
-  const suffix =
-    day % 10 === 1 && day !== 11
-      ? 'st'
-      : day % 10 === 2 && day !== 12
-        ? 'nd'
-        : day % 10 === 3 && day !== 13
-          ? 'rd'
-          : 'th';
-  return `${day}${suffix}`;
-};
 
 @Component({
   selector: 'app-nikshay-phase-config',
@@ -81,8 +55,6 @@ export class NikshayPhaseConfigComponent implements OnInit {
   readonly hourIntervals = HOUR_INTERVALS;
   readonly minutes = MINUTES;
   readonly hours = HOURS;
-  readonly daysOfMonth = DAYS_OF_MONTH;
-  readonly weekDays = WEEK_DAYS;
   readonly pad = pad;
   readonly formatHour = (hour: number) =>
     `${pad(hour % 12 || 12)} ${hour < 12 ? 'AM' : 'PM'}`;
@@ -101,8 +73,6 @@ export class NikshayPhaseConfigComponent implements OnInit {
   hourInterval = 1;
   minute = 0;
   hour = 2;
-  selectedWeekDays: string[] = ['MON'];
-  dayOfMonth = 1;
 
   constructor(
     private nikshayBeneficiaryListService: NikshayBeneficiaryListService,
@@ -147,10 +117,6 @@ export class NikshayPhaseConfigComponent implements OnInit {
         return this.hourInterval === 1
           ? `0 ${this.minute} * * * *`
           : `0 ${this.minute} */${this.hourInterval} * * *`;
-      case 'WEEKLY':
-        return `0 ${this.minute} ${this.hour} * * ${this.sortedWeekDays.join(',')}`;
-      case 'MONTHLY':
-        return `0 ${this.minute} ${this.hour} ${this.dayOfMonth} * *`;
       default:
         return `0 ${this.minute} ${this.hour} * * *`;
     }
@@ -165,21 +131,9 @@ export class NikshayPhaseConfigComponent implements OnInit {
         return this.hourInterval === 1
           ? `Runs every hour at ${pad(this.minute)} minutes past the hour`
           : `Runs every ${this.hourInterval} hours at ${pad(this.minute)} minutes past the hour`;
-      case 'WEEKLY':
-        return `Runs every ${this.sortedWeekDays
-          .map((d) => WEEK_DAYS.find((w) => w.value === d)?.label)
-          .join(', ')} at ${time}`;
-      case 'MONTHLY':
-        return `Runs on the ${ordinal(this.dayOfMonth)} of every month at ${time}`;
       default:
         return `Runs every day at ${time}`;
     }
-  }
-
-  get sortedWeekDays(): string[] {
-    return WEEK_DAYS.map((d) => d.value).filter((d) =>
-      this.selectedWeekDays.includes(d),
-    );
   }
 
   get hasChanges(): boolean {
@@ -192,9 +146,7 @@ export class NikshayPhaseConfigComponent implements OnInit {
   }
 
   get canSave(): boolean {
-    const hasWeekDays =
-      this.frequency !== 'WEEKLY' || this.selectedWeekDays.length > 0;
-    return this.hasChanges && hasWeekDays && !this.isSavingJobSetting;
+    return this.hasChanges && !this.isSavingJobSetting;
   }
 
   /** Fills the picker from a cron it can build; false for anything else. */
@@ -233,37 +185,11 @@ export class NikshayPhaseConfigComponent implements OnInit {
     }
 
     const h = num(hour, HOURS);
-    if (h === null) return false;
-    if (dayOfMonth === '*' && dayOfWeek === '*') {
-      this.frequency = 'DAILY';
-    } else if (dayOfMonth === '*') {
-      const days = dayOfWeek.toUpperCase().split(',');
-      if (!days.every((d) => WEEK_DAYS.some((w) => w.value === d))) {
-        return false;
-      }
-      this.frequency = 'WEEKLY';
-      this.selectedWeekDays = days;
-    } else if (dayOfWeek === '*') {
-      const day = num(dayOfMonth, DAYS_OF_MONTH);
-      if (day === null) return false;
-      this.frequency = 'MONTHLY';
-      this.dayOfMonth = day;
-    } else {
-      return false;
-    }
+    if (h === null || dayOfMonth !== '*' || dayOfWeek !== '*') return false;
+    this.frequency = 'DAILY';
     this.minute = m;
     this.hour = h;
     return true;
-  }
-
-  isWeekDaySelected(day: string): boolean {
-    return this.selectedWeekDays.includes(day);
-  }
-
-  toggleWeekDay(day: string) {
-    this.selectedWeekDays = this.isWeekDaySelected(day)
-      ? this.selectedWeekDays.filter((d) => d !== day)
-      : [...this.selectedWeekDays, day];
   }
 
   resetJobSetting() {

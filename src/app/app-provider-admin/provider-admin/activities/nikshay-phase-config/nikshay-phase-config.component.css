@@ -86,30 +86,6 @@
   width: 180px;
 }
 
-.week-days {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.week-days-label {
-  font-size: 14px;
-  color: #5f6368;
-  margin-right: 4px;
-}
-
-.week-day-btn {
-  min-width: 56px;
-  border-radius: 16px;
-}
-
-.week-day-selected {
-  background: #0b69b2;
-  color: #fff;
-}
-
 .schedule-summary {
   display: flex;
   flex-wrap: wrap;

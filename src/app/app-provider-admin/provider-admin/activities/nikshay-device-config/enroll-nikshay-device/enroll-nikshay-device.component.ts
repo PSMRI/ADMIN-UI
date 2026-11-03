@@ -43,7 +43,7 @@ export class EnrollNikshayDeviceComponent implements OnInit {
   selectedFile: File | null = null;
   maxFileSizeInMB = 5;
   validFileExtensions = ['xls', 'xlsx'];
-  // Excel column header -> request key
+  // Excel column header -> form field
   headerKeyMap: { [header: string]: string } = {
     'Device Serial Number': 'deviceSerialNumber',
     'Device Name': 'deviceName',
@@ -64,18 +64,46 @@ export class EnrollNikshayDeviceComponent implements OnInit {
   }
 
   enrollDevice() {
-    const requestObj = {
-      deviceSerialNumber: this.deviceSerialNumber,
-      deviceName: this.deviceName,
-      phiUserId: this.phiUserId,
-      password: this.password,
-      createdBy: this.createdBy,
-    };
+    this.submitDevices(
+      [
+        this.toDevicePayload({
+          deviceSerialNumber: this.deviceSerialNumber,
+          deviceName: this.deviceName,
+          phiUserId: this.phiUserId,
+          password: this.password,
+        }),
+      ],
+      () => this.resetForm(),
+    );
+  }
 
+  /** One entry of the enroll request's devices array. */
+  toDevicePayload(device: {
+    deviceSerialNumber: string;
+    deviceName: string;
+    phiUserId: string;
+    password: string;
+  }) {
+    return {
+      deviceSerialNumber: device.deviceSerialNumber,
+      deviceName: device.deviceName,
+      phiUserId: device.phiUserId,
+      password: device.password,
+    };
+  }
+
+  /** The same enroll API takes one device (form) or many (Excel upload). */
+  submitDevices(devices: any[], onSuccess: () => void) {
+    const requestObj = { createdBy: this.createdBy, devices };
     this.nikshayDeviceService.enrollDevice(requestObj).subscribe(
       () => {
-        this.dialogService.alert('Device enrolled successfully', 'success');
-        this.resetForm();
+        this.dialogService.alert(
+          devices.length === 1
+            ? 'Device enrolled successfully'
+            : `${devices.length} devices enrolled successfully`,
+          'success',
+        );
+        onSuccess();
       },
       (err: any) => {
         this.dialogService.alert(
@@ -145,20 +173,14 @@ export class EnrollNikshayDeviceComponent implements OnInit {
 
       const headers = rows[0].map((h: any) => String(h).trim());
       const devices = rows.slice(1).map((row) => {
-        const device: any = { createdBy: this.createdBy };
+        const device: any = {};
         headers.forEach((header: string, i: number) => {
           device[this.headerKeyMap[header]] = String(row[i]).trim();
         });
-        return device;
+        return this.toDevicePayload(device);
       });
 
-      // TODO: replace with the bulk upload API call
-      console.info('Bulk enroll devices:', devices);
-      this.dialogService.alert(
-        `${devices.length} device(s) extracted from the file`,
-        'success',
-      );
-      this.resetFileInput();
+      this.submitDevices(devices, () => this.resetFileInput());
     };
     reader.readAsArrayBuffer(this.selectedFile);
   }
