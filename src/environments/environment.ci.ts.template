@@ -559,7 +559,6 @@ export const environment = {
   nikshay_GetBeneficiaryList_Url: `${adminBaseUrl}nikshay/beneficiaryStatus/list`,
   // Append {phase}/reprocess
   nikshay_Phase_Url: `${adminBaseUrl}nikshay/phase/`,
-  nikshay_PhaseJob_Url: `${adminBaseUrl}nikshay/phase/job`,
 
   // PHI Transfer Config APIs
   phi_CreateDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/save`,

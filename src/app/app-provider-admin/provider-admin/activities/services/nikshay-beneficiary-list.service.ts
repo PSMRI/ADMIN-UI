@@ -85,14 +85,6 @@ export interface NikshayBeneficiaryListQuery {
   status?: PhaseStatus;
 }
 
-/** The scheduled Nikshay sync job, as returned by GET/PUT nikshay/phase/job. */
-export interface NikshayPhaseJobSetting {
-  enabled: boolean;
-  cronExpression: string | null;
-  updatedBy: string | null;
-  updatedAt: string | null;
-}
-
 @Injectable()
 export class NikshayBeneficiaryListService {
   constructor(private http: HttpClient) {}
@@ -123,28 +115,6 @@ export class NikshayBeneficiaryListService {
           };
         }),
       );
-  }
-
-  getPhaseJobSetting(): Observable<NikshayPhaseJobSetting> {
-    return this.http
-      .get(environment.nikshay_PhaseJob_Url)
-      .pipe(map((response: any) => this.unwrap(response)));
-  }
-
-  updatePhaseJobSetting(requestObj: {
-    enabled: boolean;
-    cron: string | null;
-  }): Observable<NikshayPhaseJobSetting> {
-    return this.http
-      .put(environment.nikshay_PhaseJob_Url, requestObj)
-      .pipe(map((response: any) => this.unwrap(response)));
-  }
-
-  private unwrap(response: any) {
-    if (response?.statusCode && response.statusCode !== 200) {
-      throw { errorMessage: response?.errorMessage || 'Request failed' };
-    }
-    return response?.data ?? response;
   }
 
   /** Re-runs a phase for the given beneficiaries straight away. */

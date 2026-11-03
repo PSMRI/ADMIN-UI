@@ -113,7 +113,6 @@ import { CreatePhiTransferComponent } from './phi-transfer-config/create-phi-tra
 import { PhiTransferConfigService } from './services/phi-transfer-config.service';
 import { NikshayBeneficiaryListComponent } from './nikshay-beneficiary-list/nikshay-beneficiary-list.component';
 import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-list.service';
-import { NikshayPhaseConfigComponent } from './nikshay-phase-config/nikshay-phase-config.component';
 
 @NgModule({
   declarations: [
@@ -174,7 +173,6 @@ import { NikshayPhaseConfigComponent } from './nikshay-phase-config/nikshay-phas
     PhiMasterComponent,
     CreatePhiTransferComponent,
     NikshayBeneficiaryListComponent,
-    NikshayPhaseConfigComponent,
   ],
   imports: [
     CommonModule,
@@ -276,7 +274,6 @@ import { NikshayPhaseConfigComponent } from './nikshay-phase-config/nikshay-phas
     PhiMasterComponent,
     CreatePhiTransferComponent,
     NikshayBeneficiaryListComponent,
-    NikshayPhaseConfigComponent,
   ],
 })
 export class ActivitiesModule {}
