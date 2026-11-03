@@ -14,14 +14,14 @@
       >
         <div class="col-3">
           <mat-form-field [style.width]="'100%'" class="hide_underline">
-            <mat-label>Device</mat-label>
+            <mat-label>Device Serial Number</mat-label>
             <mat-select
               required
               name="selectedDevice"
               [(ngModel)]="selectedDevice"
             >
               <mat-option *ngFor="let item of devices_array" [value]="item">
-                {{ item.deviceId }}
+                {{ item.deviceSerialNumber }}
               </mat-option>
             </mat-select>
           </mat-form-field>

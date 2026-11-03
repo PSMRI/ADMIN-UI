@@ -270,14 +270,13 @@ export class LinkNikshayDeviceComponent implements OnInit {
   linkDevice() {
     const requestObj = {
       deviceDetailId: this.selectedDevice.id,
+      stateId: this.state.nikshayStateID,
+      districtId: this.district.nikshayDistrictID,
+      tbuId: this.tu.nikshayTUID,
+      facilityIds: this.getFacilityIds(),
+      villageIds: this.selectedVillages.map((v: any) => v.nikshayVillageID),
+      moreData: null,
       createdBy: this.createdBy,
-      villages: this.selectedVillages.map((v: any) => ({
-        stateId: this.state.nikshayStateID,
-        districtId: this.district.nikshayDistrictID,
-        tbuId: this.tu.nikshayTUID,
-        facilityIds: this.getFacilityIds(),
-        villageId: v.nikshayVillageID,
-      })),
     };
 
     this.nikshayDeviceService.linkDeviceToVillage(requestObj).subscribe(

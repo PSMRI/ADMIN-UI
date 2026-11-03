@@ -39,7 +39,7 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
 
   displayedColumns: string[] = [
     'sno',
-    'deviceSerialId',
+    'deviceSerialNumber',
     'deviceId',
     'deviceName',
     'phiUserId',
@@ -48,7 +48,7 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
   ];
 
   allDevices: any[] = [];
-  searchDeviceId = '';
+  searchDeviceSerialNumber = '';
   showTableFlag = false;
   expandedDevice: any = null;
 
@@ -79,7 +79,7 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
     this.dialogService
       .confirm(
         'confirm',
-        `Are you sure you want to unlink ${village.villageName} from ${device.deviceId}?`,
+        `Are you sure you want to unlink ${village.villageName} from ${device.deviceSerialNumber}?`,
       )
       .subscribe((res: boolean) => {
         if (!res) return;
@@ -108,7 +108,7 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
   }
 
   onSearchInputChange(value: string) {
-    this.searchDeviceId = value;
+    this.searchDeviceSerialNumber = value;
     this.searchInput$.next(value);
   }
 
@@ -130,27 +130,29 @@ export class NikshayDeviceMasterComponent implements OnInit, OnDestroy {
   }
 
   search() {
-    if (!this.searchDeviceId) {
+    if (!this.searchDeviceSerialNumber) {
       this.deviceList.data = this.allDevices;
       this.deviceList.paginator = this.tablePaginator;
       return;
     }
-    this.nikshayDeviceService.searchDevice(this.searchDeviceId).subscribe(
-      (response: any) => {
-        const result = response && response.data;
-        this.deviceList.data = Array.isArray(result)
-          ? result
-          : result
-            ? [result]
-            : [];
-        this.deviceList.paginator = this.tablePaginator;
-      },
-      (err: any) => {
-        this.dialogService.alert(
-          err?.errorMessage || 'Failed to search device',
-          'error',
-        );
-      },
-    );
+    this.nikshayDeviceService
+      .searchDevice(this.searchDeviceSerialNumber)
+      .subscribe(
+        (response: any) => {
+          const result = response && response.data;
+          this.deviceList.data = Array.isArray(result)
+            ? result
+            : result
+              ? [result]
+              : [];
+          this.deviceList.paginator = this.tablePaginator;
+        },
+        (err: any) => {
+          this.dialogService.alert(
+            err?.errorMessage || 'Failed to search device',
+            'error',
+          );
+        },
+      );
   }
 }

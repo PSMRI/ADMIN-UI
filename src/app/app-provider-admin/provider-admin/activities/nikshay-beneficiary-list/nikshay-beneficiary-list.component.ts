@@ -204,7 +204,7 @@ export class NikshayBeneficiaryListComponent implements OnInit {
       label: getStatusLabel(status) || status,
       cssClass: 'status-' + status.toLowerCase().replace(/_/g, '-'),
       reason:
-        status === 'FAILED' ? phase?.failureReason || phase?.errorDetail : null,
+        status === 'FAILED' ? phase?.errorDetail || phase?.failureReason : null,
     };
   }
 
