@@ -52,6 +52,8 @@ export class EnrollNikshayDeviceComponent implements OnInit {
   };
   expectedHeaders = Object.keys(this.headerKeyMap);
   validDeviceNames = ['NAAT', 'XRAY'];
+  /** Downloaded when a bulk upload has failed rows. */
+  readonly failedRowsFileName = 'enroll-device-errors.xlsx';
 
   constructor(
     private nikshayDeviceService: NikshayDeviceConfigService,
@@ -73,7 +75,7 @@ export class EnrollNikshayDeviceComponent implements OnInit {
           password: this.password,
         }),
       ],
-      () => this.resetForm(),
+      (result) => this.handleSingleEnrollResult(result),
     );
   }
 
@@ -92,19 +94,14 @@ export class EnrollNikshayDeviceComponent implements OnInit {
     };
   }
 
-  /** The same enroll API takes one device (form) or many (Excel upload). */
-  submitDevices(devices: any[], onSuccess: () => void) {
+  /**
+   * The same enroll API takes one device (form) or many (Excel upload) and
+   * reports per row: { total, successCount, failedCount, created, failed }.
+   */
+  submitDevices(devices: any[], onResult: (result: any) => void) {
     const requestObj = { createdBy: this.createdBy, devices };
     this.nikshayDeviceService.enrollDevice(requestObj).subscribe(
-      () => {
-        this.dialogService.alert(
-          devices.length === 1
-            ? 'Device enrolled successfully'
-            : `${devices.length} devices enrolled successfully`,
-          'success',
-        );
-        onSuccess();
-      },
+      (response: any) => onResult(response?.data || {}),
       (err: any) => {
         this.dialogService.alert(
           err?.errorMessage || 'Failed to enroll device',
@@ -112,6 +109,70 @@ export class EnrollNikshayDeviceComponent implements OnInit {
         );
       },
     );
+  }
+
+  handleSingleEnrollResult(result: any) {
+    if (this.getFailedCount(result) > 0) {
+      this.dialogService.alert(
+        this.getFailureMessage(result.failed?.[0]) || 'Failed to enroll device',
+        'error',
+      );
+      return;
+    }
+    this.dialogService.alert('Device enrolled successfully', 'success');
+    this.resetForm();
+  }
+
+  handleBulkEnrollResult(result: any) {
+    const failedCount = this.getFailedCount(result);
+    const successCount = result.successCount ?? (result.created || []).length;
+    this.resetFileInput();
+    if (failedCount === 0) {
+      this.dialogService.alert(
+        `${successCount} device(s) enrolled successfully`,
+        'success',
+      );
+      return;
+    }
+    this.downloadFailedRows(result.failed || []);
+    this.dialogService.alert(
+      `${successCount} device(s) enrolled, ${failedCount} failed. ` +
+        `The failed rows have been downloaded as ${this.failedRowsFileName}.`,
+      successCount > 0 ? 'warn' : 'error',
+    );
+  }
+
+  getFailedCount(result: any): number {
+    return result.failedCount ?? (result.failed || []).length;
+  }
+
+  /** The row's field errors, or its reason code when it has none. */
+  getFailureMessage(failed: any): string {
+    const messages = (failed?.errors || [])
+      .map((e: any) => e?.message)
+      .filter(Boolean);
+    return messages.length ? messages.join('\n') : failed?.reason || '';
+  }
+
+  /** One sheet row per failed device, with its errors. */
+  buildFailedRows(failed: any[]) {
+    return failed.map((f: any) => ({
+      'Device Serial Number': f.deviceSerialNumber ?? '',
+      'Device Name': f.deviceName ?? '',
+      'PHI User Id': f.phiUserId ?? '',
+      Reason: f.reason ?? '',
+      Errors: this.getFailureMessage(f).replace(/\n/g, '; '),
+    }));
+  }
+
+  downloadFailedRows(failed: any[]) {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      wb,
+      XLSX.utils.json_to_sheet(this.buildFailedRows(failed)),
+      'Failed Devices',
+    );
+    XLSX.writeFile(wb, this.failedRowsFileName);
   }
 
   resetForm() {
@@ -180,7 +241,9 @@ export class EnrollNikshayDeviceComponent implements OnInit {
         return this.toDevicePayload(device);
       });
 
-      this.submitDevices(devices, () => this.resetFileInput());
+      this.submitDevices(devices, (result) =>
+        this.handleBulkEnrollResult(result),
+      );
     };
     reader.readAsArrayBuffer(this.selectedFile);
   }

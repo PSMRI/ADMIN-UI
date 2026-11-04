@@ -133,4 +133,16 @@ export class NikshayBeneficiaryListService {
         }),
       );
   }
+
+  /** Runs the scheduled Nikshay sync job straight away. */
+  runNikshayJob(): Observable<any> {
+    return this.http.post(environment.nikshay_RunJob_Url, null).pipe(
+      map((response: any) => {
+        if (response?.statusCode && response.statusCode !== 200) {
+          throw { errorMessage: response?.errorMessage || 'Request failed' };
+        }
+        return response?.data ?? response;
+      }),
+    );
+  }
 }

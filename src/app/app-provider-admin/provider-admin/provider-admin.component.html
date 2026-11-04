@@ -172,6 +172,7 @@
       <button mat-menu-item [matMenuTriggerFor]="nikshayDeviceConfigMenu">Nikshay Device Config</button>
       <button mat-menu-item [matMenuTriggerFor]="phiTransferConfigMenu">PHI Transfer Config</button>
       <button mat-menu-item (click)="show('88')">Nikshay Beneficiary List</button>
+      <button mat-menu-item (click)="show('89')">Trigger Nikshay Job</button>
     </mat-menu>
     <mat-menu #typeMaster="matMenu">
       <button mat-menu-item (click)="show('43')">Supplier Master</button>
@@ -319,6 +320,7 @@
         <app-phi-master *ngSwitchCase="86"></app-phi-master>
         <app-create-phi-transfer *ngSwitchCase="87"></app-create-phi-transfer>
         <app-nikshay-beneficiary-list *ngSwitchCase="88"></app-nikshay-beneficiary-list>
+        <app-nikshay-job-config *ngSwitchCase="89"></app-nikshay-job-config>
         <app-item-to-facility-mapping *ngSwitchCase="81"></app-item-to-facility-mapping>
         <app-main-store-and-sub-store
           *ngSwitchCase="40"
