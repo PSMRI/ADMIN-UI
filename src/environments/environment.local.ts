@@ -563,6 +563,7 @@ export const environment = {
   // Append {phase}/reprocess
   nikshay_Phase_Url: `${adminBaseUrl}nikshay/phase/`,
   nikshay_RunJob_Url: `${adminBaseUrl}nikshay/phase/job/run`,
+  nikshay_JobTriggerHistory_Url: `${adminBaseUrl}nikshay/log/runs`,
 
   // PHI Transfer Config APIs
   phi_CreateDesignatedPhi_Url: `${adminBaseUrl}nikshay/designatedPhi/save`,

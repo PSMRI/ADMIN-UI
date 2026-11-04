@@ -135,4 +135,76 @@ describe('NikshayBeneficiaryListService', () => {
       .flush({ statusCode: 5000, errorMessage: 'Job already running' });
     expect(error).toEqual({ errorMessage: 'Job already running' });
   });
+
+  it('getNikshayJobTriggerHistory sends page, size and the date range', () => {
+    let result: any;
+    service
+      .getNikshayJobTriggerHistory({
+        page: 1,
+        size: 20,
+        fromDate: '2026-11-01',
+        toDate: '2026-11-03',
+      })
+      .subscribe((res) => (result = res));
+    const req = httpMock.expectOne(
+      (r) => r.url === environment.nikshay_JobTriggerHistory_Url,
+    );
+    expect(req.request.method).toBe('GET');
+    expect(req.request.params.get('page')).toBe('1');
+    expect(req.request.params.get('size')).toBe('20');
+    expect(req.request.params.get('fromDate')).toBe('2026-11-01');
+    expect(req.request.params.get('toDate')).toBe('2026-11-03');
+    const runs = [{ jobRunId: 'run-1', status: 'SUCCESS', summary: null }];
+    req.flush({
+      statusCode: 200,
+      data: { total: 21, page: 1, size: 20, runs },
+    });
+    expect(result).toEqual({ total: 21, page: 1, size: 20, runs });
+  });
+
+  it('getNikshayJobTriggerHistory reads the total from totalElements', () => {
+    let result: any;
+    service
+      .getNikshayJobTriggerHistory({ page: 0, size: 10 })
+      .subscribe((res) => (result = res));
+    const runs = [{ jobRunId: 'run-1' }];
+    httpMock
+      .expectOne((r) => r.url === environment.nikshay_JobTriggerHistory_Url)
+      .flush({ size: 10, page: 0, runs, totalElements: 15 });
+    expect(result).toEqual({ total: 15, page: 0, size: 10, runs });
+  });
+
+  it('getNikshayJobTriggerHistory reports a null total when the API sends none', () => {
+    let result: any;
+    service
+      .getNikshayJobTriggerHistory({ page: 0, size: 50 })
+      .subscribe((res) => (result = res));
+    const runs = [{ jobRunId: 'run-1' }];
+    httpMock
+      .expectOne((r) => r.url === environment.nikshay_JobTriggerHistory_Url)
+      .flush({ size: 50, page: 0, runs });
+    expect(result).toEqual({ total: null, page: 0, size: 50, runs });
+  });
+
+  it('getNikshayJobTriggerHistory sends the trigger type when set', () => {
+    service
+      .getNikshayJobTriggerHistory({ page: 0, size: 10, triggerType: 'MANUAL' })
+      .subscribe();
+    const req = httpMock.expectOne(
+      (r) => r.url === environment.nikshay_JobTriggerHistory_Url,
+    );
+    expect(req.request.params.get('triggerType')).toBe('MANUAL');
+    req.flush({ statusCode: 200, data: {} });
+  });
+
+  it('getNikshayJobTriggerHistory omits the dates when no range is set', () => {
+    service.getNikshayJobTriggerHistory({ page: 0, size: 10 }).subscribe();
+    const req = httpMock.expectOne(
+      (r) => r.url === environment.nikshay_JobTriggerHistory_Url,
+    );
+    expect(req.request.params.has('fromDate')).toBeFalse();
+    expect(req.request.params.has('toDate')).toBeFalse();
+    expect(req.request.params.has('triggerType')).toBeFalse();
+    req.flush({ statusCode: 200, data: {} });
+  });
 });
