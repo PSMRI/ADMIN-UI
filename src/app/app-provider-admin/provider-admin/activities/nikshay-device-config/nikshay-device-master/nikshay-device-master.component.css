@@ -1,0 +1,5 @@
+/* Wide enough for the "Search by Device Serial Number" label to clear the icon */
+#filterbox {
+  width: 300px;
+  max-width: 100%;
+}

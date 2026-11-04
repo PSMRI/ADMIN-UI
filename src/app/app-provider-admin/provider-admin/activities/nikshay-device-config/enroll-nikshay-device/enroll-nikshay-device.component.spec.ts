@@ -12,7 +12,33 @@ let component: EnrollNikshayDeviceComponent;
 let fixture: ComponentFixture<EnrollNikshayDeviceComponent>;
 
 const FakeNikshayDeviceConfigService = {
-  enrollDevice: (_req: any) => of({ data: {} }),
+  enrollDevice: (_req: any) =>
+    of({ statusCode: 200, data: enrollResult(1, []) }),
+};
+
+/** Shape of the enroll API's data: per-row created/failed with counts. */
+function enrollResult(successCount: number, failed: any[]) {
+  return {
+    total: successCount + failed.length,
+    successCount,
+    failedCount: failed.length,
+    created: Array.from({ length: successCount }, (_, i) => ({ rowIndex: i })),
+    failed,
+  };
+}
+
+const DUPLICATE_ROW = {
+  rowIndex: 0,
+  deviceSerialNumber: '1',
+  deviceName: 'NAAT',
+  phiUserId: 'phi User Id',
+  reason: 'ALREADY_EXISTS',
+  errors: [
+    {
+      field: 'deviceSerialNumber',
+      message: 'A device with serial number 1 already exists',
+    },
+  ],
 };
 
 const FakeDialogService = {
@@ -116,6 +142,34 @@ describe('EnrollNikshayDeviceComponent', () => {
       expect(component.enrollDeviceForm.resetForm).toHaveBeenCalled();
     });
 
+    it('shows the row error message and keeps the form when the device is rejected', () => {
+      spyOn(FakeNikshayDeviceConfigService, 'enrollDevice').and.returnValue(
+        of({ statusCode: 200, data: enrollResult(0, [DUPLICATE_ROW]) }),
+      );
+      spyOn(FakeDialogService, 'alert');
+      component.enrollDevice();
+      expect(FakeDialogService.alert).toHaveBeenCalledOnceWith(
+        'A device with serial number 1 already exists',
+        'error',
+      );
+      expect(component.enrollDeviceForm.resetForm).not.toHaveBeenCalled();
+    });
+
+    it('falls back to the reason code when a rejected device has no messages', () => {
+      spyOn(FakeNikshayDeviceConfigService, 'enrollDevice').and.returnValue(
+        of({
+          statusCode: 200,
+          data: enrollResult(0, [{ ...DUPLICATE_ROW, errors: [] }]),
+        }),
+      );
+      spyOn(FakeDialogService, 'alert');
+      component.enrollDevice();
+      expect(FakeDialogService.alert).toHaveBeenCalledOnceWith(
+        'ALREADY_EXISTS',
+        'error',
+      );
+    });
+
     it('shows the backend error message on failure', () => {
       spyOn(FakeNikshayDeviceConfigService, 'enrollDevice').and.returnValue(
         throwError(() => ({ errorMessage: 'Duplicate device' })),
@@ -141,34 +195,112 @@ describe('EnrollNikshayDeviceComponent', () => {
     });
   });
 
-  describe('submitDevices (bulk)', () => {
+  describe('submitDevices', () => {
     initTestBed();
 
-    it('shows a pluralized success message for more than one device', () => {
-      spyOn(FakeDialogService, 'alert');
-      const onSuccess = jasmine.createSpy('onSuccess');
-      component.submitDevices(
-        [
-          component.toDevicePayload({
-            deviceSerialNumber: 'A',
-            deviceName: 'NAAT',
-            phiUserId: 'P1',
-            password: 'x',
-          }),
-          component.toDevicePayload({
-            deviceSerialNumber: 'B',
-            deviceName: 'XRAY',
-            phiUserId: 'P2',
-            password: 'y',
-          }),
-        ],
-        onSuccess,
+    it('sends createdBy with the devices and hands the result data to the callback', () => {
+      const data = enrollResult(2, []);
+      spyOn(FakeNikshayDeviceConfigService, 'enrollDevice').and.returnValue(
+        of({ statusCode: 200, data }),
       );
-      expect(FakeDialogService.alert).toHaveBeenCalledWith(
-        '2 devices enrolled successfully',
+      const onResult = jasmine.createSpy('onResult');
+      const devices = [
+        { deviceSerialNumber: 'A' },
+        { deviceSerialNumber: 'B' },
+      ];
+      component.submitDevices(devices, onResult);
+      expect(FakeNikshayDeviceConfigService.enrollDevice).toHaveBeenCalledWith({
+        createdBy: 'admin',
+        devices,
+      });
+      expect(onResult).toHaveBeenCalledWith(data);
+    });
+  });
+
+  describe('handleBulkEnrollResult', () => {
+    initTestBed();
+
+    beforeEach(() => {
+      spyOn(component, 'downloadFailedRows');
+      spyOn(component, 'resetFileInput');
+      spyOn(FakeDialogService, 'alert');
+    });
+
+    it('reports success and downloads nothing when every row was enrolled', () => {
+      component.handleBulkEnrollResult(enrollResult(16, []));
+      expect(FakeDialogService.alert).toHaveBeenCalledOnceWith(
+        '16 device(s) enrolled successfully',
         'success',
       );
-      expect(onSuccess).toHaveBeenCalled();
+      expect(component.downloadFailedRows).not.toHaveBeenCalled();
+      expect(component.resetFileInput).toHaveBeenCalled();
+    });
+
+    it('warns with both counts and downloads the failed rows on a partial failure', () => {
+      component.handleBulkEnrollResult(enrollResult(15, [DUPLICATE_ROW]));
+      expect(component.downloadFailedRows).toHaveBeenCalledOnceWith([
+        DUPLICATE_ROW,
+      ]);
+      expect(FakeDialogService.alert).toHaveBeenCalledOnceWith(
+        '15 device(s) enrolled, 1 failed. The failed rows have been downloaded as enroll-device-errors.xlsx.',
+        'warn',
+      );
+      expect(component.resetFileInput).toHaveBeenCalled();
+    });
+
+    it('reports an error when no row was enrolled', () => {
+      component.handleBulkEnrollResult(enrollResult(0, [DUPLICATE_ROW]));
+      expect(component.downloadFailedRows).toHaveBeenCalled();
+      expect(FakeDialogService.alert).toHaveBeenCalledOnceWith(
+        jasmine.stringContaining('0 device(s) enrolled, 1 failed'),
+        'error',
+      );
+    });
+
+    it('falls back to the array lengths when the counts are missing', () => {
+      component.handleBulkEnrollResult({
+        created: [{}, {}],
+        failed: [DUPLICATE_ROW],
+      });
+      expect(FakeDialogService.alert).toHaveBeenCalledOnceWith(
+        jasmine.stringContaining('2 device(s) enrolled, 1 failed'),
+        'warn',
+      );
+    });
+  });
+
+  describe('buildFailedRows', () => {
+    initTestBed();
+
+    it('maps each failed device to a sheet row with its Excel row number and errors', () => {
+      expect(
+        component.buildFailedRows([
+          {
+            ...DUPLICATE_ROW,
+            rowIndex: 3,
+            errors: [
+              { field: 'deviceSerialNumber', message: 'Already exists' },
+              { field: 'phiUserId', message: 'PHI user not found' },
+            ],
+          },
+        ]),
+      ).toEqual([
+        {
+          'Excel Row': 5,
+          'Device Serial Number': '1',
+          'Device Name': 'NAAT',
+          'PHI User Id': 'phi User Id',
+          Reason: 'ALREADY_EXISTS',
+          Errors: 'Already exists; PHI user not found',
+        },
+      ]);
+    });
+
+    it('never includes the password', () => {
+      const [row] = component.buildFailedRows([
+        { ...DUPLICATE_ROW, password: 'secret' },
+      ]);
+      expect(Object.values(row)).not.toContain('secret');
     });
   });
 
