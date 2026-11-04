@@ -1,0 +1,30 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-xs-12 col-sm-12">
+      <div class="job-card">
+        <div class="job-info">
+          <div class="job-title">Trigger Nikshay Job</div>
+          <div class="job-description">
+            Runs the Nikshay sync job now instead of waiting for its schedule.
+          </div>
+        </div>
+        <button
+          mat-raised-button
+          color="primary"
+          class="mat_blue"
+          type="button"
+          [disabled]="isRunningJob"
+          (click)="triggerNikshayJob()"
+        >
+          <mat-spinner
+            *ngIf="isRunningJob"
+            diameter="18"
+            class="btn-spinner"
+          ></mat-spinner>
+          <mat-icon *ngIf="!isRunningJob" class="btn-icon">play_arrow</mat-icon>
+          {{ isRunningJob ? "Running..." : "Trigger" }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

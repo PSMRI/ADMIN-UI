@@ -115,4 +115,24 @@ describe('NikshayBeneficiaryListService', () => {
     expect(req.request.body).toEqual([1, 2]);
     req.flush({ data: {} });
   });
+
+  it('runNikshayJob posts to the job run URL with no body', () => {
+    let result: any;
+    service.runNikshayJob().subscribe((res) => (result = res));
+    const req = httpMock.expectOne(environment.nikshay_RunJob_Url);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toBeNull();
+    req.flush({ statusCode: 200, data: { message: 'Job started' } });
+    expect(result).toEqual({ message: 'Job started' });
+    expect(environment.nikshay_RunJob_Url).toMatch(/nikshay\/phase\/job\/run$/);
+  });
+
+  it('runNikshayJob throws with the backend errorMessage when statusCode is not 200', () => {
+    let error: any;
+    service.runNikshayJob().subscribe({ error: (e) => (error = e) });
+    httpMock
+      .expectOne(environment.nikshay_RunJob_Url)
+      .flush({ statusCode: 5000, errorMessage: 'Job already running' });
+    expect(error).toEqual({ errorMessage: 'Job already running' });
+  });
 });

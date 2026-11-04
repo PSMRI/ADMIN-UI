@@ -112,6 +112,7 @@ import { PhiMasterComponent } from './phi-transfer-config/phi-master/phi-master.
 import { CreatePhiTransferComponent } from './phi-transfer-config/create-phi-transfer/create-phi-transfer.component';
 import { PhiTransferConfigService } from './services/phi-transfer-config.service';
 import { NikshayBeneficiaryListComponent } from './nikshay-beneficiary-list/nikshay-beneficiary-list.component';
+import { NikshayJobConfigComponent } from './nikshay-job-config/nikshay-job-config.component';
 import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-list.service';
 
 @NgModule({
@@ -173,6 +174,7 @@ import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-li
     PhiMasterComponent,
     CreatePhiTransferComponent,
     NikshayBeneficiaryListComponent,
+    NikshayJobConfigComponent,
   ],
   imports: [
     CommonModule,
@@ -274,6 +276,7 @@ import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-li
     PhiMasterComponent,
     CreatePhiTransferComponent,
     NikshayBeneficiaryListComponent,
+    NikshayJobConfigComponent,
   ],
 })
 export class ActivitiesModule {}
