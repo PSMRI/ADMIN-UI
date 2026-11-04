@@ -272,7 +272,7 @@ describe('EnrollNikshayDeviceComponent', () => {
   describe('buildFailedRows', () => {
     initTestBed();
 
-    it('maps each failed device to a sheet row with its Excel row number and errors', () => {
+    it('maps each failed device to a sheet row with its errors', () => {
       expect(
         component.buildFailedRows([
           {
@@ -286,7 +286,6 @@ describe('EnrollNikshayDeviceComponent', () => {
         ]),
       ).toEqual([
         {
-          'Excel Row': 5,
           'Device Serial Number': '1',
           'Device Name': 'NAAT',
           'PHI User Id': 'phi User Id',

@@ -154,10 +154,9 @@ export class EnrollNikshayDeviceComponent implements OnInit {
     return messages.length ? messages.join('\n') : failed?.reason || '';
   }
 
-  /** One sheet row per failed device; rowIndex is the 0-based data row, so +2 skips the header. */
+  /** One sheet row per failed device, with its errors. */
   buildFailedRows(failed: any[]) {
     return failed.map((f: any) => ({
-      'Excel Row': typeof f.rowIndex === 'number' ? f.rowIndex + 2 : '',
       'Device Serial Number': f.deviceSerialNumber ?? '',
       'Device Name': f.deviceName ?? '',
       'PHI User Id': f.phiUserId ?? '',
