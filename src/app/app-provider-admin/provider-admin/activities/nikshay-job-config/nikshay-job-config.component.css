@@ -35,3 +35,124 @@
   vertical-align: middle;
   margin-right: 8px;
 }
+
+.history-section {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+}
+
+.history-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.history-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.trigger-type-field {
+  width: 150px;
+}
+
+.date-range-field {
+  width: 260px;
+  max-width: 100%;
+}
+
+.list-loading {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
+}
+
+.table-responsive td {
+  vertical-align: middle;
+}
+
+.empty-state {
+  margin: 16px 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+.status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-success {
+  background: #e6f4ea;
+  color: #1e7e34;
+}
+
+.status-failed {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+.sub-text {
+  font-size: 12px;
+  color: #5f6368;
+}
+
+.count-cell {
+  text-align: center;
+}
+
+.count-failed {
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.status-other {
+  background: #f1f3f4;
+  color: #5f6368;
+}
+
+.icon-btn {
+  color: #0b69b2;
+  border: unset;
+  background-color: unset;
+}
+
+/* The details row is always rendered; it only takes space when open */
+.details-row {
+  height: 0;
+}
+
+.details-row:not(.details-row-open) .details-cell {
+  padding: 0;
+  border-bottom-width: 0;
+}
+
+.run-details {
+  padding: 12px 0;
+}
+
+.run-message {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  background: #f1f3f4;
+  color: #3c4043;
+}
+
+.run-message-failed {
+  background: #fdecea;
+  color: #b3261e;
+}
+
+.phase-table {
+  margin-bottom: 0;
+}

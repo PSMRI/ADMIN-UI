@@ -85,6 +85,58 @@ export interface NikshayBeneficiaryListQuery {
   status?: PhaseStatus;
 }
 
+/** Counts the job reports for a whole run and for each phase pass. */
+export interface NikshayJobCounts {
+  picked: number;
+  succeeded: number;
+  failed: number;
+  notApplicable: number;
+  waiting: number;
+}
+
+/** One pass of one phase within a run; XRAY_UPLOAD and NAAT_UPLOAD run twice. */
+export interface NikshayJobPhaseResult extends NikshayJobCounts {
+  phase: NikshayPhaseKey;
+  pass: number;
+  result: string;
+}
+
+export interface NikshayJobRunSummary extends NikshayJobCounts {
+  phases: NikshayJobPhaseResult[];
+}
+
+/** One run of the Nikshay job, scheduled or triggered manually. */
+export interface NikshayJobRun {
+  jobRunId: string;
+  triggerType: string;
+  triggeredBy: string | null;
+  status: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  summary: NikshayJobRunSummary | null;
+  message: string | null;
+}
+
+/** total (the API's totalElements) is null when the API does not report it. */
+export interface NikshayJobRunHistoryResponse {
+  total: number | null;
+  page: number;
+  size: number;
+  runs: NikshayJobRun[];
+}
+
+/** JOB runs come from the schedule; MANUAL ones were triggered by a user. */
+export type NikshayJobTriggerType = 'JOB' | 'MANUAL';
+
+/** Page (0-based), an optional inclusive date range as yyyy-MM-dd, and trigger type. */
+export interface NikshayJobTriggerHistoryQuery {
+  page: number;
+  size: number;
+  fromDate?: string;
+  toDate?: string;
+  triggerType?: NikshayJobTriggerType;
+}
+
 @Injectable()
 export class NikshayBeneficiaryListService {
   constructor(private http: HttpClient) {}
@@ -144,5 +196,39 @@ export class NikshayBeneficiaryListService {
         return response?.data ?? response;
       }),
     );
+  }
+
+  getNikshayJobTriggerHistory(
+    query: NikshayJobTriggerHistoryQuery,
+  ): Observable<NikshayJobRunHistoryResponse> {
+    let params = new HttpParams()
+      .set('page', String(query.page))
+      .set('size', String(query.size));
+    if (query.fromDate) params = params.set('fromDate', query.fromDate);
+    if (query.toDate) params = params.set('toDate', query.toDate);
+    if (query.triggerType)
+      params = params.set('triggerType', query.triggerType);
+
+    return this.http
+      .get(environment.nikshay_JobTriggerHistory_Url, { params })
+      .pipe(
+        map((response: any) => {
+          if (response?.statusCode && response.statusCode !== 200) {
+            throw { errorMessage: response?.errorMessage || 'Request failed' };
+          }
+          const data = response?.data ?? response;
+          return {
+            total:
+              typeof data?.totalElements === 'number'
+                ? data.totalElements
+                : typeof data?.total === 'number'
+                  ? data.total
+                  : null,
+            page: data?.page || 0,
+            size: data?.size || query.size,
+            runs: data?.runs || [],
+          };
+        }),
+      );
   }
 }
