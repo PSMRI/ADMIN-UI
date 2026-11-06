@@ -66,6 +66,7 @@
       <button mat-menu-item (click)="show('75')">
         Project Configuration Screen
       </button>
+      <button mat-menu-item (click)="show('84')">Consent Configuration</button>
     </mat-menu>
     <mat-menu #FetosenseMaster="matMenu">
       <button mat-menu-item (click)="show('70')">Device ID Master</button>
@@ -260,6 +261,9 @@
         <app-project-configutation-screen
           *ngSwitchCase="75"
         ></app-project-configutation-screen>
+        <app-consent-configuration
+          *ngSwitchCase="84"
+        ></app-consent-configuration>
         <app-data-mapping-block-subcenter
           *ngSwitchCase="72"
         ></app-data-mapping-block-subcenter>

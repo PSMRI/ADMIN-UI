@@ -1,0 +1,45 @@
+.consent-config-mappings td,
+.consent-config-mappings th {
+  vertical-align: middle;
+}
+
+.consent-config-project {
+  margin: 0 0 12px;
+}
+
+.consent-config-version {
+  margin: 0 0 12px;
+  color: #616161;
+}
+
+.consent-config-tab {
+  padding: 16px 0;
+}
+
+.consent-config-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.consent-config-modes td,
+.consent-config-modes th {
+  vertical-align: middle;
+}
+
+.consent-config-error {
+  margin: 0 0 8px;
+  color: #c62828;
+}
+
+.consent-config-preview {
+  margin: 16px 0;
+}
+
+.consent-config-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 24px;
+}
