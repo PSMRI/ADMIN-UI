@@ -101,6 +101,8 @@ import { ProjectMasterComponent } from './project-master/project-master.componen
 import { ProjectServicelineMappingComponent } from './project-serviceline-mapping/project-serviceline-mapping.component';
 import { ProjectConfigutationScreenComponent } from './project-configutation-screen/project-configutation-screen.component';
 import { ConsentConfigurationComponent } from './consent-configuration/consent-configuration.component';
+import { ConsentMessageComponent } from './consent-message/consent-message.component';
+import { LegacyConsentUploadComponent } from './legacy-consent-upload/legacy-consent-upload.component';
 import { ProjectConfigurationService } from './services/project-configuration-service';
 import { AddFieldsToProjectComponent } from './add-fields-to-project/add-fields-to-project.component';
 import { AddFieldsService } from './services/add-fields-service';
@@ -159,6 +161,8 @@ import { CoreModule } from 'src/app/core/core.module';
     ProjectServicelineMappingComponent,
     ProjectConfigutationScreenComponent,
     ConsentConfigurationComponent,
+    ConsentMessageComponent,
+    LegacyConsentUploadComponent,
     AddFieldsToProjectComponent,
     EmployeeMasterBulkUploadComponent,
     UserFacilityMappingComponent,

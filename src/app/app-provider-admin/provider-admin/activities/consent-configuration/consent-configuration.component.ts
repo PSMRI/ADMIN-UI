@@ -19,7 +19,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
+import { MatPaginator } from '@angular/material/paginator';
+import { MatTableDataSource } from '@angular/material/table';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import {
@@ -29,29 +31,27 @@ import {
   ContextConfig,
   ModeSettings,
   ProjectConsentConfig,
+  RETIRED_CONSENT_MODES,
   SaveConsentConfigRequest,
 } from '../services/consent-configuration.service';
 import { ProjectMasterService } from '../services/project-master-service.service';
+import { ConsentMessageComponent } from '../consent-message/consent-message.component';
 
-/** One row of the modes table; the table order is the display order. */
+/** Labels used when the masters have not loaded or do not name a mode. */
+export const MODE_LABELS: Partial<Record<ConsentMode, string>> = {
+  SELF_READ: 'Patient read it',
+  READ_ALOUD: 'Read aloud to patient',
+  WITNESSED: 'Witnessed',
+  SIGNATURE_PHOTO: 'Signed consent form (signature / thumb)',
+  OTP: "OTP to patient's phone",
+};
+
+/** One row of the modes table, in the master order. */
 export interface ModeRow {
   mode: ConsentMode;
   name: string;
   ticked: boolean;
   settings: ModeSettings;
-}
-
-/** Feature 001 behaviour, shown for a project that was never configured. */
-export function platformDefault(): ContextConfig {
-  return {
-    enabled: true,
-    mandatory: true,
-    modes: [],
-    defaultMode: null,
-    purposes: [],
-    languages: [],
-    guardian: { enabled: true, ageThreshold: 18 },
-  };
 }
 
 @Component({
@@ -60,6 +60,29 @@ export function platformDefault(): ContextConfig {
   styleUrls: ['./consent-configuration.component.css'],
 })
 export class ConsentConfigurationComponent implements OnInit {
+  showTable = true;
+  /** DPDP: the legacy consent upload panel is open on the list view. */
+  showLegacyUpload = false;
+  editMode = false;
+  mappings: ProjectConsentConfig[] = [];
+  dataSource = new MatTableDataSource<ProjectConsentConfig>();
+  displayedColumns = [
+    'sno',
+    'projectName',
+    'consent',
+    'mandatory',
+    'modes',
+    'version',
+    'savedBy',
+    'edit',
+  ];
+
+  @ViewChild(ConsentMessageComponent) message?: ConsentMessageComponent;
+
+  @ViewChild(MatPaginator) set paginator(paginator: MatPaginator) {
+    this.dataSource.paginator = paginator;
+  }
+
   serviceProviderId!: number;
   userName = '';
   projectNames: any[] = [];
@@ -90,6 +113,118 @@ export class ConsentConfigurationComponent implements OnInit {
     this.userName = this.sessionstorage.getItem('uname') || '';
     this.getProjects();
     this.getMasters();
+    this.getMappings();
+  }
+
+  /** Projects that already have a consent configuration, one table row each. */
+  getMappings() {
+    this.consentConfigService.fetchAllConfigs(this.serviceProviderId).subscribe(
+      (res: any) => {
+        if (res && res.statusCode === 200) {
+          this.mappings = res.data || [];
+          this.dataSource.data = this.mappings;
+        } else {
+          this.confirmationService.alert(res?.errorMessage, 'error');
+        }
+      },
+      (err: any) => this.confirmationService.alert(err.errorMessage, 'error'),
+    );
+  }
+
+  filterMappings(searchTerm: string) {
+    const text = (searchTerm || '').toLowerCase().trim();
+    this.dataSource.data = this.mappings.filter(
+      (m) =>
+        m.projectName.toLowerCase().includes(text) ||
+        this.modeNames(m).toLowerCase().includes(text),
+    );
+  }
+
+  /** The allowed modes of a mapping in master order, the default marked. */
+  /**
+   * The allowed modes of a mapping, from the fetchAllConfigs response itself, in rank order with
+   * the default marked. Names come from the masters when loaded, otherwise from built-in labels.
+   */
+  modeNames(mapping: ProjectConsentConfig): string {
+    const context = mapping?.registration;
+    if (!context || !context.enabled) {
+      return '-';
+    }
+    const names = [...(context.modes || [])]
+      .filter((m) => m && RETIRED_CONSENT_MODES.indexOf(m.mode) === -1)
+      .sort((a, b) => (a.rank ?? 0) - (b.rank ?? 0))
+      .map((m) => ({ mode: m.mode, name: this.modeName(m.mode) }))
+      .filter((m) => !!m.name)
+      .map((m) =>
+        m.mode === context.defaultMode ? `${m.name} (default)` : m.name,
+      );
+    return names.length > 0 ? names.join(', ') : '-';
+  }
+
+  /** Display name of a mode: the master's name, else a built-in label; none for an unknown mode. */
+  private modeName(mode: ConsentMode): string | undefined {
+    const master = (this.masters?.modes || []).find((m) => m.mode === mode);
+    return master?.name || MODE_LABELS[mode];
+  }
+
+  /** Projects without a mapping, offered when adding a new one. */
+  unmappedProjects(): any[] {
+    return this.projectNames.filter(
+      (p: any) => !this.mappings.some((m) => m.projectId === p.projectId),
+    );
+  }
+
+  addMapping() {
+    this.clearForm();
+    this.editMode = false;
+    this.filteredOptions = this.unmappedProjects();
+    this.showTable = false;
+  }
+
+  editMapping(mapping: ProjectConsentConfig) {
+    this.clearForm();
+    this.editMode = true;
+    this.showTable = false;
+    const project = this.projectNames.find(
+      (p: any) => p.projectId === mapping.projectId,
+    ) || { projectId: mapping.projectId, projectName: mapping.projectName };
+    this.project = project;
+    this.loadConfig(project);
+  }
+
+  back() {
+    if (!this.dirty && !this.message?.dirty) {
+      this.showList();
+      return;
+    }
+    this.confirmationService
+      .confirm('Confirm', 'Discard your unsaved changes?')
+      .subscribe((discard) => {
+        if (discard) {
+          this.showList();
+        }
+      });
+  }
+
+  showList() {
+    this.clearForm();
+    this.showTable = true;
+    this.getMappings();
+  }
+
+  private clearForm() {
+    this.project = null;
+    this.selectedProject = null;
+    this.loaded = null;
+    this.rows = [];
+    this.dirty = false;
+  }
+
+  /** Master modes without the retired ones, even if an older master still lists them. */
+  private masterModes() {
+    return (this.masters?.modes || []).filter(
+      (m) => RETIRED_CONSENT_MODES.indexOf(m.mode) === -1,
+    );
   }
 
   getProjects() {
@@ -115,6 +250,10 @@ export class ConsentConfigurationComponent implements OnInit {
       (res: any) => {
         if (res && res.statusCode === 200) {
           this.masters = res.data;
+          // The project may have loaded first, with only the fallback names.
+          if (this.loaded && !this.dirty) {
+            this.apply(this.loaded);
+          }
         } else {
           this.confirmationService.alert(res?.errorMessage, 'error');
         }
@@ -131,19 +270,9 @@ export class ConsentConfigurationComponent implements OnInit {
     const text = (typeof value === 'string' ? value : this.displayFn(value))
       .toLowerCase()
       .trim();
-    this.filteredOptions = this.projectNames.filter((p: any) =>
+    this.filteredOptions = this.unmappedProjects().filter((p: any) =>
       p.projectName.toLowerCase().includes(text),
     );
-  }
-
-  /** "Configured vN" or "Not configured" for the picker (FR-002). */
-  projectStatus(project: any): string {
-    const found = (this.masters?.projects || []).find(
-      (p) => p.projectId === project.projectId,
-    );
-    return found && found.version > 0
-      ? `Configured v${found.version}`
-      : 'Not configured';
   }
 
   onProjectSelected(project: any) {
@@ -178,35 +307,30 @@ export class ConsentConfigurationComponent implements OnInit {
       );
   }
 
-  /** Fills the form from a stored configuration; version 0 shows the platform default. */
+  /**
+   * Fills the form exactly as fetchConfigByProject returned it. A project never saved comes back
+   * with version 0 and the server's own starting values.
+   */
   apply(config: ProjectConsentConfig) {
     this.loaded = config;
-    const context =
-      config.version > 0 ? config.registration : platformDefault();
-    this.enabled = context.enabled;
-    this.mandatory = context.mandatory;
-    this.defaultMode = context.defaultMode;
-    const allowed = [...(context.modes || [])].sort((a, b) => a.rank - b.rank);
-    const masterModes = this.masters?.modes || [];
-    const nameOf = (mode: ConsentMode) =>
-      masterModes.find((m) => m.mode === mode)?.name || mode;
-    const ticked: ModeRow[] = allowed
-      .filter((m) => masterModes.some((x) => x.mode === m.mode))
-      .map((m) => ({
+    const context: Partial<ContextConfig> = config.registration || {};
+    this.enabled = context.enabled === true;
+    this.mandatory = context.mandatory === true;
+    this.defaultMode =
+      context.defaultMode &&
+      RETIRED_CONSENT_MODES.indexOf(context.defaultMode) === -1
+        ? context.defaultMode
+        : null;
+    const allowed = context.modes || [];
+    this.rows = this.masterModes().map((m) => {
+      const found = allowed.find((a) => a.mode === m.mode);
+      return {
         mode: m.mode,
-        name: nameOf(m.mode),
-        ticked: true,
-        settings: { ...m.settings },
-      }));
-    const rest: ModeRow[] = masterModes
-      .filter((m) => !ticked.some((t) => t.mode === m.mode))
-      .map((m) => ({
-        mode: m.mode,
-        name: m.name,
-        ticked: config.version === 0,
-        settings: {},
-      }));
-    this.rows = ticked.concat(rest);
+        name: m.name || m.mode,
+        ticked: !!found,
+        settings: found ? { ...found.settings } : {},
+      };
+    });
     this.dirty = false;
   }
 
@@ -226,17 +350,6 @@ export class ConsentConfigurationComponent implements OnInit {
 
   toggleMode(row: ModeRow, checked: boolean) {
     row.ticked = checked;
-    this.markDirty();
-  }
-
-  move(index: number, step: -1 | 1) {
-    const target = index + step;
-    if (target < 0 || target >= this.rows.length) {
-      return;
-    }
-    const rows = [...this.rows];
-    [rows[index], rows[target]] = [rows[target], rows[index]];
-    this.rows = rows;
     this.markDirty();
   }
 
@@ -275,7 +388,7 @@ export class ConsentConfigurationComponent implements OnInit {
 
   buildRegistration(): ContextConfig {
     const base = this.loaded as ProjectConsentConfig;
-    const previous = base.version > 0 ? base.registration : platformDefault();
+    const previous: Partial<ContextConfig> = base.registration || {};
     return {
       ...previous,
       enabled: this.enabled,
@@ -286,7 +399,8 @@ export class ConsentConfigurationComponent implements OnInit {
         settings: { ...r.settings },
       })),
       defaultMode: this.tickedRows.length > 0 ? this.effectiveDefault : null,
-    };
+      // purposes, languages and guardian go back exactly as the server sent them.
+    } as ContextConfig;
   }
 
   save() {
@@ -317,12 +431,11 @@ export class ConsentConfigurationComponent implements OnInit {
       (res: any) => {
         this.saving = false;
         if (res && res.statusCode === 200 && res.data) {
-          this.apply(res.data);
-          this.updateProjectVersion(res.data.projectId, res.data.version);
           this.confirmationService.alert(
             `Saved, version ${res.data.version}`,
             'success',
           );
+          this.showList();
         } else {
           this.confirmationService.alert(res?.errorMessage, 'error');
         }
@@ -355,18 +468,5 @@ export class ConsentConfigurationComponent implements OnInit {
     if (this.loaded) {
       this.apply(this.loaded);
     }
-  }
-
-  private updateProjectVersion(projectId: number, version: number) {
-    if (!this.masters) {
-      return;
-    }
-    const others = this.masters.projects.filter(
-      (p) => p.projectId !== projectId,
-    );
-    this.masters = {
-      ...this.masters,
-      projects: others.concat([{ projectId, version }]),
-    };
   }
 }

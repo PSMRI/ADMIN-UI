@@ -1,6 +1,10 @@
-.consent-config-status {
-  margin-left: 8px;
-  color: #616161;
+.consent-config-mappings td,
+.consent-config-mappings th {
+  vertical-align: middle;
+}
+
+.consent-config-project {
+  margin: 0 0 12px;
 }
 
 .consent-config-version {

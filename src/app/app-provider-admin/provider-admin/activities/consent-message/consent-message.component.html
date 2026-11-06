@@ -1,0 +1,248 @@
+<div class="consent-message">
+  <p class="consent-message-intro">
+    The message field staff read or show to the patient before taking consent.
+    Write it in English.
+  </p>
+
+  <p class="consent-message-error" role="alert" *ngIf="loadFailed">
+    Could not load the consent messages.
+    <button
+      mat-button
+      type="button"
+      class="consent-message-retry"
+      (click)="load()"
+    >
+      Retry
+    </button>
+  </p>
+
+  <ng-container *ngIf="!loadFailed">
+    <div class="consent-message-pickers">
+      <div
+        class="consent-message-contexts"
+        role="group"
+        aria-label="Consent context"
+      >
+        <button
+          *ngFor="let c of contexts"
+          type="button"
+          class="consent-message-context"
+          [class.selected]="c.value === context"
+          [attr.aria-pressed]="c.value === context"
+          [disabled]="busy"
+          (click)="selectContext(c.value)"
+        >
+          {{ c.label }}
+        </button>
+      </div>
+    </div>
+
+    <ng-container *ngIf="languageCode">
+      <div class="consent-message-state">
+        <span class="consent-message-badge">{{ statusOf(current) }}</span>
+        <span *ngIf="current?.published as published">
+          Published by {{ published.publishedBy }} on
+          {{ published.publishedAt | date: "d MMM y, HH:mm" }}
+        </span>
+        <span *ngIf="current?.draft as draft">
+          · Draft saved by {{ draft.savedBy }} on
+          {{ draft.savedAt | date: "d MMM y, HH:mm" }}
+        </span>
+      </div>
+      <p class="consent-message-hint" *ngIf="fallbackNote">
+        {{ fallbackNote }}
+      </p>
+
+      <ng-container>
+        <mat-form-field class="consent-message-body">
+          <mat-label>Consent message (English)</mat-label>
+          <textarea
+            matInput
+            name="consent-message-body"
+            rows="7"
+            required
+            [maxlength]="maxLength"
+            [(ngModel)]="content.body"
+            (ngModelChange)="markDirty()"
+          ></textarea>
+          <mat-hint>A blank line starts a new paragraph.</mat-hint>
+          <mat-hint align="end"
+            >{{ content.body.length }} / {{ maxLength }}</mat-hint
+          >
+        </mat-form-field>
+        <p
+          class="consent-message-error"
+          role="alert"
+          *ngIf="dirty && bodyMissing"
+        >
+          Enter the consent message.
+        </p>
+
+        <section class="consent-message-group consent-message-declaration">
+          <h5>Patient declaration</h5>
+          <p class="consent-message-hint">
+            What the patient agrees to after the message. Saved with every
+            consent as proof.
+          </p>
+          <mat-form-field class="consent-message-body">
+            <mat-label>Declaration (English)</mat-label>
+            <textarea
+              matInput
+              name="consent-message-declaration"
+              rows="3"
+              [maxlength]="declarationMaxLength"
+              [(ngModel)]="content.declaration"
+              (ngModelChange)="markDirty()"
+            ></textarea>
+            <mat-hint>Required to publish.</mat-hint>
+            <mat-hint align="end"
+              >{{ content.declaration.length }} /
+              {{ declarationMaxLength }}</mat-hint
+            >
+          </mat-form-field>
+          <mat-form-field class="consent-message-body">
+            <mat-label
+              >Guardian / representative declaration (optional)</mat-label
+            >
+            <textarea
+              matInput
+              name="consent-message-representative-declaration"
+              rows="3"
+              [maxlength]="declarationMaxLength"
+              [(ngModel)]="content.representativeDeclaration"
+              (ngModelChange)="markDirty()"
+            ></textarea>
+            <mat-hint
+              >Shown when a guardian or representative consents. Empty: the
+              patient declaration.</mat-hint
+            >
+          </mat-form-field>
+        </section>
+
+        <section class="consent-message-group consent-message-grievance">
+          <h5>Grievance contact</h5>
+          <p class="consent-message-hint">
+            Shown and sent by SMS with the Consent ID. Empty: the central
+            grievance contact.
+          </p>
+          <div class="consent-message-grievance-fields">
+            <mat-form-field
+              class="consent-message-section"
+              *ngFor="let f of grievanceFields"
+            >
+              <mat-label>{{ f.label }}</mat-label>
+              <input
+                matInput
+                [name]="'consent-message-grievance-' + f.key"
+                [placeholder]="f.hint"
+                [maxlength]="f.max"
+                [(ngModel)]="content.grievance[f.key]"
+                (ngModelChange)="markDirty()"
+              />
+            </mat-form-field>
+          </div>
+          <p class="consent-message-error" role="alert" *ngIf="grievanceError">
+            {{ grievanceError }}
+          </p>
+        </section>
+
+        <mat-expansion-panel class="consent-message-sections">
+          <mat-expansion-panel-header>
+            <mat-panel-title>Notice details (optional)</mat-panel-title>
+          </mat-expansion-panel-header>
+          <mat-form-field
+            class="consent-message-section"
+            *ngFor="let s of sections"
+          >
+            <mat-label>{{ s.label }}</mat-label>
+            <input
+              matInput
+              [name]="'consent-message-' + s.key"
+              [placeholder]="s.hint"
+              [maxlength]="500"
+              [(ngModel)]="content[s.key]"
+              (ngModelChange)="markDirty()"
+            />
+          </mat-form-field>
+        </mat-expansion-panel>
+
+        <div class="consent-message-preview" *ngIf="showPreview">
+          <h5>Preview for field staff</h5>
+          <div class="consent-message-preview-card">
+            <p *ngFor="let p of previewParagraphs">{{ p }}</p>
+            <p
+              class="consent-message-hint"
+              *ngIf="previewParagraphs.length === 0"
+            >
+              The message is empty.
+            </p>
+            <div
+              class="consent-message-preview-declaration"
+              *ngIf="content.declaration.trim()"
+            >
+              <strong>Declaration</strong>
+              <p>{{ content.declaration }}</p>
+            </div>
+            <dl *ngIf="previewSections.length > 0">
+              <ng-container *ngFor="let s of previewSections">
+                <dt>{{ s.label }}</dt>
+                <dd>{{ s.text }}</dd>
+              </ng-container>
+            </dl>
+          </div>
+        </div>
+
+        <div class="consent-message-actions">
+          <mat-checkbox
+            class="consent-message-reconsent"
+            name="consent-message-reconsent"
+            [(ngModel)]="requireReconsent"
+            [disabled]="!canPublish"
+            >Ask patients who already consented to consent again</mat-checkbox
+          >
+          <span class="consent-message-spacer"></span>
+          <button
+            mat-raised-button
+            type="button"
+            class="consent-message-preview-toggle"
+            (click)="togglePreview()"
+          >
+            {{ showPreview ? "Hide preview" : "Preview" }}
+          </button>
+          <button
+            mat-raised-button
+            type="button"
+            class="consent-message-discard"
+            [disabled]="!dirty || busy"
+            (click)="discard()"
+          >
+            Discard changes
+          </button>
+          <button
+            mat-raised-button
+            type="button"
+            class="consent-message-save"
+            [disabled]="!canSave"
+            (click)="saveDraft()"
+          >
+            Save draft
+          </button>
+          <button
+            mat-raised-button
+            color="primary"
+            type="button"
+            class="mat_blue consent-message-publish"
+            [disabled]="!canPublish"
+            [title]="publishHint"
+            (click)="publish()"
+          >
+            Publish
+          </button>
+        </div>
+        <p class="consent-message-hint consent-message-publish-hint" *ngIf="!canPublish && publishHint">
+          {{ publishHint }}
+        </p>
+      </ng-container>
+    </ng-container>
+  </ng-container>
+</div>

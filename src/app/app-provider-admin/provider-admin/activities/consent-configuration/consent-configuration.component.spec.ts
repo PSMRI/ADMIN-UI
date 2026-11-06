@@ -23,7 +23,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
-import { of, throwError } from 'rxjs';
+import { of, Subject, throwError } from 'rxjs';
 import { MaterialModule } from 'src/app/core/material.module';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import {
@@ -32,10 +32,9 @@ import {
   ProjectConsentConfig,
 } from '../services/consent-configuration.service';
 import { ProjectMasterService } from '../services/project-master-service.service';
-import {
-  ConsentConfigurationComponent,
-  platformDefault,
-} from './consent-configuration.component';
+import { ConsentMessageComponent } from '../consent-message/consent-message.component';
+import { LegacyConsentUploadComponent } from '../legacy-consent-upload/legacy-consent-upload.component';
+import { ConsentConfigurationComponent } from './consent-configuration.component';
 
 function masters(): ConsentConfigMasters {
   return {
@@ -96,7 +95,22 @@ function unconfigured(): ProjectConsentConfig {
     version: 0,
     savedBy: null,
     savedAt: null,
-    registration: platformDefault(),
+    // The server's starting values for a project never saved.
+    registration: {
+      enabled: true,
+      mandatory: true,
+      modes: [
+        'SELF_READ',
+        'READ_ALOUD',
+        'WITNESSED',
+        'SIGNATURE_PHOTO',
+        'OTP',
+      ].map((mode, i) => ({ mode: mode as never, rank: i + 1, settings: {} })),
+      defaultMode: null,
+      purposes: [],
+      languages: [],
+      guardian: { enabled: true, ageThreshold: 18 },
+    },
   };
 }
 
@@ -133,6 +147,7 @@ describe('ConsentConfigurationComponent', () => {
     configService.fetchConfig.and.returnValue(
       of({ statusCode: 200, data: config }),
     );
+    component.showTable = false;
     component.onProjectSelected(project);
     fixture.detectChanges();
   }
@@ -140,10 +155,15 @@ describe('ConsentConfigurationComponent', () => {
   beforeEach(() => {
     configService = jasmine.createSpyObj('ConsentConfigurationService', [
       'getMasters',
+      'fetchAllConfigs',
       'fetchConfig',
       'saveConfig',
       'updateConfig',
+      'fetchNotices',
     ]);
+    configService.fetchNotices.and.returnValue(
+      of({ statusCode: 200, data: [] }),
+    );
     projectService = jasmine.createSpyObj('ProjectMasterService', [
       'getProjectMasters',
     ]);
@@ -158,6 +178,9 @@ describe('ConsentConfigurationComponent', () => {
     configService.getMasters.and.returnValue(
       of({ statusCode: 200, data: masters() }),
     );
+    configService.fetchAllConfigs.and.returnValue(
+      of({ statusCode: 200, data: [configured()] }),
+    );
     projectService.getProjectMasters.and.returnValue(
       of({
         statusCode: 200,
@@ -169,7 +192,11 @@ describe('ConsentConfigurationComponent', () => {
       }),
     );
     TestBed.configureTestingModule({
-      declarations: [ConsentConfigurationComponent],
+      declarations: [
+        ConsentConfigurationComponent,
+        ConsentMessageComponent,
+        LegacyConsentUploadComponent,
+      ],
       imports: [MaterialModule, FormsModule, NoopAnimationsModule],
       providers: [
         { provide: ConsentConfigurationService, useValue: configService },
@@ -181,10 +208,12 @@ describe('ConsentConfigurationComponent', () => {
   });
 
   describe('on init', () => {
-    it('loads active projects and masters for the provider', () => {
+    it('loads active projects, masters and mappings for the provider', () => {
       create();
       expect(projectService.getProjectMasters).toHaveBeenCalledWith(1);
       expect(configService.getMasters).toHaveBeenCalledWith(1);
+      expect(configService.fetchAllConfigs).toHaveBeenCalledWith(1);
+      expect(component.showTable).toBeTrue();
       expect(component.projectNames.map((p) => p.projectId)).toEqual([12, 13]);
       expect(component.userName).toBe('padmin1');
       expect(el().textContent).toContain('Consent Configuration');
@@ -204,9 +233,13 @@ describe('ConsentConfigurationComponent', () => {
       configService.getMasters.and.returnValue(
         of({ statusCode: 500, errorMessage: 'm down' }),
       );
+      configService.fetchAllConfigs.and.returnValue(
+        of({ statusCode: 500, errorMessage: 'c down' }),
+      );
       create();
       expect(dialogs.alert).toHaveBeenCalledWith('p down', 'error');
       expect(dialogs.alert).toHaveBeenCalledWith('m down', 'error');
+      expect(dialogs.alert).toHaveBeenCalledWith('c down', 'error');
     });
 
     it('alerts when projects or masters calls error', () => {
@@ -216,9 +249,13 @@ describe('ConsentConfigurationComponent', () => {
       configService.getMasters.and.returnValue(
         throwError(() => ({ errorMessage: 'm err' })),
       );
+      configService.fetchAllConfigs.and.returnValue(
+        throwError(() => ({ errorMessage: 'c err' })),
+      );
       create();
       expect(dialogs.alert).toHaveBeenCalledWith('p err', 'error');
       expect(dialogs.alert).toHaveBeenCalledWith('m err', 'error');
+      expect(dialogs.alert).toHaveBeenCalledWith('c err', 'error');
     });
 
     it('handles empty project data and empty responses', () => {
@@ -226,31 +263,154 @@ describe('ConsentConfigurationComponent', () => {
         of({ statusCode: 200, data: null }),
       );
       configService.getMasters.and.returnValue(of(null));
+      configService.fetchAllConfigs.and.returnValue(
+        of({ statusCode: 200, data: null }),
+      );
       create();
       expect(component.projectNames).toEqual([]);
+      expect(component.mappings).toEqual([]);
+      expect(el().textContent).toContain('No Records Found');
       expect(dialogs.alert).toHaveBeenCalledWith(undefined as never, 'error');
+    });
+  });
+
+  describe('mapping list', () => {
+    beforeEach(() => create());
+
+    it('shows one row per mapped project with its modes, default marked', () => {
+      const row = el().querySelector('.consent-config-mappings tbody tr');
+      expect(row?.textContent).toContain('Test Project A');
+      expect(row?.textContent).toContain('On');
+      expect(row?.textContent).toContain('Yes');
+      expect(row?.textContent).toContain(
+        "OTP to patient's phone (default), Witnessed",
+      );
+      expect(row?.textContent).toContain('padmin1');
+    });
+
+    it('shows a dash for modes and no time when consent is off or unsaved', () => {
+      const off = {
+        ...configured(),
+        savedAt: null,
+        registration: { ...configured().registration, enabled: false },
+      };
+      expect(component.modeNames(off)).toBe('-');
+      component.mappings = [off];
+      component.dataSource.data = [off];
+      fixture.detectChanges();
+      const row = el().querySelector('.consent-config-mappings tbody tr');
+      expect(row?.textContent).toContain('Off');
+      expect(row?.textContent).toContain('No');
+    });
+
+    it('shows a dash when a mapping has no modes, and built-in names when masters are missing', () => {
+      const none = {
+        ...configured(),
+        registration: {
+          ...configured().registration,
+          modes: undefined as never,
+        },
+      };
+      expect(component.modeNames(none)).toBe('-');
+      component.masters = null;
+      expect(component.modeNames(configured())).toBe(
+        "OTP to patient's phone (default), Witnessed",
+      );
+    });
+
+    it('filters rows by project name or mode', () => {
+      component.filterMappings('witness');
+      expect(component.dataSource.data.length).toBe(1);
+      component.filterMappings('project a');
+      expect(component.dataSource.data.length).toBe(1);
+      component.filterMappings('nothing');
+      expect(component.dataSource.data.length).toBe(0);
+      component.filterMappings('');
+      expect(component.dataSource.data.length).toBe(1);
+    });
+
+    it('opens an empty form with only unmapped projects on Add Mapping', () => {
+      (el().querySelector('.consent-config-add') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(component.showTable).toBeFalse();
+      expect(component.editMode).toBeFalse();
+      expect(component.filteredOptions).toEqual([projectB]);
+      expect(el().textContent).toContain('Add Consent Mapping');
+      expect(el().querySelector('mat-tab-group')).toBeNull();
+      (el().querySelector('.consent-config-back') as HTMLButtonElement).click();
+      expect(component.showTable).toBeTrue();
+    });
+
+    it('opens the mapped project on Edit', () => {
+      configService.fetchConfig.and.returnValue(
+        of({ statusCode: 200, data: configured() }),
+      );
+      (el().querySelector('.consent-config-edit') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(component.editMode).toBeTrue();
+      expect(component.project).toBe(projectA);
+      expect(configService.fetchConfig).toHaveBeenCalledWith(12, 1);
+      expect(el().textContent).toContain('Edit Consent Mapping');
+      expect(
+        el().querySelector('.consent-config-project')?.textContent,
+      ).toContain('Test Project A');
+    });
+
+    it('edits a mapping whose project is not in the active list', () => {
+      configService.fetchConfig.and.returnValue(
+        of({ statusCode: 200, data: { ...configured(), projectId: 99 } }),
+      );
+      component.editMapping({ ...configured(), projectId: 99 });
+      expect(component.project).toEqual({
+        projectId: 99,
+        projectName: 'Test Project A',
+      });
+    });
+
+    it('asks before going back with unsaved changes', () => {
+      configService.fetchConfig.and.returnValue(
+        of({ statusCode: 200, data: configured() }),
+      );
+      component.editMapping(configured());
+      component.markDirty();
+      dialogs.confirm.and.returnValue(of(false));
+      component.back();
+      expect(component.showTable).toBeFalse();
+      dialogs.confirm.and.returnValue(of(true));
+      component.back();
+      expect(component.showTable).toBeTrue();
+      expect(component.loaded).toBeNull();
+      expect(configService.fetchAllConfigs).toHaveBeenCalledTimes(2);
+    });
+
+    it('asks before going back with an unsaved consent message (feature 003)', () => {
+      configService.fetchConfig.and.returnValue(
+        of({ statusCode: 200, data: configured() }),
+      );
+      component.editMapping(configured());
+      component.message = { dirty: true } as ConsentMessageComponent;
+      dialogs.confirm.and.returnValue(of(false));
+      component.back();
+      expect(dialogs.confirm).toHaveBeenCalled();
+      expect(component.showTable).toBeFalse();
     });
   });
 
   describe('project picker', () => {
     beforeEach(() => create());
 
-    it('filters by typed text or by a selected project', () => {
+    it('filters unmapped projects by typed text or by a selected project', () => {
       component.filterOptions(' project b');
       expect(component.filteredOptions).toEqual([projectB]);
       component.filterOptions(projectA);
-      expect(component.filteredOptions).toEqual([projectA]);
+      expect(component.filteredOptions).toEqual([]);
       component.filterOptions(null);
-      expect(component.filteredOptions.length).toBe(2);
+      expect(component.filteredOptions).toEqual([projectB]);
     });
 
-    it('shows the project name and its configuration status', () => {
+    it('shows the project name', () => {
       expect(component.displayFn(projectA)).toBe('Test Project A');
       expect(component.displayFn(null)).toBe('');
-      expect(component.projectStatus(projectA)).toBe('Configured v4');
-      expect(component.projectStatus(projectB)).toBe('Not configured');
-      component.masters = null;
-      expect(component.projectStatus(projectA)).toBe('Not configured');
     });
 
     it('alerts when the configuration cannot be fetched', () => {
@@ -300,22 +460,23 @@ describe('ConsentConfigurationComponent', () => {
       open(configured());
     });
 
-    it('shows the version line and the configured modes first in rank order', () => {
+    it('shows the version line and the modes in master order', () => {
       expect(el().textContent).toContain('Version 4');
       expect(el().textContent).toContain('padmin1');
+      // DPDP: the master still lists voice recording; it is not offered.
       expect(component.rows.map((r) => r.mode)).toEqual([
-        'OTP',
-        'WITNESSED',
         'SELF_READ',
         'READ_ALOUD',
-        'VOICE_CLIP',
+        'WITNESSED',
         'SIGNATURE_PHOTO',
+        'OTP',
       ]);
       expect(component.tickedRows.map((r) => r.mode)).toEqual([
-        'OTP',
         'WITNESSED',
+        'OTP',
       ]);
-      expect(component.rows[1].settings).toEqual({
+      expect(el().querySelector('.consent-config-up')).toBeNull();
+      expect(component.rows[2].settings).toEqual({
         witnessRelationshipRequired: false,
       });
       expect(component.effectiveDefault).toBe('OTP');
@@ -325,32 +486,6 @@ describe('ConsentConfigurationComponent', () => {
       expect(
         el().querySelector('.consent-config-preview')?.textContent,
       ).toContain('(default)');
-    });
-
-    it('moves rows up and down but not past the ends', () => {
-      component.move(0, -1);
-      expect(component.dirty).toBeFalse();
-      component.move(5, 1);
-      expect(component.dirty).toBeFalse();
-      component.move(0, 1);
-      expect(component.rows.slice(0, 2).map((r) => r.mode)).toEqual([
-        'WITNESSED',
-        'OTP',
-      ]);
-      expect(component.dirty).toBeTrue();
-      fixture.detectChanges();
-      const up = el().querySelectorAll(
-        '.consent-config-up',
-      )[0] as HTMLButtonElement;
-      const down = el().querySelectorAll(
-        '.consent-config-down',
-      )[5] as HTMLButtonElement;
-      expect(up.disabled).toBeTrue();
-      expect(down.disabled).toBeTrue();
-      (
-        el().querySelectorAll('.consent-config-down')[0] as HTMLButtonElement
-      ).click();
-      expect(component.rows[0].mode).toBe('OTP');
     });
 
     it('blocks saving with no mode ticked', () => {
@@ -364,8 +499,8 @@ describe('ConsentConfigurationComponent', () => {
     });
 
     it('blocks saving while the default mode is not ticked', () => {
-      component.toggleMode(component.rows[0], false);
-      component.toggleMode(component.rows[2], true);
+      component.toggleMode(component.rows[4], false);
+      component.toggleMode(component.rows[0], true);
       fixture.detectChanges();
       expect(component.errors.defaultMode).toBe(
         'Choose a ticked mode as default',
@@ -378,7 +513,7 @@ describe('ConsentConfigurationComponent', () => {
 
     it('uses the only ticked mode as the default', () => {
       component.defaultMode = null;
-      component.toggleMode(component.rows[1], false);
+      component.toggleMode(component.rows[2], false);
       expect(component.effectiveDefault).toBe('OTP');
       expect(component.errors).toEqual({});
     });
@@ -394,12 +529,11 @@ describe('ConsentConfigurationComponent', () => {
       expect(component.errors).toEqual({});
     });
 
-    it('updates with the base version and shows the new version', () => {
+    it('updates with the base version and returns to the list', () => {
       const saved = { ...configured(), version: 5 };
       configService.updateConfig.and.returnValue(
         of({ statusCode: 200, data: saved }),
       );
-      component.move(0, 1);
       (el().querySelector('.consent-config-save') as HTMLButtonElement).click();
       const body = configService.updateConfig.calls.mostRecent().args[0];
       expect(body.baseVersion).toBe(4);
@@ -419,11 +553,9 @@ describe('ConsentConfigurationComponent', () => {
       );
       expect(body.revisit).toBeNull();
       expect(dialogs.alert).toHaveBeenCalledWith('Saved, version 5', 'success');
-      expect(component.loaded?.version).toBe(5);
-      expect(component.dirty).toBeFalse();
-      expect(component.masters?.projects).toEqual([
-        { projectId: 12, version: 5 },
-      ]);
+      expect(component.showTable).toBeTrue();
+      expect(component.loaded).toBeNull();
+      expect(configService.fetchAllConfigs).toHaveBeenCalledTimes(2);
     });
 
     it('stores no default when consent is off and nothing is ticked', () => {
@@ -509,17 +641,8 @@ describe('ConsentConfigurationComponent', () => {
       ).toBe('Test Project A');
     });
 
-    it('does not crash on saving when masters are missing', () => {
-      configService.updateConfig.and.returnValue(
-        of({ statusCode: 200, data: configured() }),
-      );
-      component.masters = null;
-      component.save();
-      expect(component.masters).toBeNull();
-    });
-
     it('resets to the loaded configuration and reloads from the server', () => {
-      component.toggleMode(component.rows[0], false);
+      component.toggleMode(component.rows[4], false);
       fixture.detectChanges();
       (
         el().querySelector('.consent-config-reset') as HTMLButtonElement
@@ -537,10 +660,10 @@ describe('ConsentConfigurationComponent', () => {
       open(unconfigured(), projectB);
     });
 
-    it('shows the platform default: all six modes allowed, nothing as default', () => {
+    it('shows the server starting values exactly', () => {
       expect(el().textContent).toContain('Not yet configured');
       expect(component.notConfigured).toBeTrue();
-      expect(component.tickedRows.length).toBe(6);
+      expect(component.tickedRows.length).toBe(5);
       expect(component.defaultMode).toBeNull();
       expect(component.errors.defaultMode).toBeDefined();
     });
@@ -561,16 +684,13 @@ describe('ConsentConfigurationComponent', () => {
       const body = configService.saveConfig.calls.mostRecent().args[0];
       expect(body.createdBy).toBe('padmin1');
       expect(body.baseVersion).toBeUndefined();
-      expect(body.registration.modes.length).toBe(6);
+      expect(body.registration.modes.length).toBe(5);
       expect(body.registration.guardian).toEqual({
         enabled: true,
         ageThreshold: 18,
       });
       expect(dialogs.alert).toHaveBeenCalledWith('Saved, version 1', 'success');
-      expect(component.masters?.projects).toContain({
-        projectId: 13,
-        version: 1,
-      });
+      expect(component.showTable).toBeTrue();
     });
   });
 
@@ -585,7 +705,7 @@ describe('ConsentConfigurationComponent', () => {
     expect(configService.fetchConfig).not.toHaveBeenCalled();
   });
 
-  it('builds rows from no masters and no modes', () => {
+  it('shows no rows and a message when masters has no modes', () => {
     configService.getMasters.and.returnValue(
       of({ statusCode: 200, data: null }),
     );
@@ -595,6 +715,74 @@ describe('ConsentConfigurationComponent', () => {
       registration: { ...configured().registration, modes: undefined as never },
     });
     expect(component.rows).toEqual([]);
+    expect(el().textContent).toContain('Consent modes could not be loaded');
+    expect(el().querySelector('.consent-config-modes')).toBeNull();
+  });
+
+  it('fills the rows when masters answers after the project loaded', () => {
+    const late = new Subject<any>();
+    configService.getMasters.and.returnValue(late);
+    create();
+    open(unconfigured(), projectB);
+    expect(component.rows).toEqual([]);
+    late.next({
+      statusCode: 200,
+      data: {
+        modes: [{ mode: 'SELF_READ', name: 'Self read (master)' }],
+        purposes: [],
+        languages: [],
+        projects: [],
+      },
+    });
+    expect(component.rows.map((r) => r.name)).toEqual(['Self read (master)']);
+    expect(component.tickedRows.length).toBe(1);
+  });
+
+  describe('DPDP changes', () => {
+    it('never offers the retired voice recording mode', () => {
+      create();
+      open(configured());
+      expect(component.rows.map((r) => r.mode)).not.toContain('VOICE_CLIP');
+    });
+
+    it('drops a saved default that is a retired mode', () => {
+      create();
+      open({
+        ...configured(),
+        registration: {
+          ...configured().registration,
+          defaultMode: 'VOICE_CLIP',
+        },
+      });
+      expect(component.defaultMode).toBeNull();
+      open({
+        ...configured(),
+        registration: { ...configured().registration, defaultMode: null },
+      });
+      expect(component.defaultMode).toBeNull();
+    });
+
+    it('opens and closes the legacy consent upload from the list', () => {
+      create();
+      const button = fixture.nativeElement.querySelector(
+        '.consent-config-legacy',
+      ) as HTMLButtonElement;
+      button.click();
+      fixture.detectChanges();
+      expect(component.showLegacyUpload).toBeTrue();
+      const upload = fixture.nativeElement.querySelector(
+        'app-legacy-consent-upload',
+      );
+      expect(upload).not.toBeNull();
+      (
+        upload.querySelector('button[aria-label="Close"]') as HTMLButtonElement
+      ).click();
+      fixture.detectChanges();
+      expect(component.showLegacyUpload).toBeFalse();
+      expect(
+        fixture.nativeElement.querySelector('app-legacy-consent-upload'),
+      ).toBeNull();
+    });
   });
 
   it('falls back to the mode code when masters lack a name', () => {

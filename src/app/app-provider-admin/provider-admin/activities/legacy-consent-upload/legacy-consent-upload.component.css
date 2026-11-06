@@ -1,0 +1,52 @@
+.legacy-upload {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #fff;
+}
+
+.legacy-upload-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.legacy-upload-head h5 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.legacy-upload-hint {
+  margin: 4px 0 12px;
+  color: #616161;
+}
+
+.legacy-upload-actions,
+.legacy-upload-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.legacy-upload-spacer {
+  flex: 1;
+}
+
+.legacy-upload-error,
+.legacy-upload-bad {
+  color: #c62828;
+}
+
+.legacy-upload-table {
+  max-height: 360px;
+  overflow: auto;
+  margin-bottom: 12px;
+}
+
+.legacy-upload-row-error td {
+  color: #c62828;
+}
