@@ -774,7 +774,6 @@
             minlength="1"
             maxlength="100"
             #itemName="ngModel"
-            disabled="true"
             required
           />
         </mat-form-field>
@@ -833,7 +832,6 @@
             matInput
             [(ngModel)]="edit_Strength"
             name="strength"
-            disabled="true"
             #itemStrength="ngModel"
             minlength="1"
             maxlength="10"
@@ -848,7 +846,6 @@
           <mat-select
             [(ngModel)]="edit_Uom"
             name="uom"
-            disabled="true"
             required
           >
             <mat-option *ngFor="let item of edit_measures" [value]="item.uOMID">
@@ -893,7 +890,6 @@
           <mat-select
             [(ngModel)]="edit_Dose"
             name="dose"
-            disabled="true"
             required
           >
             <mat-option
@@ -1010,6 +1006,7 @@
         mat-raised-button
         color="accent"
         class="pull-right mat_green"
+        [disabled]="editItemCreationForm.invalid"
         (click)="updateItem(editItemCreationForm.value)"
       >
         Update

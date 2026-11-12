@@ -734,6 +734,10 @@ export class ItemMasterComponent implements OnInit {
   update(editItemCreationForm: any) {
     // debugger;
     const updateItemObject: any = {
+      itemName: String(editItemCreationForm.name ?? '').trim(),
+      strength: String(editItemCreationForm.strength ?? '').trim(),
+      uomID: editItemCreationForm.uom,
+      itemFormID: editItemCreationForm.dose,
       itemDesc: editItemCreationForm.description,
       isMedical: editItemCreationForm.itemType,
       itemCategoryID: editItemCreationForm.category,
