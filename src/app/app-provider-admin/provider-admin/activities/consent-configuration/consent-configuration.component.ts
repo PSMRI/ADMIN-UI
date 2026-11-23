@@ -31,6 +31,7 @@ import {
   ContextConfig,
   ModeSettings,
   ProjectConsentConfig,
+  PurposeConfig,
   RETIRED_CONSENT_MODES,
   SaveConsentConfigRequest,
 } from '../services/consent-configuration.service';
@@ -45,6 +46,9 @@ export const MODE_LABELS: Partial<Record<ConsentMode, string>> = {
   SIGNATURE_PHOTO: 'Signed consent form (signature / thumb)',
   OTP: "OTP to patient's phone",
 };
+
+/** DPDP Rule 10: patients under 18 need a guardian; the server accepts only this age. */
+export const GUARDIAN_AGE = 18;
 
 /** One row of the modes table, in the master order. */
 export interface ModeRow {
@@ -399,8 +403,32 @@ export class ConsentConfigurationComponent implements OnInit {
         settings: { ...r.settings },
       })),
       defaultMode: this.tickedRows.length > 0 ? this.effectiveDefault : null,
-      // purposes, languages and guardian go back exactly as the server sent them.
+      // purposes, languages and guardian go back as the server sent them. saveConfig requires all
+      // three, and a project never saved may come back without them, so missing ones are filled.
+      purposes: previous.purposes ?? this.defaultPurposes(),
+      languages: previous.languages ?? this.defaultLanguages(),
+      guardian: previous.guardian ?? {
+        enabled: true,
+        ageThreshold: GUARDIAN_AGE,
+      },
     } as ContextConfig;
+  }
+
+  /** Every central purpose, shown, keeping its central mandatory flag, in master order. */
+  private defaultPurposes(): PurposeConfig[] {
+    return (this.masters?.purposes || []).map((p, i) => ({
+      purposeCode: p.purposeCode,
+      shown: true,
+      rank: i + 1,
+      isMandatory: p.isMandatory === true,
+    }));
+  }
+
+  /** Languages with a published notice; the server refuses any other language. */
+  private defaultLanguages(): string[] {
+    return (this.masters?.languages || [])
+      .filter((l) => l.hasNotice !== false)
+      .map((l) => l.languageCode);
   }
 
   save() {

@@ -29,6 +29,7 @@ import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirm
 import {
   ConsentConfigMasters,
   ConsentConfigurationService,
+  ContextConfig,
   ProjectConsentConfig,
 } from '../services/consent-configuration.service';
 import { ProjectMasterService } from '../services/project-master-service.service';
@@ -692,6 +693,50 @@ describe('ConsentConfigurationComponent', () => {
       expect(dialogs.alert).toHaveBeenCalledWith('Saved, version 1', 'success');
       expect(component.showTable).toBeTrue();
     });
+  });
+
+  it('fills purposes, languages and guardian the server left out of a new project', () => {
+    create();
+    component.masters = {
+      ...masters(),
+      purposes: [
+        { purposeCode: 'P-REG', name: 'Registration', isMandatory: true },
+        { purposeCode: 'P-RES', name: 'Research', isMandatory: false },
+      ],
+      languages: [
+        { languageCode: 'en', languageName: 'English', hasNotice: true },
+        { languageCode: 'hi', languageName: 'Hindi', hasNotice: false },
+      ],
+    };
+    const bare = unconfigured();
+    delete (bare.registration as Partial<ContextConfig>).purposes;
+    delete (bare.registration as Partial<ContextConfig>).languages;
+    delete (bare.registration as Partial<ContextConfig>).guardian;
+    open(bare, projectB);
+    configService.saveConfig.and.returnValue(
+      of({ statusCode: 200, data: { ...bare, version: 1 } }),
+    );
+    component.setDefault('SELF_READ');
+    component.save();
+    const body = configService.saveConfig.calls.mostRecent().args[0];
+    expect(body.registration.purposes).toEqual([
+      { purposeCode: 'P-REG', shown: true, rank: 1, isMandatory: true },
+      { purposeCode: 'P-RES', shown: true, rank: 2, isMandatory: false },
+    ]);
+    expect(body.registration.languages).toEqual(['en']);
+    expect(body.registration.guardian).toEqual({
+      enabled: true,
+      ageThreshold: 18,
+    });
+  });
+
+  it('keeps empty purposes and languages the server sent', () => {
+    create();
+    open(unconfigured(), projectB);
+    component.setDefault('SELF_READ');
+    const registration = component.buildRegistration();
+    expect(registration.purposes).toEqual([]);
+    expect(registration.languages).toEqual([]);
   });
 
   it('cannot save, reset or reload before a project is loaded', () => {
