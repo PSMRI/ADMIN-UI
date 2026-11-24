@@ -17,26 +17,6 @@
   </p>
 
   <ng-container *ngIf="!loadFailed">
-    <div class="consent-message-pickers">
-      <div
-        class="consent-message-contexts"
-        role="group"
-        aria-label="Consent context"
-      >
-        <button
-          *ngFor="let c of contexts"
-          type="button"
-          class="consent-message-context"
-          [class.selected]="c.value === context"
-          [attr.aria-pressed]="c.value === context"
-          [disabled]="busy"
-          (click)="selectContext(c.value)"
-        >
-          {{ c.label }}
-        </button>
-      </div>
-    </div>
-
     <ng-container *ngIf="languageCode">
       <div class="consent-message-state">
         <span class="consent-message-badge">{{ statusOf(current) }}</span>
@@ -136,6 +116,8 @@
                 [name]="'consent-message-grievance-' + f.key"
                 [placeholder]="f.hint"
                 [maxlength]="f.max"
+                [attr.type]="f.key === 'phone' ? 'tel' : f.key === 'email' ? 'email' : null"
+                [attr.inputmode]="f.key === 'phone' ? 'tel' : null"
                 [(ngModel)]="content.grievance[f.key]"
                 (ngModelChange)="markDirty()"
               />

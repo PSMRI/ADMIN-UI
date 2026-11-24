@@ -20,7 +20,6 @@
  * along with this program.  If not, see https://www.gnu.org/licenses/.
  */
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
-import { Observable, of } from 'rxjs';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 import {
   ConsentConfigurationService,
@@ -111,8 +110,34 @@ export const GRIEVANCE_FIELDS: {
   },
 ];
 
-const PHONE = /^[0-9+\- ]{8,15}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Digits in groups, one space or hyphen between groups, and + only at the start. */
+const PHONE_FORMAT = /^\+?\d+(?:[ -]\d+)*$/;
+/** 10-digit mobile, optionally after 91 or 0. */
+const MOBILE = /^(?:91|0)?[6-9]\d{9}$/;
+/** Landline with its STD code: 0, then 10 digits (STD code + number). */
+const LANDLINE = /^0[1-9]\d{9}$/;
+/** Toll-free and shared-cost numbers, e.g. 1800-000-0000. */
+const TOLL_FREE = /^18[06]0\d{6,7}$/;
+/** After +91: a mobile or a landline without its leading 0. */
+const INTERNATIONAL = /^91[1-9]\d{9}$/;
+
+export const PHONE_ERROR =
+  'Enter a valid phone number: a 10-digit mobile, a landline with STD code or a 1800 number';
+
+/** An Indian phone number for the grievance contact; spaces and hyphens are allowed between digits. */
+export function isValidPhone(value: string): boolean {
+  const phone = (value || '').trim();
+  if (!PHONE_FORMAT.test(phone)) {
+    return false;
+  }
+  const digits = phone.replace(/\D/g, '');
+  if (phone.startsWith('+')) {
+    return INTERNATIONAL.test(digits);
+  }
+  return MOBILE.test(digits) || LANDLINE.test(digits) || TOLL_FREE.test(digits);
+}
 
 export function emptyGrievance(): ConsentGrievance {
   return {
@@ -176,13 +201,8 @@ export class ConsentMessageComponent implements OnChanges {
   readonly maxLength = MESSAGE_MAX_LENGTH;
   readonly declarationMaxLength = DECLARATION_MAX_LENGTH;
   readonly sourceLanguage = SOURCE_LANGUAGE;
-  readonly contexts: { value: ConsentContext; label: string }[] = [
-    { value: 'REGISTRATION', label: 'Registration' },
-    { value: 'REVISIT', label: 'Revisit' },
-  ];
-
   entries: ConsentNoticeEntry[] = [];
-  context: ConsentContext = 'REGISTRATION';
+  readonly context: ConsentContext = 'REGISTRATION';
   readonly languageCode = SOURCE_LANGUAGE;
   content: ConsentNoticeContent = emptyContent();
   requireReconsent = false;
@@ -256,20 +276,7 @@ export class ConsentMessageComponent implements OnChanges {
     if (this.current?.published) {
       return '';
     }
-    const registration = this.entryFor('REGISTRATION', this.languageCode);
-    if (this.context === 'REVISIT' && registration?.published) {
-      return 'Until this is published, field staff see the Registration message.';
-    }
     return 'Until this is published, field staff see the central consent message.';
-  }
-
-  selectContext(context: ConsentContext) {
-    if (context !== this.context) {
-      this.leave(() => {
-        this.context = context;
-        this.fill();
-      });
-    }
   }
 
   markDirty() {
@@ -289,8 +296,8 @@ export class ConsentMessageComponent implements OnChanges {
     const g = this.content.grievance;
     const phone = g.phone.trim();
     const email = g.email.trim();
-    if (phone && !PHONE.test(phone)) {
-      return 'Enter a valid phone number';
+    if (phone && !isValidPhone(phone)) {
+      return PHONE_ERROR;
     }
     if (email && !EMAIL.test(email)) {
       return 'Enter a valid email address';
@@ -313,6 +320,7 @@ export class ConsentMessageComponent implements OnChanges {
       !this.dirty &&
       !!this.current?.draft &&
       !this.declarationMissing &&
+      !this.grievanceError &&
       !this.busy
     );
   }
@@ -330,8 +338,11 @@ export class ConsentMessageComponent implements OnChanges {
         ? 'Change the message and save a draft to publish a new version'
         : 'Save a draft before publishing';
     }
-    return this.declarationMissing
-      ? 'Enter the patient declaration and save the draft'
+    if (this.declarationMissing) {
+      return 'Enter the patient declaration and save the draft';
+    }
+    return this.grievanceError
+      ? 'Fix the grievance contact and save the draft'
       : '';
   }
 
@@ -461,21 +472,6 @@ export class ConsentMessageComponent implements OnChanges {
           );
         },
       );
-  }
-
-  /** Runs the change, asking first when typed text would be lost. */
-  private leave(change: () => void) {
-    const ask: Observable<boolean> = this.dirty
-      ? this.confirmationService.confirm(
-          'Confirm',
-          'Discard your unsaved message changes?',
-        )
-      : of(true);
-    ask.subscribe((go) => {
-      if (go) {
-        change();
-      }
-    });
   }
 
   /** Shows the draft when there is one, otherwise the published text. */

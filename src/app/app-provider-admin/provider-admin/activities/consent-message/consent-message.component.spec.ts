@@ -32,6 +32,8 @@ import {
 import {
   ConsentMessageComponent,
   grievanceLine,
+  isValidPhone,
+  PHONE_ERROR,
 } from './consent-message.component';
 
 const text = {
@@ -147,9 +149,6 @@ describe('ConsentMessageComponent', () => {
     expect(component.statusOf(component.current)).toBe('Not set');
     expect(component.content.body).toBe('');
     expect(component.fallbackNote).toContain('central consent message');
-    create();
-    component.selectContext('REVISIT');
-    expect(component.fallbackNote).toContain('Registration message');
   });
 
   it('shows a retry when the messages cannot be loaded', () => {
@@ -250,20 +249,6 @@ describe('ConsentMessageComponent', () => {
     dialogs.confirm.and.returnValue(of(false));
     component.publish();
     expect(service.publishNotice).not.toHaveBeenCalled();
-  });
-
-  it('asks before switching away from unsaved text', () => {
-    create();
-    component.content.body = 'Typed';
-    component.markDirty();
-    dialogs.confirm.and.returnValue(of(false));
-    component.selectContext('REVISIT');
-    expect(component.context).toBe('REGISTRATION');
-    expect(component.content.body).toBe('Typed');
-    dialogs.confirm.and.returnValue(of(true));
-    component.selectContext('REVISIT');
-    expect(component.context).toBe('REVISIT');
-    expect(component.dirty).toBeFalse();
   });
 
   describe('error and edge paths', () => {
@@ -462,7 +447,7 @@ describe('ConsentMessageComponent', () => {
       expect(component.grievanceError).toContain('phone number or email');
       expect(component.canSave).toBeFalse();
       g.phone = '12ab';
-      expect(component.grievanceError).toBe('Enter a valid phone number');
+      expect(component.grievanceError).toBe(PHONE_ERROR);
       g.phone = '1800-000-0000';
       expect(component.grievanceError).toBeNull();
       g.email = 'not-an-email';
@@ -478,6 +463,56 @@ describe('ConsentMessageComponent', () => {
         el().querySelector('.consent-message-grievance [role="alert"]')!
           .textContent,
       ).toContain('valid email');
+    });
+
+    it('accepts only real phone numbers for the grievance contact', () => {
+      [
+        '9876543210',
+        '98765 43210',
+        '09876543210',
+        '919876543210',
+        '+91 98765 43210',
+        '+91-98765-43210',
+        '080-12345678',
+        '040 2345 6789',
+        '+91 80 12345678',
+        '1800-000-0000',
+        '1800 123 4567',
+        '1860-500-1234',
+      ].forEach((phone) =>
+        expect(isValidPhone(phone)).withContext(phone).toBeTrue(),
+      );
+      [
+        '',
+        '--------',
+        '++++ ++++',
+        '12345678',
+        '1234567890',
+        '5876543210',
+        '98765432101',
+        '9876-',
+        '98765--43210',
+        '9876 54321 0x',
+        '+1 202 555 0143',
+        '+91 0987654321',
+        '1800-00',
+        '98+76543210',
+      ].forEach((phone) =>
+        expect(isValidPhone(phone)).withContext(phone).toBeFalse(),
+      );
+    });
+
+    it('does not publish a saved draft whose grievance phone is invalid', () => {
+      create([drafted()]);
+      expect(component.canPublish).toBeTrue();
+      // A draft saved before the phone check was added.
+      component.content.grievance.phone = '12345';
+      expect(component.canPublish).toBeFalse();
+      expect(component.publishHint).toBe(
+        'Fix the grievance contact and save the draft',
+      );
+      component.content.grievance.phone = '1800-000-0000';
+      expect(component.canPublish).toBeTrue();
     });
 
     it('saves the declaration, grievance contact and a one-line grievance text', () => {

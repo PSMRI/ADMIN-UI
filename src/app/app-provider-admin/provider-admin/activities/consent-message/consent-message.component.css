@@ -13,41 +13,6 @@
   color: #c62828;
 }
 
-.consent-message-pickers {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.consent-message-contexts {
-  display: inline-flex;
-  align-self: flex-start;
-  border: 1px solid #0277bd;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.consent-message-context {
-  min-width: 120px;
-  height: 36px;
-  padding: 0 16px;
-  border: 0;
-  background-color: #ffffff;
-  color: #0277bd;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.consent-message-context + .consent-message-context {
-  border-left: 1px solid #0277bd;
-}
-
-.consent-message-context.selected {
-  background-color: #0277bd;
-  color: #ffffff;
-}
-
 .consent-message-state {
   display: flex;
   flex-wrap: wrap;
