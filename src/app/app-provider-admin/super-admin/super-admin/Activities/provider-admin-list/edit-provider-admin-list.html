@@ -335,6 +335,24 @@
           </mat-form-field>
         </div>
         <div class="col-3">
+          <mat-form-field>
+            <mat-label>Type of Admin Permission</mat-label>
+            <mat-select
+              [ngModel]="adminPermissionType"
+              (ngModelChange)="onAdminPermissionSelected($event)"
+              name="adminPermissionType"
+              required
+            >
+              <mat-option
+                *ngFor="let item of adminPermissionMaster"
+                [value]="item.adminPermissionType"
+              >
+                {{ item.adminPermissionType }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
           <mat-form-field class="input-full-width mat_form_field_width_one">
             <mat-label>Remarks</mat-label>
             <input

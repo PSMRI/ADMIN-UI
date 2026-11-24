@@ -19,6 +19,12 @@
             "
           >
             <li style="color: white; margin-right: 10px">
+              <span
+                *ngIf="data?.facilityData?.user?.adminPermissionType"
+                class="admin-permission-box"
+              >
+                {{ data.facilityData.user.adminPermissionType }}
+              </span>
               Welcome {{ data.userName }}
             </li>
             <li class="">

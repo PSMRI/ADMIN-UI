@@ -84,6 +84,12 @@
             {{ element.remarks }}
           </td>
         </ng-container>
+        <ng-container matColumnDef="adminPermissionType">
+          <th mat-header-cell *matHeaderCellDef>Type of Admin Permission</th>
+          <td mat-cell *matCellDef="let element">
+            {{ getAdminPermissionLabel(element) }}
+          </td>
+        </ng-container>
         <ng-container matColumnDef="edit">
           <th mat-header-cell *matHeaderCellDef>Edit</th>
           <td mat-cell *matCellDef="let element">
@@ -488,6 +494,25 @@
         </mat-hint>
       </mat-form-field>
     </div>
+    <div class="col-3 p-b-10">
+      <mat-form-field [style.width]="'100%'">
+        <mat-label>Type of Admin Permission</mat-label>
+        <mat-select
+          class="width100"
+          [ngModel]="adminPermissionType"
+          (ngModelChange)="onAdminPermissionSelected($event)"
+          name="adminPermissionType"
+          required
+        >
+          <mat-option
+            *ngFor="let item of adminPermissionMaster"
+            [value]="item.adminPermissionType"
+          >
+            {{ item.adminPermissionType }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
   </form>
 
   <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12 p-t-5">
@@ -644,6 +669,14 @@
           </th>
           <td mat-cell *matCellDef="let element">
             {{ element.primaryMobileNumber }}
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="adminPermissionType">
+          <th mat-header-cell *matHeaderCellDef>
+            Type of Admin Permission
+          </th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.adminPermissionType }}
           </td>
         </ng-container>
         <ng-container matColumnDef="action">

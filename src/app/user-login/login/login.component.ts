@@ -338,7 +338,7 @@ export class loginContentClassComponent implements OnInit, OnDestroy {
                 this.userID,
                 this.encryptPassword,
                 doLogOut,
-                this.captchaToken,
+                this.enableCaptcha ? this.captchaToken : undefined,
               )
               .subscribe(
                 (response: any) => {

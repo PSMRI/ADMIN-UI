@@ -44,3 +44,8 @@ Thumbs.db
 
 src/environments/environment.ts
 src/environments/environment.ci.ts
+src/environments/environment.local.ts
+src/environments/environment.local.ts
+src/app/user-login/login/login.component.ts
+src/environments/environment.local.ts
+node_modules/

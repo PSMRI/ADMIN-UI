@@ -32,6 +32,21 @@ import { SuperAdmin_ServiceProvider_Service } from 'src/app/core/services/adminS
 import { dataService } from 'src/app/core/services/dataService/data.service';
 import { ConfirmationDialogsService } from 'src/app/core/services/dialog/confirmation.service';
 
+const ADMIN_PERMISSION_MASTER = [
+  { adminPermissionTypeID: 1, adminPermissionType: 'National Admin' },
+  { adminPermissionTypeID: 2, adminPermissionType: 'State Admin' },
+  { adminPermissionTypeID: 3, adminPermissionType: 'District Admin' },
+  { adminPermissionTypeID: 4, adminPermissionType: 'Block Admin' },
+];
+
+function resolveAdminPermission(permissionType: any) {
+  return (
+    ADMIN_PERMISSION_MASTER.find(
+      (item) => item.adminPermissionType === permissionType,
+    ) || null
+  );
+}
+
 @Component({
   selector: 'app-provider-admin-list',
   templateUrl: './provider-admin-list.component.html',
@@ -56,6 +71,13 @@ export class ProviderAdminListComponent implements OnInit {
   emergencyMobileNumber: any;
   username: any;
   user_password: any;
+  adminPermissionTypeID: any;
+  adminPermissionType: any;
+  selectedAdminPermission: {
+    adminPermissionTypeID: number;
+    adminPermissionType: string;
+  } | null = null;
+  adminPermissionMaster = ADMIN_PERMISSION_MASTER;
   today = new Date();
   mindate = new Date();
   maxdate = new Date();
@@ -114,6 +136,7 @@ export class ProviderAdminListComponent implements OnInit {
     'aadhaarNo',
     'pAN',
     'remarks',
+    'adminPermissionType',
     'edit',
     'action',
   ];
@@ -123,6 +146,7 @@ export class ProviderAdminListComponent implements OnInit {
     'username',
     'primaryEmail',
     'primaryMobileNumber',
+    'adminPermissionType',
     'action',
   ];
 
@@ -150,6 +174,22 @@ export class ProviderAdminListComponent implements OnInit {
 
   ngOnInit() {
     this.getAllProviderAdminDetails();
+  }
+
+  onAdminPermissionSelected(permissionType: any) {
+    this.selectedAdminPermission = resolveAdminPermission(permissionType);
+    this.adminPermissionType =
+      this.selectedAdminPermission?.adminPermissionType ?? permissionType;
+  }
+
+  getAdminPermissionLabel(element: any) {
+    if (element?.adminPermissionType) {
+      return element.adminPermissionType;
+    }
+    const permissionTypeID = Number(element?.adminPermissionTypeID);
+    return this.adminPermissionMaster.find(
+      (item) => item.adminPermissionTypeID === permissionTypeID,
+    )?.adminPermissionType;
   }
 
   /*
@@ -460,6 +500,9 @@ export class ProviderAdminListComponent implements OnInit {
       edu_qualification: providerAdminData.admin_edu_qualification,
       emergency_cnt_person: providerAdminData.em_contact_person,
       emergencyMobileNumber: providerAdminData.em_contact_number,
+      adminPermissionType:
+        this.selectedAdminPermission?.adminPermissionType ??
+        this.adminPermissionType,
       username: adminCredentials.user_name,
       password: adminCredentials.password,
       admin_remarks:
@@ -471,6 +514,7 @@ export class ProviderAdminListComponent implements OnInit {
     console.log('add objects', tempObj);
     this.checkUserNameAvailability(name);
     this.checkDuplicatesInBuffer(tempObj);
+    this.selectedAdminPermission = null;
     this.resetAllForms();
   }
 
@@ -479,7 +523,7 @@ export class ProviderAdminListComponent implements OnInit {
     let duplicatePan = 0;
     let duplicateName = 0;
     if (this.objs.data.length === 0) {
-      this.objs.data.push(tempObj);
+      this.objs.data = [...this.objs.data, tempObj];
     } else {
       for (let i = 0; i < this.objs.data.length; i++) {
         if (
@@ -505,7 +549,7 @@ export class ProviderAdminListComponent implements OnInit {
         }
       }
       if (duplicateAadhar === 0 && duplicatePan === 0 && duplicateName === 0) {
-        this.objs.data.push(tempObj);
+        this.objs.data = [...this.objs.data, tempObj];
       } else if (duplicateAadhar > 0 && duplicatePan > 0 && duplicateName > 0) {
         this.dialogService.alert(
           'Aadhar, Pan number and Username already exists',
@@ -560,6 +604,7 @@ export class ProviderAdminListComponent implements OnInit {
         qualificationID: this.objs.data[i].edu_qualification,
         emergencyContactPerson: this.objs.data[i].emergency_cnt_person,
         emergencyContactNo: this.objs.data[i].emergencyMobileNumber,
+        adminPermissionType: this.objs.data[i].adminPermissionType,
         userName: this.objs.data[i].username,
         password: this.objs.data[i].password,
         remarks:
@@ -663,7 +708,8 @@ export class ProviderAdminListComponent implements OnInit {
             key === 'userName' ||
             key === 'contactNo' ||
             key === 'emergencyContactNo' ||
-            key === 'emailID'
+            key === 'emailID' ||
+            key === 'adminPermissionType'
           ) {
             const value: string = '' + item[key];
             if (value.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
@@ -701,6 +747,13 @@ export class EditProviderAdminModalComponent implements OnInit {
   edu_qualification: any;
   emergency_cnt_person: any;
   emergencyMobileNumber: any;
+  adminPermissionTypeID: any;
+  adminPermissionType: any;
+  selectedAdminPermission: {
+    adminPermissionTypeID: number;
+    adminPermissionType: string;
+  } | null = null;
+  adminPermissionMaster = ADMIN_PERMISSION_MASTER;
   admin_remarks: any;
   today = new Date();
   mindate = new Date();
@@ -766,6 +819,10 @@ export class EditProviderAdminModalComponent implements OnInit {
     this.edu_qualification = this.data.qualificationID;
     this.emergency_cnt_person = this.data.emergencyContactPerson;
     this.emergencyMobileNumber = this.data.emergencyContactNo;
+    this.adminPermissionType = this.data.adminPermissionType ?? null;
+    this.selectedAdminPermission = resolveAdminPermission(
+      this.adminPermissionType,
+    );
     this.admin_remarks =
       this.data.remarks !== undefined && this.data.remarks !== null
         ? this.data.remarks.trim()
@@ -906,7 +963,16 @@ export class EditProviderAdminModalComponent implements OnInit {
     }
   }
 
+  onAdminPermissionSelected(permissionType: any) {
+    this.selectedAdminPermission = resolveAdminPermission(permissionType);
+    this.adminPermissionType =
+      this.selectedAdminPermission?.adminPermissionType ?? permissionType;
+  }
+
   update() {
+    const permission =
+      this.selectedAdminPermission ||
+      resolveAdminPermission(this.adminPermissionType);
     const update_tempObj = {
       titleID: this.titleID,
       firstName: this.admin_firstName,
@@ -923,6 +989,8 @@ export class EditProviderAdminModalComponent implements OnInit {
       qualificationID: this.edu_qualification,
       emergencyContactPerson: this.emergency_cnt_person,
       emergencyContactNo: this.emergencyMobileNumber,
+      adminPermissionType:
+        permission?.adminPermissionType ?? this.adminPermissionType,
       remarks:
         this.admin_remarks !== undefined && this.admin_remarks !== null
           ? this.admin_remarks.trim()
