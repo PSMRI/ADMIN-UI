@@ -1219,6 +1219,9 @@
     </div>
   </div>
   <div *ngIf="employeeMasterUpload">
-    <app-employee-master-bulk-upload (closeUpload)="closeBulkUpload()"></app-employee-master-bulk-upload>
+    <app-employee-master-bulk-upload
+      (closeUpload)="closeBulkUpload()"
+      (usersUploaded)="getAllUserDetails()"
+    ></app-employee-master-bulk-upload>
   </div>
 </div>

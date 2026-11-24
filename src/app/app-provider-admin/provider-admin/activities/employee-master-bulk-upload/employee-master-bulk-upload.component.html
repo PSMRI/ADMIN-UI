@@ -56,6 +56,12 @@
         <span class="help-block" *ngIf="error2"
           >File size should not exceed {{ maxFileSize }}MB</span
         >
+        <div class="m-t-10" style="margin-left: 60px" *ngIf="pendingXml">
+          <span
+            >{{ pendingFileName }}: {{ pendingRowCount }} user(s) ready.
+            Click Submit to upload.</span
+          >
+        </div>
       </div>
       <div class="m-t-20" style="margin-left: 60px; margin-bottom: 20px">
         <span class="help-block" *ngIf="successcount" style="color: green"
@@ -74,6 +80,17 @@
           (click)="back()"
         >
           Back
+        </button>
+      </div>
+      <div class="col-md-3" *ngIf="showUpload">
+        <button
+          mat-raised-button
+          color="primary"
+          class="mat_blue"
+          [disabled]="!pendingXml || showProgressBar"
+          (click)="submitUpload()"
+        >
+          Submit
         </button>
       </div>
     </div>
