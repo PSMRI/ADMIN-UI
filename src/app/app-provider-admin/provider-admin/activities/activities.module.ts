@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ScrollingModule } from '@angular/cdk/scrolling';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { ProviderAdminRoleService } from './services/state-serviceline-role.service';
 import { MaterialModule } from 'src/app/core/material.module';
@@ -25,6 +26,7 @@ import { RoleMasterComponent } from './role-master/provider-admin-role-master.co
 import { ServicelineCdssMappingComponent } from './serviceline-cdss-mapping/servicelineCdssMapping.component';
 import { SpecialistMappingComponent } from './specialist-mapping/specialist-mapping.component';
 import { WorkLocationMappingComponent } from './work-location-mapping/work-location-mapping.component';
+import { FastBulkSelectDirective } from './work-location-mapping/fast-bulk-select.directive';
 import { UserFacilityMappingComponent } from './work-location-mapping/user-facility-mapping/user-facility-mapping.component';
 import { VillageMasterService } from 'src/app/core/services/adminServices/AdminVillage/village-master-service.service';
 import { CommonServices } from 'src/app/core/services/inventory-services/commonServices';
@@ -133,6 +135,7 @@ import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-li
     InstituteDirectoryMasterComponent,
     EditInstituteDirectoryComponent,
     WorkLocationMappingComponent,
+    FastBulkSelectDirective,
     FeedbackComplaintNatureMasterComponent,
     EditFeedbackNatureModalComponent,
     NatureOfComplaintCategoryMappingComponent,
@@ -178,6 +181,7 @@ import { NikshayBeneficiaryListService } from './services/nikshay-beneficiary-li
   ],
   imports: [
     CommonModule,
+    ScrollingModule,
     MaterialModule,
     FormsModule,
     ReactiveFormsModule,

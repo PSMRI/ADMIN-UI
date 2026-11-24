@@ -169,6 +169,10 @@ export const environment = {
   nikshayFacilities_url: `${adminBaseUrl}nikshay/location/facilities`,
   nikshayVillages_url: `${adminBaseUrl}nikshay/location/villages`,
   nikshayUserMapping_url: `${adminBaseUrl}nikshay/location/userMapping`,
+  // Stop TB teams (MMU vans), AMM-2496
+  stopTBTeams_url: `${adminBaseUrl}stoptb/team/vans`,
+  stopTBUserTeam_url: `${adminBaseUrl}stoptb/team/user`,
+  stopTBTeamMembers_url: `${adminBaseUrl}stoptb/team/members`,
   update_facilities_Url: `${adminBaseUrl}editFacility`,
   delete_facilities_Url: `${adminBaseUrl}deleteFacility`,
   get_FacilityLevels_Url: `${adminBaseUrl}getFacilityLevels`,
