@@ -114,7 +114,10 @@ export class ItemToFacilityMappingComponent implements OnInit {
       .subscribe((response: any) => {
         this.services = response.data.filter((item: any) => {
           return (
-            item.serviceID === 4 || item.serviceID === 9 || item.serviceID === 2
+            item.serviceID === 4 ||
+            item.serviceID === 9 ||
+            item.serviceID === 2 ||
+            item.serviceID === 12
           );
         });
       });

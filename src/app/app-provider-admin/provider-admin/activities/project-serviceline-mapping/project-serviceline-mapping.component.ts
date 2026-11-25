@@ -109,7 +109,12 @@ export class ProjectServicelineMappingComponent implements OnInit {
   filterServices(res: any) {
     const services: any = [];
     res.filter((item: any) => {
-      if (item.serviceID === 4 || item.serviceID === 2 || item.serviceID === 9)
+      if (
+        item.serviceID === 4 ||
+        item.serviceID === 2 ||
+        item.serviceID === 9 ||
+        item.serviceID === 12
+      )
         services.push(item);
     });
     return services;

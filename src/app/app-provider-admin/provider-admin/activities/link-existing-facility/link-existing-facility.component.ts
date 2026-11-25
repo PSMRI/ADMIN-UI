@@ -115,7 +115,11 @@ export class LinkExistingFacilityComponent implements OnInit {
     this.commonServices.getServiceLines(this.userID).subscribe(
       (response: any) => {
         this.services_array = response.data.filter(
-          (item: any) => item.serviceID === 4 || item.serviceID === 9,
+          (item: any) =>
+            item.serviceID === 4 ||
+            item.serviceID === 9 ||
+            item.serviceID === 2 ||
+            item.serviceID === 12,
         );
       },
       () => {

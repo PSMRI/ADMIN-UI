@@ -103,7 +103,12 @@ export class CalibrationMasterComponent implements OnInit {
   successhandeler(response: any) {
     this.services = response.filter(function (item: any) {
       console.log('item', item);
-      if (item.serviceID === 4 || item.serviceID === 9 || item.serviceID === 2)
+      if (
+        item.serviceID === 4 ||
+        item.serviceID === 9 ||
+        item.serviceID === 2 ||
+        item.serviceID === 12
+      )
         return item;
     });
     return this.services;

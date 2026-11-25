@@ -1,4 +1,7 @@
-<div class="container-fluid">
+<div
+  class="container-fluid"
+  [class.asset-mode-container]="showFormFlag && itemType === 'asset'"
+>
   <div class="row" *ngIf="tableMode">
     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
       <h4>
@@ -80,8 +83,8 @@
         <ng-container matColumnDef="isMedical">
           <mat-header-cell *matHeaderCellDef>Item Type</mat-header-cell>
           <mat-cell *matCellDef="let item">
-            <td *ngIf="item.isMedical">Medical</td>
-            <td *ngIf="!item.isMedical">Non-Medical</td></mat-cell
+            <td *ngIf="item.isMedical">Medicines</td>
+            <td *ngIf="!item.isMedical">Consumables</td></mat-cell
           >
         </ng-container>
 
@@ -227,7 +230,9 @@
   <div class="row" *ngIf="showFormFlag">
     <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
       <h4>
-        <strong>Item Master</strong>
+        <strong>{{
+          itemType === 'asset' ? 'Asset Category Master' : 'Item Master'
+        }}</strong>
       </h4>
     </div>
     <form
@@ -284,275 +289,421 @@
         <span class="f-s-n-b">Item Type<em>*</em></span>
         <mat-radio-group [(ngModel)]="itemType" name="itemType" required>
           <mat-radio-button color="primary" class="p-l-10 f-s-12" [value]="true"
-            >Medical</mat-radio-button
+            >Medicines</mat-radio-button
           >
           <mat-radio-button
             color="primary"
             class="p-l-10 f-s-12"
             [value]="false"
-            >Non-Medical</mat-radio-button
-          >
-        </mat-radio-group>
-      </div>
-
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" appDotAllow>
-          <mat-label>Item Code</mat-label>
-          <input
-            matInput
-            [(ngModel)]="code"
-            name="code"
-            minlength="1"
-            maxlength="15"
-            (selectionChange)="checkCodeExistance(code)"
-            #itemCode="ngModel"
-            required
-          />
-          <mat-hint *ngIf="itemCode.touched || itemCode.dirty">
-            <span class="errorText" [hidden]="!itemCode.errors"
-              >Item code is required</span
-            >
-            <span class="errorText" *ngIf="itemCodeExist"
-              >Item code is already exists</span
-            >
-          </mat-hint>
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Item Name</mat-label>
-          <input
-            matInput
-            appItemNameWithSpecialCharCopyPaste
-            [(ngModel)]="name"
-            name="name"
-            minlength="1"
-            maxlength="100"
-            #itemName="ngModel"
-            required
-          />
-          <mat-hint *ngIf="itemName.touched || itemName.dirty">
-            <span class="errorText" [hidden]="!itemName.errors"
-              >Item Name is required</span
-            >
-          </mat-hint>
-        </mat-form-field>
-      </div>
-
-      <div class="col-3 m-t-25">
-        <mat-form-field>
-          <mat-label>Snomed CT Code</mat-label>
-          <input
-            autocomplete="off"
-            maxlength="100"
-            matInput
-            name="testsnomedCode"
-            [(ngModel)]="testsnomedCode"
-            (keyup.enter)="searchSnomed(testsnomedCode)"
-          />
-        </mat-form-field>
-
-        <span>
-          <mat-icon
-            class="search-btn cursorPointer"
-            matSuffix
-            (click)="searchSnomed(testsnomedCode)"
-            [class.toolbar-icon-disabled]="snomedFlag"
-            >search</mat-icon
-          >
-        </span>
-        <span
-          *ngIf="snomedFlag === true"
-          tabindex="0"
-          (click)="onDeleteClick()"
-          (keydown.enter)="onDeleteClick()"
-          (keydown.space)="onDeleteClick()"
-        >
-          <mat-icon class="cursorPointer">delete</mat-icon>
-        </span>
-      </div>
-      <div class="col-3 m-t-25">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Snomed CT Term</mat-label>
-          <input
-            maxlength="100"
-            matInput
-            name="testSnomedName"
-            [(ngModel)]="testSnomedName"
-            disabled
-          />
-        </mat-form-field>
-      </div>
-
-      <div class="col-3 m-t-25">
-        <mat-form-field [style.width]="'100%'" appDrugStrengthWithCopyPaste>
-          <mat-label>Strength</mat-label>
-          <input
-            matInput
-            [(ngModel)]="strength"
-            name="strength"
-            #itemStrength="ngModel"
-            minlength="1"
-            maxlength="10"
-            required
-          />
-          <mat-hint *ngIf="itemStrength.touched || itemStrength.dirty">
-            <span class="errorText" [hidden]="!itemStrength.errors"
-              >Strength is required</span
-            >
-          </mat-hint>
-        </mat-form-field>
-      </div>
-      <div class="col-3 m-t-25">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>UOM</mat-label>
-          <mat-select [(ngModel)]="uom" name="uom" required>
-            <mat-option *ngFor="let item of measures" [value]="item">
-              {{ item.uOMName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Item Category</mat-label>
-          <mat-select [(ngModel)]="category" name="category" required>
-            <mat-option *ngFor="let item of categories" [value]="item">
-              {{ item.itemCategoryName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Drug List Type</mat-label>
-          <mat-select [(ngModel)]="drugName" name="drugName" required>
-            <mat-option
-              *ngFor="let item of drugTypeList"
-              [value]="item"
-              (click)="drugTypeChange(item)"
-            >
-              {{ item }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Item Form</mat-label>
-          <mat-select [(ngModel)]="dose" name="dose" required>
-            <mat-option *ngFor="let item of dosages" [value]="item">
-              {{ item.itemForm }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Pharmacology Category</mat-label>
-          <mat-select [(ngModel)]="pharmacology" name="pharmacology">
-            <mat-option *ngFor="let item of pharmacologies" [value]="item">
-              {{ item.pharmCategoryName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Manufacturer</mat-label>
-          <mat-select [(ngModel)]="manufacturer" name="manufacturer">
-            <mat-option *ngFor="let item of manufacturers" [value]="item">
-              {{ item.manufacturerName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-6 m-t-25">
-        <span class="f-s-n-b">Drug Type<em>*</em></span>
-        <mat-radio-group [(ngModel)]="drugType" name="drugType" required>
-          <mat-radio-button color="primary" class="p-l-10 f-s-12" [value]="true"
-            >Scheduled</mat-radio-button
+            >Consumables</mat-radio-button
           >
           <mat-radio-button
             color="primary"
             class="p-l-10 f-s-12"
-            [value]="false"
-            >Non-Scheduled</mat-radio-button
+            [value]="'asset'"
+            >Asset</mat-radio-button
           >
         </mat-radio-group>
       </div>
 
-      <div class="clearfix visible-sm"></div>
+      <ng-container *ngIf="itemType !== 'asset'">
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" appDotAllow>
+            <mat-label>Item Code</mat-label>
+            <input
+              matInput
+              [(ngModel)]="code"
+              name="code"
+              minlength="1"
+              maxlength="15"
+              (selectionChange)="checkCodeExistance(code)"
+              #itemCode="ngModel"
+              required
+            />
+            <mat-hint *ngIf="itemCode.touched || itemCode.dirty">
+              <span class="errorText" [hidden]="!itemCode.errors"
+                >Item code is required</span
+              >
+              <span class="errorText" *ngIf="itemCodeExist"
+                >Item code is already exists</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Item Name</mat-label>
+            <input
+              matInput
+              appItemNameWithSpecialCharCopyPaste
+              [(ngModel)]="name"
+              name="name"
+              minlength="1"
+              maxlength="100"
+              #itemName="ngModel"
+              required
+            />
+            <mat-hint *ngIf="itemName.touched || itemName.dirty">
+              <span class="errorText" [hidden]="!itemName.errors"
+                >Item Name is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
 
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" appVehicleNoCopyPaste>
-          <mat-label>Composition</mat-label>
-          <input
-            matInput
-            [(ngModel)]="composition"
-            name="composition"
-            #itemComposition="ngModel"
-            minlength="2"
-            maxlength="300"
-            required
-          />
-          <mat-hint *ngIf="itemComposition.touched || itemComposition.dirty">
-            <span class="errorText" [hidden]="!itemComposition.errors"
-              >Composition is required</span
+        <div class="col-3 m-t-25">
+          <mat-form-field>
+            <mat-label>Snomed CT Code</mat-label>
+            <input
+              autocomplete="off"
+              maxlength="100"
+              matInput
+              name="testsnomedCode"
+              [(ngModel)]="testsnomedCode"
+              (keyup.enter)="searchSnomed(testsnomedCode)"
+            />
+          </mat-form-field>
+
+          <span>
+            <mat-icon
+              class="search-btn cursorPointer"
+              matSuffix
+              (click)="searchSnomed(testsnomedCode)"
+              [class.toolbar-icon-disabled]="snomedFlag"
+              >search</mat-icon
             >
-          </mat-hint>
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Route Of Admin</mat-label>
-          <mat-select [(ngModel)]="route" name="route" required>
-            <mat-option *ngFor="let item of routes" [value]="item">
-              {{ item.routeName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field
-          [style.width]="'100%'"
-          appVehicleNoSpecialCharWithCopyPaste
-        >
-          <mat-label>Item Description</mat-label>
-          <input
-            matInput
-            [(ngModel)]="description"
-            name="description"
-            minlength="2"
-            maxlength="100"
-          />
-        </mat-form-field>
-      </div>
-      <div class="col-3" style="text-align: center">
-        <button
-          mat-mini-fab
-          class="xs-pull-right sm-pull-right md-pull-left lg-pull-left mat_icon_white"
-          *ngIf="itemCreationForm.valid && !itemCodeExist"
-          color="primary"
-          (click)="addMultipleItemArray(itemCreationForm.value)"
-        >
-          <mat-icon
-            matSuffix
-            class="mat-icon material-icons"
-            role="img"
-            aria-hidden="true"
-            style="cursor: pointer"
-            >add</mat-icon
+          </span>
+          <span
+            *ngIf="snomedFlag === true"
+            tabindex="0"
+            (click)="onDeleteClick()"
+            (keydown.enter)="onDeleteClick()"
+            (keydown.space)="onDeleteClick()"
           >
-        </button>
-      </div>
+            <mat-icon class="cursorPointer">delete</mat-icon>
+          </span>
+        </div>
+        <div class="col-3 m-t-25">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Snomed CT Term</mat-label>
+            <input
+              maxlength="100"
+              matInput
+              name="testSnomedName"
+              [(ngModel)]="testSnomedName"
+              disabled
+            />
+          </mat-form-field>
+        </div>
+
+        <div class="col-3 m-t-25">
+          <mat-form-field [style.width]="'100%'" appDrugStrengthWithCopyPaste>
+            <mat-label>Strength</mat-label>
+            <input
+              matInput
+              [(ngModel)]="strength"
+              name="strength"
+              #itemStrength="ngModel"
+              minlength="1"
+              maxlength="10"
+              required
+            />
+            <mat-hint *ngIf="itemStrength.touched || itemStrength.dirty">
+              <span class="errorText" [hidden]="!itemStrength.errors"
+                >Strength is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3 m-t-25">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>UOM</mat-label>
+            <mat-select [(ngModel)]="uom" name="uom" required>
+              <mat-option *ngFor="let item of measures" [value]="item">
+                {{ item.uOMName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Item Category</mat-label>
+            <mat-select [(ngModel)]="category" name="category" required>
+              <mat-option *ngFor="let item of categories" [value]="item">
+                {{ item.itemCategoryName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Drug List Type</mat-label>
+            <mat-select [(ngModel)]="drugName" name="drugName" required>
+              <mat-option
+                *ngFor="let item of drugTypeList"
+                [value]="item"
+                (click)="drugTypeChange(item)"
+              >
+                {{ item }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Item Form</mat-label>
+            <mat-select [(ngModel)]="dose" name="dose" required>
+              <mat-option *ngFor="let item of dosages" [value]="item">
+                {{ item.itemForm }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Pharmacology Category</mat-label>
+            <mat-select [(ngModel)]="pharmacology" name="pharmacology">
+              <mat-option *ngFor="let item of pharmacologies" [value]="item">
+                {{ item.pharmCategoryName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Manufacturer</mat-label>
+            <mat-select [(ngModel)]="manufacturer" name="manufacturer">
+              <mat-option *ngFor="let item of manufacturers" [value]="item">
+                {{ item.manufacturerName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-6 m-t-25">
+          <span class="f-s-n-b">Drug Type<em>*</em></span>
+          <mat-radio-group [(ngModel)]="drugType" name="drugType" required>
+            <mat-radio-button
+              color="primary"
+              class="p-l-10 f-s-12"
+              [value]="true"
+              >Scheduled</mat-radio-button
+            >
+            <mat-radio-button
+              color="primary"
+              class="p-l-10 f-s-12"
+              [value]="false"
+              >Non-Scheduled</mat-radio-button
+            >
+          </mat-radio-group>
+        </div>
+
+        <div class="clearfix visible-sm"></div>
+
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" appVehicleNoCopyPaste>
+            <mat-label>Composition</mat-label>
+            <input
+              matInput
+              [(ngModel)]="composition"
+              name="composition"
+              #itemComposition="ngModel"
+              minlength="2"
+              maxlength="300"
+              required
+            />
+            <mat-hint *ngIf="itemComposition.touched || itemComposition.dirty">
+              <span class="errorText" [hidden]="!itemComposition.errors"
+                >Composition is required</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Route Of Admin</mat-label>
+            <mat-select [(ngModel)]="route" name="route" required>
+              <mat-option *ngFor="let item of routes" [value]="item">
+                {{ item.routeName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field
+            [style.width]="'100%'"
+            appVehicleNoSpecialCharWithCopyPaste
+          >
+            <mat-label>Item Description</mat-label>
+            <input
+              matInput
+              [(ngModel)]="description"
+              name="description"
+              minlength="2"
+              maxlength="100"
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3" style="text-align: center">
+          <button
+            mat-mini-fab
+            class="xs-pull-right sm-pull-right md-pull-left lg-pull-left mat_icon_white"
+            *ngIf="itemCreationForm.valid && !itemCodeExist"
+            color="primary"
+            [disabled]="itemType === 'asset'"
+            (click)="addMultipleItemArray(itemCreationForm.value)"
+          >
+            <mat-icon
+              matSuffix
+              class="mat-icon material-icons"
+              role="img"
+              aria-hidden="true"
+              style="cursor: pointer"
+              >add</mat-icon
+            >
+          </button>
+        </div>
+      </ng-container>
+
+      <ng-container *ngIf="itemType === 'asset'">
+        <div class="col-12 asset-management-layout">
+          <section class="asset-management-card asset-entry-card">
+            <h5 class="asset-card-heading">
+              {{ editingAssetId === null ? 'Add asset' : 'Edit asset' }}
+            </h5>
+            <div class="asset-management-fields">
+              <mat-form-field appearance="outline">
+                <mat-label>Type of asset</mat-label>
+                <mat-select [(ngModel)]="assetType" name="assetType" required>
+                  <mat-option *ngFor="let type of assetTypes" [value]="type">
+                    {{ type }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Asset code</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="assetCode"
+                  name="assetCode"
+                  minlength="1"
+                  maxlength="15"
+                  required
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Asset name</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="assetName"
+                  name="assetName"
+                  minlength="1"
+                  maxlength="100"
+                  required
+                />
+              </mat-form-field>
+              <mat-form-field
+                appearance="outline"
+                class="asset-description-field"
+              >
+                <mat-label>Asset description (Optional)</mat-label>
+                <textarea
+                  matInput
+                  [(ngModel)]="assetDescription"
+                  name="assetDescription"
+                  maxlength="300"
+                  rows="3"
+                ></textarea>
+              </mat-form-field>
+            </div>
+            <p class="asset-field-help">
+              Asset code must be unique. Asset name must be unique within its
+              type.
+            </p>
+            <div class="asset-management-actions">
+              <button
+                mat-stroked-button
+                type="button"
+                (click)="clearAssetForm()"
+              >
+                Clear
+              </button>
+              <button
+                mat-raised-button
+                color="primary"
+                type="button"
+                [disabled]="!canSaveAsset"
+                (click)="saveAsset()"
+              >
+                {{ editingAssetId === null ? 'Save' : 'Update' }}
+              </button>
+            </div>
+          </section>
+          <section class="asset-management-card asset-list-card">
+            <div class="asset-list-heading">
+              <h5 class="asset-card-heading">Assets by type</h5>
+              <mat-form-field appearance="outline" class="asset-type-filter">
+                <mat-label>Type</mat-label>
+                <mat-select
+                  [(ngModel)]="assetTypeFilter"
+                  name="assetTypeFilter"
+                >
+                  <mat-option
+                    *ngFor="let type of assetTypeFilters"
+                    [value]="type"
+                  >
+                    {{ type }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+            <div class="table-responsive">
+              <table class="asset-management-table">
+                <thead>
+                  <tr>
+                    <th>Type of asset</th>
+                    <th>Asset code</th>
+                    <th>Asset name</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let asset of filteredAssetRecords">
+                    <td>
+                      <span class="asset-type-chip">{{ asset.assetType }}</span>
+                    </td>
+                    <td>{{ asset.assetCode }}</td>
+                    <td>{{ asset.assetName }}</td>
+                    <td>{{ asset.status }}</td>
+                    <td>
+                      <button
+                        mat-button
+                        color="primary"
+                        type="button"
+                        (click)="editAsset(asset)"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="filteredAssetRecords.length === 0">
+                    <td colspan="5" class="asset-empty-state">
+                      No assets found
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </ng-container>
     </form>
 
     <div
@@ -581,7 +732,7 @@
           <ng-container matColumnDef="isMedical">
             <mat-header-cell *matHeaderCellDef>Item Type</mat-header-cell>
             <mat-cell *matCellDef="let item; let i = index">{{
-              item.isMedical ? "Medical" : "Non-Medical"
+              item.isMedical ? "Medicines" : "Consumables"
             }}</mat-cell>
           </ng-container>
 
@@ -681,6 +832,7 @@
         mat-raised-button
         color="accent"
         class="pull-right mat_green"
+        *ngIf="itemType !== 'asset'"
         [disabled]="itemArrayObj.data.length === 0"
         (click)="saveItem(); resetItemCreationForm()"
       >
@@ -690,6 +842,7 @@
         mat-raised-button
         color="primary"
         class="pull-right m-r-5 mat_blue"
+        *ngIf="itemType !== 'asset'"
         (click)="resetItemCreationForm()"
       >
         Clear
@@ -742,257 +895,322 @@
         <span class="f-s-n-b">Item Type</span>
         <mat-radio-group [(ngModel)]="edit_ItemType" name="itemType">
           <mat-radio-button color="primary" class="p-l-10" [value]="true"
-            >Medical</mat-radio-button
+            >Medicines</mat-radio-button
           >
           <mat-radio-button color="primary" class="p-l-10" [value]="false"
-            >Non-Medical</mat-radio-button
+            >Consumables</mat-radio-button
+          >
+          <mat-radio-button color="primary" class="p-l-10" [value]="'asset'"
+            >Asset</mat-radio-button
           >
         </mat-radio-group>
       </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Item Code</mat-label>
-          <input
-            matInput
-            [(ngModel)]="edit_Code"
-            name="code"
-            minlength="1"
-            maxlength="15"
-            #itemCode="ngModel"
-            disabled="true"
-            required
-          />
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Item Name</mat-label>
-          <input
-            matInput
-            [(ngModel)]="edit_Name"
-            name="name"
-            minlength="1"
-            maxlength="100"
-            #itemName="ngModel"
-            disabled="true"
-            required
-          />
-        </mat-form-field>
-      </div>
+      <ng-container *ngIf="edit_ItemType !== 'asset'">
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Item Code</mat-label>
+            <input
+              matInput
+              [(ngModel)]="edit_Code"
+              name="code"
+              minlength="1"
+              maxlength="15"
+              #itemCode="ngModel"
+              disabled="true"
+              required
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Item Name</mat-label>
+            <input
+              matInput
+              [(ngModel)]="edit_Name"
+              name="name"
+              minlength="1"
+              maxlength="100"
+              #itemName="ngModel"
+              disabled="true"
+              required
+            />
+          </mat-form-field>
+        </div>
 
-      <div class="col-3">
-        <mat-form-field class="width80">
-          <mat-label>Snomed CT Code</mat-label>
-          <input
-            autocomplete="off"
-            maxlength="100"
-            matInput
-            name="editSnomedCode"
-            [(ngModel)]="editSnomedCode"
-            (keyup.enter)="searchSnomedEdit(editSnomedCode)"
-            [disabled]="disableSnomedCode"
-          />
-        </mat-form-field>
+        <div class="col-3">
+          <mat-form-field class="width80">
+            <mat-label>Snomed CT Code</mat-label>
+            <input
+              autocomplete="off"
+              maxlength="100"
+              matInput
+              name="editSnomedCode"
+              [(ngModel)]="editSnomedCode"
+              (keyup.enter)="searchSnomedEdit(editSnomedCode)"
+              [disabled]="disableSnomedCode"
+            />
+          </mat-form-field>
 
-        <span>
-          <mat-icon
-            class="search-btn cursorPointer"
-            matSuffix
-            [class.toolbar-icon-disabled]="snomedEditFlag"
-            (click)="searchSnomedEdit(editSnomedCode)"
-            >search</mat-icon
+          <span>
+            <mat-icon
+              class="search-btn cursorPointer"
+              matSuffix
+              [class.toolbar-icon-disabled]="snomedEditFlag"
+              (click)="searchSnomedEdit(editSnomedCode)"
+              >search</mat-icon
+            >
+          </span>
+          <span
+            *ngIf="snomedEditFlag === true"
+            tabindex="0"
+            (click)="onDeleteClickEdit()"
+            (keydown.enter)="onDeleteClickEdit()"
+            (keydown.space)="onDeleteClickEdit()"
           >
-        </span>
-        <span
-          *ngIf="snomedEditFlag === true"
-          tabindex="0"
-          (click)="onDeleteClickEdit()"
-          (keydown.enter)="onDeleteClickEdit()"
-          (keydown.space)="onDeleteClickEdit()"
-        >
-          <mat-icon class="cursorPointer">delete</mat-icon>
-        </span>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Snomed CT Term</mat-label>
-          <input
-            maxlength="100"
-            matInput
-            name="testSnomedName"
-            [(ngModel)]="editSnomedName"
-            disabled
-          />
-        </mat-form-field>
-      </div>
+            <mat-icon class="cursorPointer">delete</mat-icon>
+          </span>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Snomed CT Term</mat-label>
+            <input
+              maxlength="100"
+              matInput
+              name="testSnomedName"
+              [(ngModel)]="editSnomedName"
+              disabled
+            />
+          </mat-form-field>
+        </div>
 
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Strength</mat-label>
-          <input
-            matInput
-            [(ngModel)]="edit_Strength"
-            name="strength"
-            disabled="true"
-            #itemStrength="ngModel"
-            minlength="1"
-            maxlength="10"
-            required
-          />
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>UOM</mat-label>
-          <mat-select
-            [(ngModel)]="edit_Uom"
-            name="uom"
-            disabled="true"
-            required
-          >
-            <mat-option *ngFor="let item of edit_measures" [value]="item.uOMID">
-              {{ item.uOMName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Item Category</mat-label>
-          <mat-select [(ngModel)]="edit_Category" name="category" required>
-            <mat-option
-              *ngFor="let item of edit_categories"
-              [value]="item.itemCategoryID"
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Strength</mat-label>
+            <input
+              matInput
+              [(ngModel)]="edit_Strength"
+              name="strength"
+              disabled="true"
+              #itemStrength="ngModel"
+              minlength="1"
+              maxlength="10"
+              required
+            />
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>UOM</mat-label>
+            <mat-select
+              [(ngModel)]="edit_Uom"
+              name="uom"
+              disabled="true"
+              required
             >
-              {{ item.itemCategoryName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Drug List Type</mat-label>
-          <mat-select [(ngModel)]="editDrug" disabled="true" name="drugName">
-            <mat-option
-              *ngFor="let item of drugTypeList"
-              [value]="item"
-              (click)="drugTypeChange(item)"
+              <mat-option
+                *ngFor="let item of edit_measures"
+                [value]="item.uOMID"
+              >
+                {{ item.uOMName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Item Category</mat-label>
+            <mat-select [(ngModel)]="edit_Category" name="category" required>
+              <mat-option
+                *ngFor="let item of edit_categories"
+                [value]="item.itemCategoryID"
+              >
+                {{ item.itemCategoryName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Drug List Type</mat-label>
+            <mat-select [(ngModel)]="editDrug" disabled="true" name="drugName">
+              <mat-option
+                *ngFor="let item of drugTypeList"
+                [value]="item"
+                (click)="drugTypeChange(item)"
+              >
+                {{ item }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Item Form</mat-label>
+            <mat-select
+              [(ngModel)]="edit_Dose"
+              name="dose"
+              disabled="true"
+              required
             >
-              {{ item }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Item Form</mat-label>
-          <mat-select
-            [(ngModel)]="edit_Dose"
-            name="dose"
-            disabled="true"
-            required
-          >
-            <mat-option
-              *ngFor="let item of edit_dosages"
-              [value]="item.itemFormID"
-            >
-              {{ item.itemForm }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <mat-label>Pharmacology Category</mat-label>
-          <mat-select [(ngModel)]="edit_Pharmacology" name="pharmacology">
-            <mat-option
-              *ngFor="let item of edit_pharmacologies"
-              [value]="item.pharmacologyCategoryID"
-            >
-              {{ item.pharmCategoryName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Manufacturer</mat-label>
-          <mat-select [(ngModel)]="edit_Manufacturer" name="manufacturer">
-            <mat-option
-              *ngFor="let item of edit_Manufacturerlist"
-              [value]="item.manufacturerID"
-            >
-              {{ item.manufacturerName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
+              <mat-option
+                *ngFor="let item of edit_dosages"
+                [value]="item.itemFormID"
+              >
+                {{ item.itemForm }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <mat-label>Pharmacology Category</mat-label>
+            <mat-select [(ngModel)]="edit_Pharmacology" name="pharmacology">
+              <mat-option
+                *ngFor="let item of edit_pharmacologies"
+                [value]="item.pharmacologyCategoryID"
+              >
+                {{ item.pharmCategoryName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-xs-12 col-sm-6 col-md-3 col-lg-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Manufacturer</mat-label>
+            <mat-select [(ngModel)]="edit_Manufacturer" name="manufacturer">
+              <mat-option
+                *ngFor="let item of edit_Manufacturerlist"
+                [value]="item.manufacturerID"
+              >
+                {{ item.manufacturerName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
 
-      <div class="col-12 m-t-25">
-        <span class="f-s-n-b">Drug Type</span>
-        <mat-radio-group [(ngModel)]="edit_DrugType" name="drugType">
-          <mat-radio-button color="primary" class="p-l-10" [value]="true"
-            >Scheduled Drug</mat-radio-button
-          >
-          <mat-radio-button color="primary" class="p-l-10" [value]="false"
-            >Non-Scheduled Drug</mat-radio-button
-          >
-        </mat-radio-group>
-      </div>
-      <div class="clearfix visible-sm"></div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" appMyProviderName>
-          <mat-label>Composition</mat-label>
-          <input
-            matInput
-            [(ngModel)]="edit_Composition"
-            name="composition"
-            #itemComposition="ngModel"
-            minlength="2"
-            maxlength="300"
-            disabled="true"
-            required
-          />
-          <mat-hint *ngIf="itemComposition.touched || itemComposition.dirty">
-            <span class="errorText" [hidden]="!itemComposition.errors"
-              >Enter minimum 2 characters</span
+        <div class="col-12 m-t-25">
+          <span class="f-s-n-b">Drug Type</span>
+          <mat-radio-group [(ngModel)]="edit_DrugType" name="drugType">
+            <mat-radio-button color="primary" class="p-l-10" [value]="true"
+              >Scheduled Drug</mat-radio-button
             >
-          </mat-hint>
-        </mat-form-field>
-      </div>
-      <div class="col-3">
-        <mat-form-field [style.width]="'100%'" class="hide_underline">
-          <!-- <input matInput style="display: none" /> -->
-          <mat-label>Route Of Admin</mat-label>
-          <mat-select
-            [(ngModel)]="edit_Route"
-            name="route"
-            disabled="true"
-            required
-          >
-            <mat-option *ngFor="let item of edit_routes" [value]="item.routeID">
-              {{ item.routeName }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-      </div>
-      <div class="col-3" appVehicleNoCopyPaste>
-        <mat-form-field [style.width]="'100%'">
-          <mat-label>Item Description</mat-label>
-          <input
-            matInput
-            [(ngModel)]="edit_Description"
-            name="description"
-            minlength="2"
-            maxlength="100"
-          />
-        </mat-form-field>
-      </div>
+            <mat-radio-button color="primary" class="p-l-10" [value]="false"
+              >Non-Scheduled Drug</mat-radio-button
+            >
+          </mat-radio-group>
+        </div>
+        <div class="clearfix visible-sm"></div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" appMyProviderName>
+            <mat-label>Composition</mat-label>
+            <input
+              matInput
+              [(ngModel)]="edit_Composition"
+              name="composition"
+              #itemComposition="ngModel"
+              minlength="2"
+              maxlength="300"
+              disabled="true"
+              required
+            />
+            <mat-hint *ngIf="itemComposition.touched || itemComposition.dirty">
+              <span class="errorText" [hidden]="!itemComposition.errors"
+                >Enter minimum 2 characters</span
+              >
+            </mat-hint>
+          </mat-form-field>
+        </div>
+        <div class="col-3">
+          <mat-form-field [style.width]="'100%'" class="hide_underline">
+            <!-- <input matInput style="display: none" /> -->
+            <mat-label>Route Of Admin</mat-label>
+            <mat-select
+              [(ngModel)]="edit_Route"
+              name="route"
+              disabled="true"
+              required
+            >
+              <mat-option
+                *ngFor="let item of edit_routes"
+                [value]="item.routeID"
+              >
+                {{ item.routeName }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+        <div class="col-3" appVehicleNoCopyPaste>
+          <mat-form-field [style.width]="'100%'">
+            <mat-label>Item Description</mat-label>
+            <input
+              matInput
+              [(ngModel)]="edit_Description"
+              name="description"
+              minlength="2"
+              maxlength="100"
+            />
+          </mat-form-field>
+        </div>
+      </ng-container>
+      <ng-container *ngIf="edit_ItemType === 'asset'">
+        <div class="col-12 asset-management-wrapper">
+          <section class="asset-management-panel">
+            <h5 class="asset-management-heading">Edit asset</h5>
+            <div class="asset-management-fields">
+              <mat-form-field appearance="outline">
+                <mat-label>Type of asset</mat-label>
+                <mat-select
+                  [(ngModel)]="editAssetType"
+                  name="assetType"
+                  required
+                >
+                  <mat-option *ngFor="let type of assetTypes" [value]="type">
+                    {{ type }}
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Asset code</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="editAssetCode"
+                  name="assetCode"
+                  minlength="1"
+                  maxlength="15"
+                  required
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Asset name</mat-label>
+                <input
+                  matInput
+                  [(ngModel)]="editAssetName"
+                  name="assetName"
+                  minlength="1"
+                  maxlength="100"
+                  required
+                />
+              </mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Asset description</mat-label>
+                <textarea
+                  matInput
+                  [(ngModel)]="editAssetDescription"
+                  name="assetDescription"
+                  maxlength="300"
+                  rows="3"
+                  placeholder="Optional"
+                ></textarea>
+              </mat-form-field>
+            </div>
+          </section>
+        </div>
+      </ng-container>
     </form>
     <div
       class="col-xs-12 col-sm-12 col-md-12 col-lg-12 m-b-10"
@@ -1010,6 +1228,7 @@
         mat-raised-button
         color="accent"
         class="pull-right mat_green"
+        [disabled]="edit_ItemType === 'asset'"
         (click)="updateItem(editItemCreationForm.value)"
       >
         Update

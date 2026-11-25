@@ -147,7 +147,8 @@ export class EmployeeParkingPlaceMappingComponent
             if (
               item.serviceID === 4 ||
               item.serviceID === 2 ||
-              item.serviceID === 9
+              item.serviceID === 9 ||
+              item.serviceID === 12
             )
               return item;
           });

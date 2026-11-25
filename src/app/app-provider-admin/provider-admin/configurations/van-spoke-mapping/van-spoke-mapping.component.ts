@@ -128,13 +128,17 @@ export class VanSpokeMappingComponent implements OnInit {
       (serviceresponse: any) => {
         if (this.enabletmSpokeDetailsForm === true) {
           this.tm_servicelines = serviceresponse.data.filter((item: any) => {
-            if (item.serviceID === 4) {
+            if (
+              item.serviceID === 4 ||
+              item.serviceID === 2 ||
+              item.serviceID === 12
+            ) {
               return item;
             }
           });
         } else {
           this.servicelines = serviceresponse.data.filter((item: any) => {
-            if (item.serviceID === 2) {
+            if (item.serviceID === 2 || item.serviceID === 12) {
               return item;
             }
           });

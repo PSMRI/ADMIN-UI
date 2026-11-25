@@ -11,3 +11,194 @@
 }
 
 .toolbar-icon-disabled {pointer-events: none;}
+
+.asset-mode-container {
+  box-sizing: border-box;
+  max-height: calc(100vh - 150px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0 16px 76px;
+}
+
+.asset-mode-container > .row {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.asset-management-layout {
+  display: grid;
+  grid-template-columns: minmax(270px, 0.8fr) minmax(0, 1.6fr);
+  align-items: start;
+  gap: 18px;
+  box-sizing: border-box;
+  padding-right: 14px;
+  padding-left: 14px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.asset-management-card,
+.asset-management-panel {
+  min-width: 0;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e1e7ed;
+  border-radius: 8px;
+  box-shadow: 0 3px 12px rgba(28, 48, 69, 0.07);
+}
+
+.asset-entry-card {
+  padding: 20px 22px 24px;
+}
+
+.asset-card-heading,
+.asset-management-heading {
+  margin: 0 0 16px;
+  color: #233746;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.asset-management-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.asset-management-fields mat-form-field {
+  width: 100%;
+}
+
+.asset-management-fields input.mat-mdc-input-element,
+.asset-management-fields textarea.mat-mdc-input-element {
+  text-align: left;
+}
+
+:host ::ng-deep .asset-management-fields .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-floating-label,
+:host ::ng-deep .asset-type-filter .mat-mdc-text-field-wrapper .mat-mdc-form-field-flex .mat-mdc-floating-label {
+  top: 50% !important;
+}
+
+:host ::ng-deep .asset-description-field .mat-mdc-floating-label.mdc-floating-label--float-above {
+  top: calc(50% - 6px) !important;
+}
+
+:host ::ng-deep .asset-management-fields .mat-mdc-form-field-infix,
+:host ::ng-deep .asset-type-filter .mat-mdc-form-field-infix {
+  display: flex;
+  align-items: center;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+:host ::ng-deep .asset-management-fields .mat-mdc-select-trigger,
+:host ::ng-deep .asset-type-filter .mat-mdc-select-trigger {
+  height: 100%;
+  align-items: center;
+}
+
+:host ::ng-deep .asset-management-fields .mat-mdc-select-value,
+:host ::ng-deep .asset-type-filter .mat-mdc-select-value {
+  text-align: left;
+}
+
+:host ::ng-deep .asset-management-fields .mat-mdc-text-field-wrapper.mdc-text-field--outlined,
+:host ::ng-deep .asset-type-filter .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+  padding: 0 16px !important;
+}
+
+:host ::ng-deep .asset-description-field textarea.mat-mdc-input-element {
+  padding-top: 22px !important;
+}
+
+:host ::ng-deep .asset-management-fields .mdc-notched-outline,
+:host ::ng-deep .asset-type-filter .mdc-notched-outline {
+  height: 100% !important;
+}
+
+.asset-field-help {
+  margin: 0 0 14px;
+  color: #657482;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.asset-management-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.asset-list-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.asset-type-filter {
+  width: 150px;
+}
+
+.asset-management-table {
+  width: 100%;
+  min-width: 600px;
+  border-collapse: collapse;
+  color: #344452;
+  font-size: 13px;
+}
+
+.asset-management-table th {
+  padding: 10px 8px;
+  background: #f5f7f9;
+  border-bottom: 1px solid #e4e9ee;
+  color: #526170;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.asset-management-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid #edf0f3;
+  vertical-align: middle;
+}
+
+.asset-type-chip {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #e8f0fb;
+  color: #285d9b;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.asset-empty-state {
+  padding: 28px 12px !important;
+  color: #74818d;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .asset-management-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .asset-entry-card {
+    max-width: 440px;
+  }
+}
+
+@media (max-width: 575px) {
+  .asset-management-card,
+  .asset-management-panel {
+    padding: 14px;
+  }
+
+  .asset-list-heading {
+    flex-direction: column;
+  }
+}

@@ -41,6 +41,15 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { SessionStorageService } from 'Common-UI/src/registrar/services/session-storage.service';
 
+interface AssetRecord {
+  id: number;
+  assetType: string;
+  assetCode: string;
+  assetName: string;
+  assetDescription: string;
+  status: 'Active';
+}
+
 @Component({
   selector: 'app-item-master',
   templateUrl: './item-master.component.html',
@@ -92,6 +101,10 @@ export class ItemMasterComponent implements OnInit {
   edit_serviceline: any;
   edit_state: any;
   edit_ItemType: any;
+  editAssetType: string | null = null;
+  editAssetCode: string | null = null;
+  editAssetName: string | null = null;
+  editAssetDescription: string | null = null;
   edit_Code: any;
   edit_Name: any;
   edit_Category: any;
@@ -122,6 +135,21 @@ export class ItemMasterComponent implements OnInit {
   strength: any;
   uom: any;
   itemType: any;
+  assetType: string | null = null;
+  assetCode: string | null = null;
+  assetName: string | null = null;
+  assetDescription: string | null = null;
+  assetTypes = [
+    'IT Assets',
+    'General Assets',
+    'Medical Assets',
+    'Electrical Assets',
+  ];
+  assetTypeFilters = ['All types', ...this.assetTypes];
+  assetRecords: AssetRecord[] = [];
+  assetTypeFilter = 'All types';
+  editingAssetId: number | null = null;
+  private nextAssetId = 1;
   category: any;
   dose: any;
   manufacturer: any;
@@ -202,7 +230,12 @@ export class ItemMasterComponent implements OnInit {
   servicesSuccesshandler(res: any) {
     this.services = res.data.filter(function (item: any) {
       console.log('item', item);
-      if (item.serviceID === 4 || item.serviceID === 9 || item.serviceID === 2)
+      if (
+        item.serviceID === 4 ||
+        item.serviceID === 9 ||
+        item.serviceID === 2 ||
+        item.serviceID === 12
+      )
         return item;
     });
   }
@@ -218,6 +251,9 @@ export class ItemMasterComponent implements OnInit {
   setProviderServiceMapID(providerServiceMapID: any) {
     console.log('providerServiceMapID', providerServiceMapID);
     this.providerServiceMapID = providerServiceMapID;
+    this.assetRecords = [];
+    this.assetTypeFilter = 'All types';
+    this.clearAssetForm();
     console.log('psmid', this.providerServiceMapID);
     this.getAllItemsList(providerServiceMapID);
     this.getCategoriesList(this.providerServiceMapID);
@@ -476,32 +512,115 @@ export class ItemMasterComponent implements OnInit {
     this.drugName = 'EDL';
   }
   resetItemCreationForm() {
-    this.itemCreationForm.controls['description'].reset();
-    this.itemCreationForm.controls['itemType'].reset();
-    this.itemCreationForm.controls['code'].reset();
-    this.itemCreationForm.controls['name'].reset();
-    this.itemCreationForm.controls['testsnomedCode'].reset();
-    this.itemCreationForm.controls['testSnomedName'].reset();
-    this.itemCreationForm.controls['strength'].reset();
-    this.itemCreationForm.controls['uom'].reset();
-    this.itemCreationForm.controls['category'].reset();
-    this.itemCreationForm.controls['dose'].reset();
-    this.itemCreationForm.controls['pharmacology'].reset();
-    this.itemCreationForm.controls['manufacturer'].reset();
-    this.itemCreationForm.controls['drugType'].reset();
-    this.itemCreationForm.controls['composition'].reset();
-    this.itemCreationForm.controls['route'].reset();
-    this.itemCreationForm.controls['description'].reset();
-    this.drugType = false;
-    this.drugName = 'EDL';
-    this.itemCreationForm.controls['drugType'].patchValue(false);
-    this.enableAlert = true;
-    this.snomedFlag = false;
-    this.itemCreationForm.controls['testsnomedCode'].enable();
+    this.itemCreationForm.resetForm();
+    this.itemType = null;
+    this.code = null;
+    this.name = null;
     this.testsnomedCode = null;
     this.testSnomedName = null;
+    this.strength = null;
+    this.uom = null;
+    this.category = null;
+    this.dose = null;
+    this.pharmacology = null;
+    this.manufacturer = null;
+    this.composition = null;
+    this.route = null;
+    this.description = null;
+    this.assetType = null;
+    this.assetCode = null;
+    this.assetName = null;
+    this.assetDescription = null;
+    this.drugType = false;
+    this.drugName = 'EDL';
+    this.itemCreationForm.controls['drugType']?.patchValue(false);
+    this.enableAlert = true;
+    this.snomedFlag = false;
+    this.itemCreationForm.controls['testsnomedCode']?.enable();
+  }
+  get canSaveAsset() {
+    return Boolean(
+      this.assetType && this.assetCode?.trim() && this.assetName?.trim(),
+    );
+  }
+  get filteredAssetRecords() {
+    return this.assetTypeFilter === 'All types'
+      ? this.assetRecords
+      : this.assetRecords.filter(
+          (asset) => asset.assetType === this.assetTypeFilter,
+        );
+  }
+  saveAsset() {
+    if (
+      !this.canSaveAsset ||
+      !this.assetType ||
+      !this.assetCode ||
+      !this.assetName
+    )
+      return;
+
+    const assetCode = this.assetCode.trim();
+    const assetName = this.assetName.trim();
+    const duplicateCode = this.assetRecords.some(
+      (asset) =>
+        asset.id !== this.editingAssetId &&
+        asset.assetCode.toLowerCase() === assetCode.toLowerCase(),
+    );
+    if (duplicateCode) {
+      this.dialogService.alert('Asset code must be unique.', 'error');
+      return;
+    }
+
+    const duplicateName = this.assetRecords.some(
+      (asset) =>
+        asset.id !== this.editingAssetId &&
+        asset.assetType === this.assetType &&
+        asset.assetName.toLowerCase() === assetName.toLowerCase(),
+    );
+    if (duplicateName) {
+      this.dialogService.alert(
+        'Asset name must be unique within its type.',
+        'error',
+      );
+      return;
+    }
+
+    const record: AssetRecord = {
+      id: this.editingAssetId ?? this.nextAssetId++,
+      assetType: this.assetType,
+      assetCode,
+      assetName,
+      assetDescription: this.assetDescription?.trim() ?? '',
+      status: 'Active',
+    };
+    const recordIndex = this.assetRecords.findIndex(
+      (asset) => asset.id === record.id,
+    );
+    if (recordIndex === -1) this.assetRecords = [...this.assetRecords, record];
+    else {
+      this.assetRecords = this.assetRecords.map((asset) =>
+        asset.id === record.id ? record : asset,
+      );
+    }
+    this.clearAssetForm();
+  }
+  editAsset(asset: AssetRecord) {
+    this.editingAssetId = asset.id;
+    this.assetType = asset.assetType;
+    this.assetCode = asset.assetCode;
+    this.assetName = asset.assetName;
+    this.assetDescription = asset.assetDescription;
+  }
+  clearAssetForm() {
+    this.editingAssetId = null;
+    this.assetType = null;
+    this.assetCode = null;
+    this.assetName = null;
+    this.assetDescription = null;
   }
   addMultipleItemArray(formValue: any) {
+    if (formValue.itemType === 'asset') return;
+
     if (this.enableAlert === true) {
       this.dialogService
         .confirm(
@@ -714,6 +833,8 @@ export class ItemMasterComponent implements OnInit {
   }
 
   updateItem(editItemCreationForm: any) {
+    if (editItemCreationForm.itemType === 'asset') return;
+
     if (this.enableAlert === true) {
       this.dialogService
         .confirm(
@@ -887,6 +1008,16 @@ export class EditItemMasterModalComponent implements OnInit {
   providerServiceMapID: any;
   bool: any;
   itemType: any;
+  assetType: string | null = null;
+  assetCode: string | null = null;
+  assetName: string | null = null;
+  assetDescription: string | null = null;
+  assetTypes = [
+    'IT Assets',
+    'General Assets',
+    'Medical Assets',
+    'Electrical Assets',
+  ];
   code: any;
   name: any;
   category: any;
@@ -1038,6 +1169,8 @@ export class EditItemMasterModalComponent implements OnInit {
   }
 
   update() {
+    if (this.itemType === 'asset') return;
+
     const updateItemObject: any = {
       isMedical: this.itemType,
       itemCode: this.code,

@@ -121,7 +121,8 @@ export class ProviderAdminRoleService {
       if (
         item.serviceID === 2 ||
         item.serviceID === 4 ||
-        item.serviceID === 9
+        item.serviceID === 9 ||
+        item.serviceID === 12
       ) {
         return item;
       }

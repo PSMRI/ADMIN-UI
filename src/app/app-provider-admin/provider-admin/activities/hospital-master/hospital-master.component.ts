@@ -524,7 +524,8 @@ export class HospitalMasterComponent implements OnInit {
           item.serviceID === 6 ||
           item.serviceID === 2 ||
           item.serviceID === 4 ||
-          item.serviceID === 9
+          item.serviceID === 9 ||
+          item.serviceID === 12
         ) {
           return item;
         }

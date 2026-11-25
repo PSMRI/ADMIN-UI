@@ -50,7 +50,13 @@ const FakeItemService = {
 };
 
 const FakeCommonServices = {
-  getServiceLines: (_userID: any) => of({ data: [{ serviceID: 4 }] }),
+  getServiceLines: (_userID: any) =>
+    of({
+      data: [
+        { serviceID: 2, serviceName: 'MMU' },
+        { serviceID: 12, serviceName: 'Stop TB' },
+      ],
+    }),
   getStatesOnServices: (_userID: any, _serviceID: any, _isNational: any) =>
     of({ data: [] }),
 };
@@ -113,5 +119,46 @@ describe('ItemMasterComponent', () => {
 
   it('should be created', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should include MMU and Stop TB in the service list', () => {
+    expect(component.services.map((service: any) => service.serviceID)).toEqual(
+      [2, 12],
+    );
+  });
+
+  it('should not queue Asset items until backend support is available', () => {
+    component.addMultipleItemArray({ itemType: 'asset' });
+
+    expect(component.itemArrayObj.data).toEqual([]);
+  });
+
+  it('should not update an item as Asset until backend support is available', () => {
+    const updateItemSpy = spyOn(component.itemService, 'updateItem');
+
+    component.updateItem({ itemType: 'asset' });
+
+    expect(updateItemSpy).not.toHaveBeenCalled();
+  });
+
+  it('should add and edit assets in the UI without calling the item API', () => {
+    const createItemSpy = spyOn(component.itemService, 'createItem');
+    component.assetType = 'IT Assets';
+    component.assetCode = 'IT-LAP';
+    component.assetName = 'Laptop';
+    component.assetDescription = 'Staff laptop';
+
+    component.saveAsset();
+
+    expect(component.assetRecords.length).toBe(1);
+    expect(component.assetRecords[0].assetName).toBe('Laptop');
+
+    component.editAsset(component.assetRecords[0]);
+    component.assetName = 'Updated laptop';
+    component.saveAsset();
+
+    expect(component.assetRecords.length).toBe(1);
+    expect(component.assetRecords[0].assetName).toBe('Updated laptop');
+    expect(createItemSpy).not.toHaveBeenCalled();
   });
 });
