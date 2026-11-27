@@ -1,0 +1,323 @@
+<div class="container-fluid consent-config">
+  <div class="row" *ngIf="showTable">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4 class="pull-left">Consent Configuration</h4>
+    </div>
+
+    <div style="text-align: end" *ngIf="mappings.length !== 0">
+      <mat-form-field id="filterbox">
+        <input
+          matInput
+          placeholder="In-Table Search"
+          #filterTerm
+          (keyup)="filterMappings(filterTerm.value)"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <div class="col-12 table-responsive">
+      <table
+        mat-table
+        [dataSource]="dataSource"
+        class="table table-striped table-hover consent-config-mappings"
+      >
+        <ng-container matColumnDef="sno">
+          <th mat-header-cell *matHeaderCellDef>S.No.</th>
+          <td mat-cell *matCellDef="let element; let i = index">
+            {{ i + 1 }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="projectName">
+          <th mat-header-cell *matHeaderCellDef>Project Name</th>
+          <td mat-cell *matCellDef="let element">{{ element.projectName }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="consent">
+          <th mat-header-cell *matHeaderCellDef>Consent</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.registration.enabled ? "On" : "Off" }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="mandatory">
+          <th mat-header-cell *matHeaderCellDef>Mandatory</th>
+          <td mat-cell *matCellDef="let element">
+            {{
+              element.registration.enabled && element.registration.mandatory
+                ? "Yes"
+                : "No"
+            }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="modes">
+          <th mat-header-cell *matHeaderCellDef>Consent Modes</th>
+          <td mat-cell *matCellDef="let element">
+            {{ modeNames(element) }}
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="version">
+          <th mat-header-cell *matHeaderCellDef>Version</th>
+          <td mat-cell *matCellDef="let element">{{ element.version }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="savedBy">
+          <th mat-header-cell *matHeaderCellDef>Last Updated</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.savedBy }}
+            <span *ngIf="element.savedAt"
+              >· {{ element.savedAt | date: "d MMM y, HH:mm" }}</span
+            >
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="edit">
+          <th mat-header-cell *matHeaderCellDef>Edit</th>
+          <td mat-cell *matCellDef="let element">
+            <mat-icon
+              matTooltip="edit"
+              class="mat-icon material-icons consent-config-edit"
+              aria-hidden="true"
+              style="cursor: pointer"
+              (click)="editMapping(element)"
+              >edit</mat-icon
+            >
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+      <div
+        class="pull-center"
+        style="margin-top: 5px; text-align: center"
+        *ngIf="dataSource.data.length === 0"
+      >
+        <strong>No Records Found </strong>
+      </div>
+      <div style="float: right">
+        <button
+          mat-raised-button
+          class="pull-right mat_blue consent-config-add"
+          color="primary"
+          (click)="addMapping()"
+        >
+          Add Mapping
+        </button>
+        <button
+          mat-raised-button
+          type="button"
+          class="pull-right consent-config-legacy"
+          style="margin-right: 8px"
+          [attr.aria-expanded]="showLegacyUpload"
+          (click)="showLegacyUpload = !showLegacyUpload"
+        >
+          Legacy consent upload
+        </button>
+      </div>
+      <div>
+        <mat-paginator
+          style="display: unset"
+          [hidden]="dataSource.data.length === 0"
+          [pageSizeOptions]="[5, 10, 20]"
+          [pageSize]="5"
+          showFirstLastButtons
+        >
+        </mat-paginator>
+      </div>
+    </div>
+  </div>
+
+  <div class="row" *ngIf="!showTable">
+    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
+      <h4>{{ editMode ? "Edit" : "Add" }} Consent Mapping</h4>
+    </div>
+
+    <form #projectForm="ngForm" autocomplete="off" *ngIf="!editMode">
+      <div class="col-xs-12 col-sm-4">
+        <mat-form-field style="width: 100%">
+          <mat-label>Project Name</mat-label>
+          <input
+            type="text"
+            matInput
+            [(ngModel)]="project"
+            name="project"
+            [matAutocomplete]="auto"
+            (keyup)="filterOptions(project)"
+          />
+          <mat-autocomplete
+            #auto="matAutocomplete"
+            [displayWith]="displayFn"
+            (optionSelected)="onProjectSelected($event.option.value)"
+          >
+            <mat-option *ngFor="let item of filteredOptions" [value]="item">
+              {{ item.projectName }}
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+    </form>
+    <p class="col-12 consent-config-project" *ngIf="editMode">
+      Project: <strong>{{ project?.projectName }}</strong>
+    </p>
+  </div>
+
+  <div class="row" *ngIf="showTable && showLegacyUpload">
+    <div class="col-12">
+      <app-legacy-consent-upload
+        [serviceProviderId]="serviceProviderId"
+        [userName]="userName"
+        (closed)="showLegacyUpload = false"
+      ></app-legacy-consent-upload>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!showTable && loaded">
+    <p class="consent-config-version" *ngIf="!notConfigured">
+      Version {{ loaded.version }} · saved by {{ loaded.savedBy }} on
+      {{ loaded.savedAt | date: "d MMM y, HH:mm" }}
+    </p>
+    <p class="consent-config-version" *ngIf="notConfigured">
+      Not yet configured. The server's starting values are shown.
+    </p>
+
+    <!-- preserveContent: switching tabs must not lose an unsaved consent message. -->
+    <mat-tab-group [preserveContent]="true">
+      <mat-tab label="Registration">
+        <div class="consent-config-tab">
+          <div class="consent-config-toggles">
+            <mat-slide-toggle
+              name="consent-enabled"
+              [(ngModel)]="enabled"
+              (change)="markDirty()"
+              >Consent on</mat-slide-toggle
+            >
+            <mat-slide-toggle
+              name="consent-mandatory"
+              [(ngModel)]="mandatory"
+              [disabled]="!enabled"
+              (change)="markDirty()"
+              >Mandatory before registration</mat-slide-toggle
+            >
+          </div>
+
+          <ng-container *ngIf="enabled">
+            <h5>Consent modes</h5>
+            <p class="consent-config-error" role="alert" *ngIf="rows.length === 0">
+              Consent modes could not be loaded from the server (masters). Try again later.
+            </p>
+            <table
+              class="table table-striped table-hover consent-config-modes"
+              *ngIf="rows.length > 0"
+            >
+              <thead>
+                <tr>
+                  <th>Allowed</th>
+                  <th>Mode</th>
+                  <th>Default</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of rows">
+                  <td>
+                    <mat-checkbox
+                      [checked]="row.ticked"
+                      [attr.aria-label]="'Allow ' + row.name"
+                      (change)="toggleMode(row, $event.checked)"
+                    ></mat-checkbox>
+                  </td>
+                  <td>{{ row.name }}</td>
+                  <td>
+                    <mat-radio-button
+                      name="consent-default-mode"
+                      [checked]="effectiveDefault === row.mode"
+                      [disabled]="!row.ticked"
+                      [attr.aria-label]="row.name + ' is the default'"
+                      (change)="setDefault(row.mode)"
+                    ></mat-radio-button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p
+              class="consent-config-error"
+              role="alert"
+              *ngIf="errors.modes && rows.length > 0"
+            >
+              {{ errors.modes }}
+            </p>
+            <p
+              class="consent-config-error"
+              role="alert"
+              *ngIf="errors.defaultMode"
+            >
+              {{ errors.defaultMode }}
+            </p>
+          </ng-container>
+        </div>
+      </mat-tab>
+      <mat-tab label="Consent message">
+        <app-consent-message
+          [projectId]="loaded.projectId"
+          [serviceProviderId]="serviceProviderId"
+          [userName]="userName"
+        ></app-consent-message>
+      </mat-tab>
+    </mat-tab-group>
+
+    <div class="consent-config-preview" *ngIf="enabled">
+      <h5>Preview for field staff</h5>
+      <ul>
+        <li *ngFor="let row of tickedRows">
+          {{ row.name }}
+          <strong *ngIf="effectiveDefault === row.mode">(default)</strong>
+        </li>
+      </ul>
+    </div>
+
+    <div class="consent-config-actions">
+      <button
+        mat-raised-button
+        type="button"
+        class="consent-config-back"
+        [disabled]="saving"
+        (click)="back()"
+      >
+        Back
+      </button>
+      <button
+        mat-raised-button
+        type="button"
+        class="consent-config-reset"
+        [disabled]="!dirty || saving"
+        (click)="reset()"
+      >
+        Reset
+      </button>
+      <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        class="mat_blue consent-config-save"
+        [disabled]="!canSave"
+        (click)="save()"
+      >
+        Save
+      </button>
+    </div>
+  </ng-container>
+
+  <div class="consent-config-actions" *ngIf="!showTable && !loaded">
+    <button
+      mat-raised-button
+      type="button"
+      class="consent-config-back"
+      (click)="back()"
+    >
+      Back
+    </button>
+  </div>
+</div>

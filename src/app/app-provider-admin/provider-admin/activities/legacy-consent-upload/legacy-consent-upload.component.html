@@ -1,0 +1,103 @@
+<section class="legacy-upload">
+  <div class="legacy-upload-head">
+    <h5>Legacy consent upload</h5>
+    <button mat-icon-button type="button" aria-label="Close" (click)="closed.emit()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <p class="legacy-upload-hint">
+    Add consents taken on paper or in older systems so patients are not asked again. One row per
+    consent, patients identified by AMRIT Beneficiary ID. Up to {{ maxRows }} rows and {{ maxMb }} MB.
+  </p>
+
+  <div class="legacy-upload-actions">
+    <button mat-raised-button type="button" class="legacy-upload-template" (click)="downloadTemplate()">
+      <mat-icon>download</mat-icon> Download template
+    </button>
+    <button mat-raised-button type="button" class="legacy-upload-choose" [disabled]="busy" (click)="file.click()">
+      <mat-icon>upload_file</mat-icon> Choose file
+    </button>
+    <input
+      #file
+      type="file"
+      class="legacy-upload-file"
+      accept=".xlsx,.xls,.csv"
+      hidden
+      (change)="onFileChange(file)"
+    />
+    <span class="legacy-upload-name" *ngIf="fileName">{{ fileName }} · {{ rows.length }} rows</span>
+    <span class="legacy-upload-spacer"></span>
+    <button
+      mat-raised-button
+      color="primary"
+      type="button"
+      class="mat_blue legacy-upload-check"
+      [disabled]="!canCheck"
+      (click)="check()"
+    >
+      Check rows
+    </button>
+  </div>
+
+  <p class="legacy-upload-error" role="alert" *ngIf="fileError">{{ fileError }}</p>
+
+  <ng-container *ngIf="batch">
+    <div class="legacy-upload-summary" role="status">
+      <span><strong>{{ batch.total }}</strong> rows</span>
+      <span><strong>{{ batch.valid }}</strong> valid</span>
+      <span class="legacy-upload-bad"><strong>{{ batch.failed }}</strong> with errors</span>
+      <ng-container *ngIf="imported">
+        <span><strong>{{ batch.imported }}</strong> imported</span>
+        <span><strong>{{ batch.skipped }}</strong> skipped</span>
+      </ng-container>
+      <span class="legacy-upload-spacer"></span>
+      <mat-checkbox name="legacy-errors-only" [(ngModel)]="errorsOnly">Errors only</mat-checkbox>
+    </div>
+
+    <div class="table-responsive legacy-upload-table">
+      <table class="table table-striped table-hover">
+        <thead>
+          <tr>
+            <th>Row</th>
+            <th>Beneficiary ID</th>
+            <th>Status</th>
+            <th>Reasons</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of visibleRows" [class.legacy-upload-row-error]="r.status === 'ERROR'">
+            <td>{{ r.rowNo }}</td>
+            <td>{{ r.beneficiaryId }}</td>
+            <td>{{ r.status }}</td>
+            <td>
+              <span *ngFor="let code of r.reasons; let last = last"
+                >{{ reasonText(code) }}<ng-container *ngIf="!last">; </ng-container></span
+              >
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="legacy-upload-hint" *ngIf="visibleRows.length === 0">No rows to show.</p>
+    </div>
+
+    <div class="legacy-upload-actions">
+      <button mat-raised-button type="button" class="legacy-upload-reset" [disabled]="busy" (click)="reset()">
+        Start again
+      </button>
+      <button mat-raised-button type="button" class="legacy-upload-result" (click)="downloadResult()">
+        Download result
+      </button>
+      <span class="legacy-upload-spacer"></span>
+      <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        class="mat_blue legacy-upload-import"
+        [disabled]="!canImport"
+        (click)="importValid()"
+      >
+        Import {{ batch.valid }} valid rows
+      </button>
+    </div>
+  </ng-container>
+</section>

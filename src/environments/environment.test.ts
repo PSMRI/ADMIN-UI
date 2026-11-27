@@ -520,6 +520,16 @@ export const environment = {
 
   // Customization APIs
   getAllRegistrationData: `${commonBaseURL}customization/fetchAllData`,
+  getConsentConfigMasters: `${commonBaseURL}customization/consent/masters`,
+  fetchConsentConfigByProject: `${commonBaseURL}customization/consent/fetchConfigByProject`,
+  fetchAllConsentConfigs: `${commonBaseURL}customization/consent/fetchAllConfigs`,
+  saveConsentConfig: `${commonBaseURL}customization/consent/saveConfig`,
+  updateConsentConfig: `${commonBaseURL}customization/consent/updateConfig`,
+  fetchConsentNotices: `${commonBaseURL}customization/consent/notices/fetchByProject`,
+  saveConsentNoticeDraft: `${commonBaseURL}customization/consent/notices/saveDraft`,
+  publishConsentNotice: `${commonBaseURL}customization/consent/notices/publish`,
+  validateLegacyConsents: `${commonBaseURL}consent/v1/legacy/validate`,
+  importLegacyConsents: `${commonBaseURL}consent/v1/legacy/import`,
   getBenIdForhealthID: `${fhirBaseUrl}healthID/getBenIdForhealthID`,
 
   //ABDM Facility
